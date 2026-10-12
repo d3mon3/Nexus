@@ -1,0 +1,108 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+/**
+ * Bridge to the Electron shell (electron/preload.ts). In a normal browser `window.nexus`
+ * is undefined and every hook returns an inert state.
+ */
+
+export type GameflowPhase = "None" | "Lobby" | "Matchmaking" | "ReadyCheck" | "ChampSelect" | "GameStart" | "InProgress" | "WaitingForStats" | "PreEndOfGame" | "EndOfGame" | string;
+
+export interface ClientState {
+  connected: boolean;
+  phase: GameflowPhase;
+  summoner: { gameName: string; tagLine: string; puuid: string; platform: string | null } | null;
+}
+
+export interface LiveClientSnapshot {
+  gameTime: number;
+  gameMode: string;
+  activeRiotId: string;
+  players: {
+    riotId: string;
+    championName: string;
+    team: "ORDER" | "CHAOS";
+    level: number;
+    kills: number;
+    deaths: number;
+    assists: number;
+    cs: number;
+    items: number[];
+    spells: string[];
+    /** "TOP" | "JUNGLE" | "MIDDLE" | "BOTTOM" | "UTILITY" in matchmade games. */
+    position?: string | null;
+    keystone?: number | null;
+  }[];
+  activeGold: number | null;
+  events: { name: string; time: number; team?: "ORDER" | "CHAOS" }[];
+}
+
+export interface NexusBridge {
+  platform: string;
+  version: string;
+  getClientState(): Promise<ClientState>;
+  onClientState(cb: (s: ClientState) => void): () => void;
+  onNavigate?(cb: (path: string) => void): () => void;
+  getLiveClient(): Promise<LiveClientSnapshot | null>;
+  setAutoDetect(enabled: boolean): Promise<void>;
+  toggleOverlay(show: boolean): Promise<void>;
+  spectate?(puuid: string): Promise<{ ok: boolean; error?: string }>;
+  setPrefs?(prefs: { import?: unknown; scoutAutoShow?: boolean; widgetsEnabled?: boolean }): Promise<void>;
+  importBuild?(championId: number, role: string | null): Promise<{ ok: boolean; text: string }>;
+  toggleScout?(show: boolean): Promise<void>;
+  setOverlayEdit?(on: boolean): Promise<void>;
+  onImport?(cb: (r: { text: string; runes: string; spells: string; items: string }) => void): () => void;
+  onOverlayEdit?(cb: (on: boolean) => void): () => void;
+}
+
+declare global {
+  interface Window {
+    nexus?: NexusBridge;
+  }
+}
+
+export function getBridge(): NexusBridge | null {
+  return typeof window !== "undefined" ? (window.nexus ?? null) : null;
+}
+
+export function useIsDesktop(): boolean {
+  const [desktop, setDesktop] = useState(false);
+  useEffect(() => setDesktop(Boolean(getBridge())), []);
+  return desktop;
+}
+
+export function useClientState(): ClientState | null {
+  const [state, setState] = useState<ClientState | null>(null);
+  useEffect(() => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    bridge.getClientState().then(setState).catch(() => undefined);
+    return bridge.onClientState(setState);
+  }, []);
+  return state;
+}
+
+/** Polls the local Live Client Data API while a game is running (desktop only). */
+export function useLiveClient(enabled: boolean, intervalMs = 2000): LiveClientSnapshot | null {
+  const [snap, setSnap] = useState<LiveClientSnapshot | null>(null);
+  useEffect(() => {
+    const bridge = getBridge();
+    if (!bridge || !enabled) {
+      setSnap(null);
+      return;
+    }
+    let stop = false;
+    const tick = async () => {
+      const s = await bridge.getLiveClient().catch(() => null);
+      if (!stop) setSnap(s);
+    };
+    tick();
+    const t = setInterval(tick, intervalMs);
+    return () => {
+      stop = true;
+      clearInterval(t);
+    };
+  }, [enabled, intervalMs]);
+  return snap;
+}

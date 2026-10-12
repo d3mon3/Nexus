@@ -1,0 +1,5 @@
+# HTTPS certificate is obtained automatically for $DOMAIN (e.g. 1-2-3-4.sslip.io).
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}

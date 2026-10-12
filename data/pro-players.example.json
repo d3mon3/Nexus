@@ -1,0 +1,13 @@
+[
+  {
+    "handle": "PlayerHandle",
+    "realName": "First Last",
+    "team": "Team Name",
+    "league": "LEC",
+    "role": "MIDDLE",
+    "country": "PL",
+    "riotId": "SoloQueueName#TAG",
+    "platform": "euw1",
+    "signatureChampionIds": [157, 238, 103]
+  }
+]

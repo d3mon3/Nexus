@@ -1,0 +1,97 @@
+// NEXUS database. Optional — the app runs without it (memory cache + demo datasets).
+// Run `npm run db:push` after setting DATABASE_URL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Generic response cache for Riot API calls (finished matches, accounts …).
+model CacheEntry {
+  key       String   @id
+  value     Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+/// Ranked state captured whenever a profile is viewed. Two consecutive snapshots with
+/// exactly one ranked game between them give a reliable LP change for that game.
+model RankSnapshot {
+  id         Int      @id @default(autoincrement())
+  puuid      String
+  platform   String
+  queue      String
+  tier       String
+  division   String?
+  lp         Int
+  wins       Int
+  losses     Int
+  capturedAt DateTime @default(now())
+
+  @@index([puuid, queue, capturedAt])
+}
+
+/// LP change attributed to a specific match from snapshots (see above).
+model MatchLpChange {
+  matchId  String
+  puuid    String
+  lpChange Int
+
+  @@id([matchId, puuid])
+}
+
+/// Apex ladder snapshot, used for ladder positions ("#21,452 · Top 0.8%").
+model LadderSnapshot {
+  platform   String
+  puuid      String
+  position   Int
+  total      Int
+  capturedAt DateTime @default(now())
+
+  @@id([platform, puuid])
+}
+
+/// Aggregated champion statistics produced by `npm run aggregate`.
+model ChampionAggregate {
+  patch      String
+  platform   String
+  rankBand   String
+  championId Int
+  role       String
+  games      Int
+  wins       Int
+  bans       Int
+  kills      Int
+  deaths     Int
+  assists    Int
+  /// JSON blobs: item paths, rune pages, spells, skill orders, matchups.
+  builds     Json
+  updatedAt  DateTime @updatedAt
+
+  @@id([patch, platform, rankBand, championId, role])
+  @@index([patch, role])
+}
+
+/// One row per aggregation run, so the UI can show the sample size and patch.
+model AggregateRun {
+  id         Int      @id @default(autoincrement())
+  patch      String
+  platform   String
+  rankBand   String
+  matches    Int
+  totalBans  Int      @default(0)
+  finishedAt DateTime @default(now())
+}
+
+/// Matches already counted by the aggregator (idempotent re-runs).
+model AggregatedMatch {
+  matchId String   @id
+  patch   String
+  addedAt DateTime @default(now())
+}

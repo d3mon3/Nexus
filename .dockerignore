@@ -1,0 +1,11 @@
+node_modules
+.next
+dist-electron
+release
+preview
+.env
+.env.*
+!.env.example
+.nexus-data
+*.zip
+tsconfig.tsbuildinfo

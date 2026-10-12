@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+dist-electron
+release
+.env
+.env.local
+*.tsbuildinfo
+preview/dist
+.nexus-data
+preview/shims/lucide.gen.ts
