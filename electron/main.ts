@@ -5,8 +5,8 @@
  *  - loading screen → shows the scouting board (Ctrl+Shift+S),
  *  - in game → transparent widget overlay (Ctrl+Shift+N, Ctrl+Shift+E to move widgets).
  */
-import { app, BrowserWindow, globalShortcut, ipcMain, Notification, screen, shell } from "electron";
-import { fork, type ChildProcess } from "node:child_process";
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Notification, screen, shell } from "electron";
+import { fork, spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
@@ -62,6 +62,43 @@ function loadEnvFile(dir: string): Record<string, string> {
 }
 
 declare const __NEXUS_SERVER_URL__: string;
+declare const __NEXUS_BUILD_TAG__: string;
+const BUILD_TAG = typeof __NEXUS_BUILD_TAG__ === "string" ? __NEXUS_BUILD_TAG__ : "";
+
+/**
+ * Updates. In remote mode the window shows pages from the server, so most updates arrive
+ * without reinstalling. When a new installer is published (new client features), the app
+ * offers to download it from the NEXUS server and runs it.
+ */
+let updatePrompted = false;
+async function checkForUpdate(manual = false) {
+  if (isDev || !BUILD_TAG || !baseUrl.startsWith("https://") || (updatePrompted && !manual)) return;
+  try {
+    const info = (await fetch(`${baseUrl}/api/download`).then((r) => r.json())) as { release?: { tag: string; name: string } | null };
+    const latest = info.release;
+    if (!latest || latest.tag === BUILD_TAG) return;
+    updatePrompted = true;
+    const { response } = await dialog.showMessageBox({
+      type: "info",
+      title: "NEXUS update",
+      message: `A new version of NEXUS is available (${latest.name}).`,
+      detail: "Download and install it now? NEXUS will close while the installer runs.",
+      buttons: ["Update now", "Later"],
+      defaultId: 0,
+      cancelId: 1,
+    });
+    if (response !== 0) return;
+    const file = path.join(app.getPath("temp"), `NEXUS-Setup-${latest.tag.replace(/[^\w.-]/g, "_")}.exe`);
+    const res = await fetch(`${baseUrl}/api/download/latest`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    fs.writeFileSync(file, Buffer.from(await res.arrayBuffer()));
+    spawn(file, [], { detached: true, stdio: "ignore" }).unref();
+    app.quit();
+  } catch (err) {
+    console.error("[nexus] update check failed", err);
+    if (manual) dialog.showMessageBox({ type: "error", title: "NEXUS update", message: "Couldn't download the update. Try again later or get it from the Download page." });
+  }
+}
 
 /**
  * Remote mode: the .exe shared with friends talks to one NEXUS server (which holds the Riot key).
@@ -334,6 +371,8 @@ app.whenReady().then(async () => {
     return;
   }
   createWindow();
+  setTimeout(() => void checkForUpdate(), 8000);
+  setInterval(() => void checkForUpdate(), 6 * 3600e3);
   // Overlays only draw over League in Borderless / Windowed display mode.
   globalShortcut.register("CommandOrControl+Shift+N", () => toggleOverlay());
   globalShortcut.register("CommandOrControl+Shift+E", () => setEditMode(!editMode));
