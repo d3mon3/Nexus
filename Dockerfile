@@ -9,7 +9,8 @@ COPY prisma ./prisma
 RUN npm install --no-audit --no-fund
 
 COPY . .
-RUN npm run build \
+RUN mkdir -p public data \
+ && npm run build \
  && cp -r .next/static .next/standalone/.next/static \
  && cp -r public .next/standalone/public \
  && cp -r data .next/standalone/data
