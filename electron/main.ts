@@ -15,6 +15,7 @@ import { normalizeServerUrl } from "../server/admin-utils";
 import type { Role } from "../lib/types";
 import { ChampSelectWatcher, importBuild, type ImportResult } from "./importer";
 import { DiscordPresence } from "./discord";
+import { ForegroundWatcher, isGameProcess } from "./foreground";
 import { acceptReadyCheck, findConnection, getLiveClientSnapshot, lcuPost, lcuRequest, readChampSelect, readClientState, readGameflowSession, type GameflowInfo, type LcuConnection } from "./lcu";
 import { modeForQueue, modeInfo, isGameModeId, type GameModeId } from "../lib/modes";
 import { queueName } from "../lib/static-data";
@@ -259,7 +260,9 @@ function toggleOverlay(show = !overlayShown()) {
     win.setIgnoreMouseEvents(true);
     placeWidget(win, id);
     win.loadURL(`${baseUrl}/overlay?widget=${encodeURIComponent(id)}`);
-    win.once("ready-to-show", () => win.showInactive());
+    win.once("ready-to-show", () => {
+      if (editMode || !foreground.current || isGameProcess(foreground.current)) win.showInactive();
+    });
     win.on("moved", () => {
       const d = overlayDisplay ?? screen.getPrimaryDisplay();
       const [x, y] = win.getPosition();
@@ -273,6 +276,21 @@ function toggleOverlay(show = !overlayShown()) {
   }
   for (const [id, w] of widgetWins) if (!ids.includes(id)) w.close();
 }
+
+/* Show widgets (and the scouting board) only while the game is the app in front — not over
+ * Discord, the browser or the desktop when you alt-tab. Edit mode keeps them visible. */
+function applyForeground(name: string) {
+  if (!overlayShown() && !scoutWin) return;
+  // "" = Windows is between windows (alt-tab, lock screen) — keep the current state.
+  if (!name && !editMode) return;
+  // Widgets only over the game itself; alt-tab to Discord / desktop / browser hides them.
+  const visible = editMode || isGameProcess(name);
+  for (const w of [...widgetWins.values(), ...(scoutWin ? [scoutWin] : [])]) {
+    if (visible && !w.isVisible()) w.showInactive();
+    else if (!visible && w.isVisible()) w.hide();
+  }
+}
+const foreground = new ForegroundWatcher(applyForeground);
 
 /** Edit mode makes the widget windows draggable (Ctrl+Shift+E). */
 function setEditMode(on: boolean) {
@@ -381,7 +399,7 @@ async function updatePresence(phase: string) {
     case "GameStart":
     case "InProgress": {
       const live = await getLiveClientSnapshot();
-      const me = live?.players.find((p) => p.riotId === live.activeRiotId);
+      const me = live?.players.find((p) => p.isMe) ?? null;
       const champId = me ? await championIdByName(me.championName).catch(() => null) : null;
       const k = me ? `${me.kills}/${me.deaths}/${me.assists}` : "";
       return discord.update({
@@ -474,6 +492,7 @@ async function pollClient() {
     if (next.phase === "InProgress" && prevPhase !== "InProgress") {
       mainWindow?.webContents.send("nexus:navigate", "/live");
       if (prefs.minimizeInGame && mainWindow && !mainWindow.isFocused()) mainWindow.minimize();
+      foreground.start();
       if (prefs.scoutAutoShow) {
         toggleScout(true);
         scoutShownAt = Date.now();
@@ -491,6 +510,7 @@ async function pollClient() {
     if (next.phase !== "InProgress" && prevPhase === "InProgress") {
       toggleOverlay(false);
       toggleScout(false);
+      foreground.stop();
     }
 
     // Game over → post-game summary.
@@ -604,5 +624,6 @@ app.on("window-all-closed", () => {
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
   discord.close();
+  foreground.stop();
   server?.kill();
 });

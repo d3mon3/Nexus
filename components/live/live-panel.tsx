@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { asset } from "@/lib/assets";
 import { compact, duration, pct, rankLabel, winRate, wrColor } from "@/lib/format";
-import { getBridge, useClientState, useLiveClient, type LiveClientSnapshot } from "@/lib/desktop";
+import { findMe, getBridge, useClientState, useLiveClient, type LiveClientSnapshot } from "@/lib/desktop";
 import { useChampionStats, useLiveGame } from "@/lib/queries";
 import { parseRiotId, profileHref } from "@/lib/regions";
 import { useSettings, type PlayerRef } from "@/lib/settings";
@@ -47,7 +47,7 @@ function mergeLocal(game: LiveGame, local: LiveClientSnapshot | null, byName: (n
     ...game,
     participants: game.participants.map((p) => {
       const lp = local.players.find((x) => x.riotId.toLowerCase() === p.riotId.toLowerCase()) ?? local.players.find((x) => byName(x.championName) === p.championId);
-      const isActive = lp && lp.riotId.toLowerCase() === local.activeRiotId.toLowerCase();
+      const isActive = lp && lp === findMe(local);
       return lp ? { ...p, live: { kills: lp.kills, deaths: lp.deaths, assists: lp.assists, cs: lp.cs, level: lp.level, items: lp.items, gold: isActive ? local.activeGold : null } } : p;
     }),
     unavailable: game.unavailable.filter((u) => !["KDA", "Items"].includes(u)),

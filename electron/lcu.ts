@@ -163,7 +163,7 @@ interface RawLivePlayer {
 }
 
 interface RawAllGameData {
-  activePlayer?: { riotId?: string; summonerName?: string; currentGold?: number };
+  activePlayer?: { riotId?: string; riotIdGameName?: string; riotIdTagLine?: string; summonerName?: string; currentGold?: number };
   allPlayers: RawLivePlayer[];
   events?: { Events: { EventName: string; EventTime: number; KillerName?: string }[] };
   gameData: { gameMode: string; gameTime: number };
@@ -171,6 +171,17 @@ interface RawAllGameData {
 
 export function mapLiveClient(raw: RawAllGameData) {
   const riotIdOf = (p: RawLivePlayer) => p.riotId ?? (p.riotIdGameName ? `${p.riotIdGameName}#${p.riotIdTagLine ?? ""}` : (p.summonerName ?? ""));
+  // The active player's id comes in different shapes depending on the patch (riotId,
+  // gameName + tag, or the old summonerName) — compare all of them, case-insensitively.
+  const norm = (v: string | undefined) => (v ?? "").trim().toLowerCase().replace(/\s+/g, "");
+  const ap = raw.activePlayer;
+  const activeKeys = new Set(
+    [ap?.riotId, ap?.riotIdGameName && `${ap.riotIdGameName}#${ap.riotIdTagLine ?? ""}`, ap?.riotIdGameName, ap?.summonerName, ap?.riotId?.split("#")[0]]
+      .map((v) => norm(v || ""))
+      .filter(Boolean),
+  );
+  const isMe = (p: RawLivePlayer) =>
+    [p.riotId, riotIdOf(p), p.riotIdGameName, p.summonerName, p.riotId?.split("#")[0]].some((v) => v && activeKeys.has(norm(v)));
   return {
     gameTime: raw.gameData.gameTime,
     gameMode: raw.gameData.gameMode,
@@ -181,6 +192,7 @@ export function mapLiveClient(raw: RawAllGameData) {
       for (const it of p.items) if (it.slot >= 0 && it.slot < 6) items[it.slot] = it.itemID;
       return {
         riotId: riotIdOf(p),
+        isMe: activeKeys.size > 0 && isMe(p),
         championName: p.championName,
         team: p.team,
         level: p.level,

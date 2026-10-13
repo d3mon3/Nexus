@@ -21,6 +21,8 @@ export interface LiveClientSnapshot {
   activeRiotId: string;
   players: {
     riotId: string;
+    /** Set by the desktop app when this entry is the local player. */
+    isMe?: boolean;
     championName: string;
     team: "ORDER" | "CHAOS";
     level: number;
@@ -36,6 +38,20 @@ export interface LiveClientSnapshot {
   }[];
   activeGold: number | null;
   events: { name: string; time: number; team?: "ORDER" | "CHAOS" }[];
+}
+
+const normId = (v: string | null | undefined) => (v ?? "").trim().toLowerCase().replace(/\s+/g, "");
+
+/**
+ * The local player in a live-client snapshot, or null when it can't be identified
+ * (never guesses another player — that showed someone else's 0/0/0 stats).
+ */
+export function findMe(snap: LiveClientSnapshot | null | undefined, account?: { gameName?: string; tagLine?: string } | null): LiveClientSnapshot["players"][number] | null {
+  if (!snap?.players.length) return null;
+  const flagged = snap.players.find((p) => p.isMe);
+  if (flagged) return flagged;
+  const keys = new Set([snap.activeRiotId, snap.activeRiotId.split("#")[0], account?.gameName && account.tagLine ? `${account.gameName}#${account.tagLine}` : "", account?.gameName ?? ""].map(normId).filter(Boolean));
+  return snap.players.find((p) => keys.has(normId(p.riotId)) || keys.has(normId(p.riotId.split("#")[0]))) ?? null;
 }
 
 /** Champion select seen from the League client (desktop app only). */

@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { duration } from "@/lib/format";
 import { demoLiveSnapshot } from "@/lib/demo-live";
-import { getBridge, useLiveClient, type LiveClientSnapshot } from "@/lib/desktop";
+import { findMe, getBridge, useClientState, useLiveClient, type LiveClientSnapshot } from "@/lib/desktop";
 import { useChampionBuild } from "@/lib/queries";
 import { WIDGET_META, useSettings, type WidgetId } from "@/lib/settings";
 import { SPELLS } from "@/lib/static-data";
@@ -50,6 +50,7 @@ function SingleWidget({ id }: { id: WidgetId }) {
   const { settings, updateWidget } = useSettings();
   const [edit, setEdit] = useState(false);
   const snap = useSnapshot();
+  const client = useClientState();
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
     document.documentElement.style.background = "transparent";
@@ -73,7 +74,7 @@ function SingleWidget({ id }: { id: WidgetId }) {
     return () => ro.disconnect();
   }, [settings.overlayScale]);
   if (!WIDGET_META[id]) return null;
-  const me = snap?.players.find((p) => p.riotId.toLowerCase() === snap.activeRiotId.toLowerCase()) ?? snap?.players[0];
+  const me = findMe(snap, client?.summoner);
   return (
     <div
       ref={box}
@@ -95,6 +96,7 @@ function FullOverlay() {
   const params = useSearchParams();
   const [edit, setEdit] = useState(params?.get("edit") === "1");
   const snap = useSnapshot();
+  const client = useClientState();
 
   useEffect(() => {
     document.documentElement.style.background = "transparent";
@@ -102,7 +104,7 @@ function FullOverlay() {
     return getBridge()?.onOverlayEdit?.(setEdit);
   }, []);
 
-  const me = snap?.players.find((p) => p.riotId.toLowerCase() === snap.activeRiotId.toLowerCase()) ?? snap?.players[0];
+  const me = findMe(snap, client?.summoner);
   const ids = (Object.keys(settings.widgets) as WidgetId[]).filter((id) => settings.widgets[id].enabled);
 
   return (
