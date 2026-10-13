@@ -33,7 +33,7 @@ export interface ImportResult {
 }
 
 /** Fetches the build from the NEXUS server and writes it into the client. */
-export async function importBuild(conn: LcuConnection, baseUrl: string, championId: number, role: Role | null, championName: string, prefs: ImportPrefs, mode: GameModeId = "sr"): Promise<ImportResult> {
+export async function importBuild(conn: LcuConnection, baseUrl: string, championId: number, role: Role | null, championName: string, prefs: ImportPrefs, mode: GameModeId = "sr", runeIndex?: number): Promise<ImportResult> {
   const result: ImportResult = { championId, role, runes: "skipped", spells: "skipped", items: "skipped" };
   const params = new URLSearchParams();
   if (role && mode === "sr") params.set("role", role);
@@ -46,14 +46,15 @@ export async function importBuild(conn: LcuConnection, baseUrl: string, champion
   if (!build) return { ...result, message: body.note ?? "Build data for this champion is still being collected." };
 
   if (mode === "arena") prefs = { ...prefs, runes: false, spells: false }; // Arena has no rune pages or spell picks
-  if (prefs.runes) result.runes = await importRunes(conn, build, championName, mode).catch(() => "failed" as const);
+  const index = runeIndex ?? prefs.runeChoice?.[String(championId)] ?? 0;
+  if (prefs.runes) result.runes = await importRunes(conn, build, championName, mode, index).catch(() => "failed" as const);
   if (prefs.spells) result.spells = await importSpells(conn, build, prefs.flashKey).catch(() => "failed" as const);
   if (prefs.items) result.items = await importItems(conn, build, championName, mode).catch(() => "failed" as const);
   return result;
 }
 
-async function importRunes(conn: LcuConnection, build: ChampionBuild, championName: string, mode: GameModeId) {
-  const page = toRunePage(build, championName, mode);
+async function importRunes(conn: LcuConnection, build: ChampionBuild, championName: string, mode: GameModeId, index = 0) {
+  const page = toRunePage(build, championName, mode, index);
   if (!page) return "skipped" as const;
   const pages = (await lcuRequest<PerkPage[]>(conn, "GET", "/lol-perks/v1/pages")).body ?? [];
   // Replace our previous page; otherwise free a slot by overwriting the current editable page.

@@ -89,7 +89,31 @@ export function computeScout(input: ScoutInput, nameOf: (championId: number) => 
   const add = (label: string, tone: ScoutTag["tone"]) => tags.push({ label, tone });
   const champName = input.championName;
 
+  // Players seen on the same team in this player's recent games (premade detection on the client).
+  const teammates: Record<string, number> = {};
+  for (const { m, p } of mine)
+    for (const o of m.participants) if (o.puuid && o.puuid !== input.puuid && o.teamId === p.teamId) teammates[o.puuid] = (teammates[o.puuid] ?? 0) + 1;
+  for (const k of Object.keys(teammates)) if (teammates[k] < 2) delete teammates[k];
+
+  // Role played in this game: Smite means jungle (the only reliable signal before the game starts).
+  const hasSmite = input.spells.includes(11);
+  const jungleShare = n ? (roleCount.get("JUNGLE") ?? 0) / n : 0;
+  const offRole = n >= 5 && mainRole ? (hasSmite && jungleShare < 0.15) || (!hasSmite && mainRole === "JUNGLE" && jungleShare >= 0.7) : false;
+
+  // Possible smurf: few ranked games but winning far more than the rank expects.
+  const r = input.ranked;
+  const rankedGames = r ? r.wins + r.losses : 0;
+  const rankedWr = rankedGames ? r!.wins / rankedGames : 0;
+  const recentKda = n ? kda(avg(mine.map(({ p }) => p.kills)), avg(mine.map(({ p }) => p.deaths)), avg(mine.map(({ p }) => p.assists))) : 0;
+  const smurf = (rankedGames >= 10 && rankedGames <= 80 && rankedWr >= 0.65 && recentKda >= 3) || (input.summonerLevel < 60 && rankedGames >= 10 && rankedWr >= 0.6);
+
+  // Tilt: 3+ losses among the last 4 games, all within the last 4 hours.
+  const recent4 = mine.slice(0, 4).filter(({ m }) => now - m.gameCreation <= 4 * HOUR);
+  const tilted = recent4.length >= 3 && recent4.filter(({ p }) => !p.win).length >= 3;
+
   if (input.proTeam) add(`Pro: ${input.proTeam}`, "info");
+  if (smurf) add("Possible smurf", "bad");
+  if (offRole) add(hasSmite ? "Off-role: jungle" : "Off-role", "bad");
   if (n >= 5) {
     if (mainRole && mainRole !== "UTILITY" && mainRole !== "JUNGLE" && csPerMin >= 7.5) add("Good CSer", "good");
     if (visionPerMin >= (mainRole === "UTILITY" ? 2.3 : 1.3)) add("Good vision", "good");
@@ -105,6 +129,7 @@ export function computeScout(input: ScoutInput, nameOf: (championId: number) => 
   if (!champion && n >= 5 && (input.mastery?.points ?? 0) < 10_000) add(`First time ${champName}`, "bad");
   if (streak >= 3) add(`Win streak ×${streak}`, "good");
   if (streak <= -3) add(`Loss streak ×${-streak}`, "bad");
+  else if (tilted) add("Tilted", "bad");
   const last = mine[0]?.m;
   if (last && now - (last.gameCreation + last.durationSec * 1000) >= 12 * HOUR) add("Waking up", "neutral");
   if (n > 0 && n < 3) add("Few recent games", "neutral");
@@ -128,6 +153,7 @@ export function computeScout(input: ScoutInput, nameOf: (championId: number) => 
     mainRole,
     tags,
     analysed: n,
+    teammates,
   };
 }
 

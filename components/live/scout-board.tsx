@@ -3,6 +3,9 @@
 
 import { t } from "@/lib/i18n";
 import { compact, pct, rankLabel, ROLE_LABEL, TIER_LABEL, winRate } from "@/lib/format";
+import { useQueries } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { api } from "@/lib/api-client";
 import { useScoutPlayer } from "@/lib/queries";
 import { useSettings } from "@/lib/settings";
 import type { LiveGame, LiveParticipant, Role, ScoutPlayer, ScoutTag } from "@/lib/types";
@@ -17,9 +20,55 @@ import { Tooltip } from "../ui/tooltip";
  * Loading-screen scouting board (Porofessor-style): one card per player, ally team on
  * top, enemies below. Each card loads independently so the board fills in progressively.
  */
+const PREMADE_COLORS = ["#f2b544", "#4fd1ff", "#ff6bd6", "#7dff8a"];
+
+/**
+ * Premade groups: two players on the same team who played 2+ recent games together.
+ * Uses the same queries as the cards (shared cache), so it costs no extra requests.
+ */
+function usePremades(game: LiveGame, region: string, depth: number): Map<string, { color: string; size: number; games: number }> {
+  const results = useQueries({
+    queries: game.participants.map((p) => ({
+      queryKey: ["scout", region, p.puuid, p.championId, depth],
+      queryFn: () => api.scout(region, p, depth),
+      enabled: Boolean(p.puuid),
+      staleTime: 10 * 60_000,
+      retry: 1,
+    })),
+  });
+  const data = results.map((r) => r.data?.data ?? null);
+  const key = data.map((d) => (d ? d.puuid : "-")).join(",");
+  return useMemo(() => {
+    const out = new Map<string, { color: string; size: number; games: number }>();
+    const parent = new Map<string, string>();
+    const find = (x: string): string => (parent.get(x) === x || !parent.has(x) ? x : find(parent.get(x)!));
+    const shared = new Map<string, number>();
+    for (const p of game.participants) if (p.puuid) parent.set(p.puuid, p.puuid);
+    for (const a of game.participants)
+      for (const b of game.participants) {
+        if (!a.puuid || !b.puuid || a.puuid >= b.puuid || a.teamId !== b.teamId) continue;
+        const da = data[game.participants.indexOf(a)];
+        const db = data[game.participants.indexOf(b)];
+        const together = Math.max(da?.teammates?.[b.puuid] ?? 0, db?.teammates?.[a.puuid] ?? 0);
+        if (together >= 2) {
+          parent.set(find(a.puuid), find(b.puuid));
+          for (const x of [a.puuid, b.puuid]) shared.set(x, Math.max(shared.get(x) ?? 0, together));
+        }
+      }
+    const groups = new Map<string, string[]>();
+    for (const p of game.participants) if (p.puuid && shared.has(p.puuid)) (groups.get(find(p.puuid)) ?? groups.set(find(p.puuid), []).get(find(p.puuid))!).push(p.puuid);
+    [...groups.values()].forEach((members, i) => {
+      for (const m of members) out.set(m, { color: PREMADE_COLORS[i % PREMADE_COLORS.length], size: members.length, games: shared.get(m) ?? 2 });
+    });
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, game]);
+}
+
 export function ScoutBoard({ game, region, compactMode = false, className }: { game: LiveGame; region: string; compactMode?: boolean; className?: string }) {
   const { settings } = useSettings();
   const teams = [100, 200] as const;
+  const premades = usePremades(game, region, settings.scoutDepth);
   return (
     <div className={cn("space-y-3", className)}>
       {teams.map((tt) => (
@@ -27,7 +76,7 @@ export function ScoutBoard({ game, region, compactMode = false, className }: { g
           {game.participants
             .filter((p) => p.teamId === tt)
             .map((p) => (
-              <ScoutCard key={`${p.puuid}-${p.championId}`} participant={p} region={region} depth={settings.scoutDepth} compactMode={compactMode} />
+              <ScoutCard key={`${p.puuid}-${p.championId}`} participant={p} region={region} depth={settings.scoutDepth} compactMode={compactMode} premade={p.puuid ? premades.get(p.puuid) : undefined} />
             ))}
         </div>
       ))}
@@ -35,7 +84,7 @@ export function ScoutBoard({ game, region, compactMode = false, className }: { g
   );
 }
 
-function ScoutCard({ participant, region, depth, compactMode }: { participant: LiveParticipant; region: string; depth: number; compactMode: boolean }) {
+function ScoutCard({ participant, region, depth, compactMode, premade }: { participant: LiveParticipant; region: string; depth: number; compactMode: boolean; premade?: { color: string; size: number; games: number } }) {
   const q = useScoutPlayer(region, participant, depth);
   const s = q.data?.data;
   const blue = participant.teamId === 100;
@@ -44,7 +93,16 @@ function ScoutCard({ participant, region, depth, compactMode }: { participant: L
   const [name, tag] = hidden ? [t("Hidden player"), ""] : participant.riotId.split("#");
 
   return (
-    <div className={cn("overflow-hidden rounded-xl border border-line-soft bg-[#0b0f1a]/95 shadow-[0_12px_30px_-14px_rgba(0,0,0,0.9)] backdrop-blur", compactMode && "text-[0.92em]")}>
+    <div
+      className={cn("overflow-hidden rounded-xl border border-line-soft bg-[#0b0f1a]/95 shadow-[0_12px_30px_-14px_rgba(0,0,0,0.9)] backdrop-blur", compactMode && "text-[0.92em]")}
+      style={premade ? { borderColor: premade.color, boxShadow: `0 0 0 1px ${premade.color}, 0 12px 30px -14px rgba(0,0,0,0.9)` } : undefined}
+    >
+      {premade && (
+        <div className="flex items-center justify-center gap-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-[#070a13]" style={{ background: premade.color }}>
+          {premade.size === 2 ? t("Duo") : t("Premade ×{0}", [premade.size])}
+          <span className="font-medium normal-case tracking-normal">· {t("{0} games together", [premade.games])}</span>
+        </div>
+      )}
       {/* header */}
       <div className={cn("flex items-center gap-2.5 border-b-2 px-3 py-2", blue ? "border-secondary/80" : "border-loss/80")}>
         {s ? (

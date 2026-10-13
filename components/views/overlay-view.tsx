@@ -11,6 +11,7 @@ import { findMe, getBridge, useClientState, useLiveClient, type LiveClientSnapsh
 import { useChampionBuild } from "@/lib/queries";
 import { WIDGET_META, useSettings, type WidgetId } from "@/lib/settings";
 import { SPELLS } from "@/lib/static-data";
+import { antiHealFor, itemAlerts } from "@/lib/enemy-items";
 import { useStatic } from "@/lib/static-context";
 import { cn } from "@/lib/utils";
 import { ChampionIcon, ItemIcon, SpellIcon } from "../game/icons";
@@ -194,7 +195,48 @@ function WidgetBody({ id, snap, me }: { id: WidgetId; snap: Snap; me: Player }) 
       return <LaneWidget snap={snap} me={me} />;
     case "enemySpells":
       return <EnemyWidget snap={snap} me={me} />;
+    case "enemyItems":
+      return <EnemyItemsWidget snap={snap} me={me} />;
   }
+}
+
+function EnemyItemsWidget({ snap, me }: { snap: Snap; me: Player }) {
+  const { findChampion } = useStatic();
+  const alerts = itemAlerts(snap.players.filter((p) => p.team !== me.team));
+  // Remember when each alert first appeared, to highlight new ones for 20 s.
+  const firstSeen = useRef(new Map<string, number>());
+  const now = Date.now();
+  for (const a of alerts) if (!firstSeen.current.has(a.rule.id)) firstSeen.current.set(a.rule.id, now);
+  if (!alerts.length) return <p className="max-w-[240px] text-[11px] text-muted">{t("Nothing to watch out for yet — alerts appear when enemies buy key items.")}</p>;
+  const myChamp = findChampion(me.championName);
+  return (
+    <div className="max-w-[280px] space-y-2">
+      {alerts.map((a) => {
+        const fresh = now - (firstSeen.current.get(a.rule.id) ?? 0) < 20_000;
+        return (
+          <div key={a.rule.id} className={cn("rounded-lg border px-2 py-1.5", fresh ? "border-warning/70 bg-warning/10" : "border-line-soft")}>
+            <div className="flex items-center gap-1.5">
+              <span className={cn("text-[12px] font-semibold", fresh ? "text-warning" : "text-fg")}>{t(a.rule.title)}</span>
+              <span className="ml-auto flex gap-1">
+                {a.owners.slice(0, 4).map((o) => (
+                  <span key={o.championName} className="relative">
+                    <ChampionIcon id={findChampion(o.championName)?.id ?? 0} size={20} rounded="md" tooltip={false} />
+                    <ItemIcon id={o.items[0]} size={12} className="absolute -bottom-1 -right-1 rounded-sm ring-1 ring-black" />
+                  </span>
+                ))}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[10.5px] leading-snug text-muted">{t(a.rule.tip)}</p>
+            {a.rule.id === "sustain" && (
+              <p className="mt-1 flex items-center gap-1 text-[10.5px] text-muted">
+                {t("Suggested:")} <ItemIcon id={antiHealFor(myChamp)} size={16} />
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function BuildWidget({ me }: { me: Player }) {

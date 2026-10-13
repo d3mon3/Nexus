@@ -1,18 +1,23 @@
 "use client";
 
-import { Ban, Crosshair, Swords } from "lucide-react";
+import { AlertTriangle, Ban, Crosshair, Download, Info, Swords } from "lucide-react";
 import { useMemo, useState } from "react";
 import { roleFromAssigned } from "@/lib/client-import";
-import { useChampSelect, useClientState } from "@/lib/desktop";
+import { getBridge, useChampSelect, useClientState } from "@/lib/desktop";
+import { useSettings } from "@/lib/settings";
+import { compWarnings } from "@/lib/team-comp";
+import type { GameModeId } from "@/lib/modes";
 import { pct, ROLE_LABEL } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import { modeForQueue, modeInfo } from "@/lib/modes";
-import { useChampionStats, useCounters, usePlayerStats } from "@/lib/queries";
+import { useChampionBuild, useChampionStats, useCounters, usePlayerStats } from "@/lib/queries";
 import { resolveRegion } from "@/lib/regions";
 import { useStatic } from "@/lib/static-context";
 import type { ChampionStat, Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ChampionIcon } from "../game/icons";
+import { ChampionIcon, ItemIcon, RuneIcon, SpellIcon } from "../game/icons";
+import { Button } from "../ui/button";
+import { Switch } from "../ui/switch";
 import { RoleIcon } from "../game/role-icon";
 import { TierBadge } from "../game/tier-badge";
 import { Card, CardHeader } from "../ui/card";
@@ -56,6 +61,10 @@ export function ChampSelectAssistant({ forceShow = false }: { forceShow?: boolea
   const enemies = cs.theirTeam.filter((e) => e.championId > 0);
   const guessed = enemies.find((e) => (roleFromAssigned(e.position) ?? mainRoleOf(e.championId)) === myRole)?.championId ?? null;
   const opponent = manualOpponent && enemies.some((e) => e.championId === manualOpponent) ? manualOpponent : guessed;
+  const allyChamps = cs.myTeam.map((m) => champion(m.championId || m.intentId)).filter((c): c is NonNullable<typeof c> => Boolean(c));
+  const enemyChamps = enemies.map((e) => champion(e.championId)).filter((c): c is NonNullable<typeof c> => Boolean(c));
+  const warnings = compWarnings(allyChamps, enemyChamps);
+  const myStats = (mine.data?.data.champions ?? []).find((c) => c.championId === myChamp) ?? null;
 
   return (
     <Card className="glow-border">
@@ -64,6 +73,17 @@ export function ChampSelectAssistant({ forceShow = false }: { forceShow?: boolea
         icon={<Swords className="size-4 text-primary" />}
         action={<span className="text-xs text-muted">{t(modeInfo(mode).label)}</span>}
       />
+      {myChamp > 0 && <ImportPanel championId={myChamp} role={mode === "sr" ? myRole : null} mode={mode} myStats={myStats} />}
+      {mode === "sr" && warnings.length > 0 && (
+        <div className="mx-3 mb-3 space-y-1.5">
+          {warnings.map((w) => (
+            <p key={w.id} className={cn("flex items-start gap-2 rounded-lg border px-3 py-2 text-xs", w.tone === "bad" ? "border-warning/40 bg-warning/8 text-warning" : "border-secondary/40 bg-secondary/8 text-secondary")}>
+              {w.tone === "bad" ? <AlertTriangle className="mt-px size-3.5 shrink-0" /> : <Info className="mt-px size-3.5 shrink-0" />}
+              {t(w.text)}
+            </p>
+          ))}
+        </div>
+      )}
       {mode !== "sr" ? (
         <p className="px-4 pb-4 text-sm text-muted">{t("Runes and items for {0} are imported automatically when you pick a champion.", [t(modeInfo(mode).label)])}</p>
       ) : (
@@ -74,6 +94,94 @@ export function ChampSelectAssistant({ forceShow = false }: { forceShow?: boolea
         </div>
       )}
     </Card>
+  );
+}
+
+/** What will be imported for the current pick: choose the rune page, import now, or turn auto-import off for this champion. */
+function ImportPanel({ championId, role, mode, myStats }: { championId: number; role: Role | null; mode: GameModeId; myStats: { games: number; wins: number; kills: number; deaths: number; assists: number } | null }) {
+  const { champion } = useStatic();
+  const { settings, update } = useSettings();
+  const q = useChampionBuild(championId, mode === "sr" ? role : null, undefined, mode);
+  const build = q.data?.data ?? null;
+  const prefs = settings.importPrefs;
+  const chosen = prefs.runeChoice?.[String(championId)] ?? 0;
+  const disabled = (prefs.disabledChampions ?? []).includes(championId);
+  const [status, setStatus] = useState<string | null>(null);
+  const bridge = getBridge();
+
+  const setPrefs = (patch: Partial<typeof prefs>) => update((s) => ({ importPrefs: { ...s.importPrefs, ...patch } }));
+  const choose = (i: number) => setPrefs({ runeChoice: { ...(prefs.runeChoice ?? {}), [String(championId)]: i } });
+  const toggleAuto = (on: boolean) => {
+    const list = new Set(prefs.disabledChampions ?? []);
+    if (on) list.delete(championId);
+    else list.add(championId);
+    setPrefs({ disabledChampions: [...list] });
+  };
+  const importNow = async () => {
+    if (!bridge?.importBuild) return;
+    setStatus(t("Importing…"));
+    const r = await bridge.importBuild(championId, role, mode, chosen).catch(() => ({ ok: false, text: t("Import failed.") }));
+    setStatus(r.text);
+  };
+
+  return (
+    <div className="mx-3 mb-3 rounded-xl border border-line-soft bg-surface-2/40 p-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <ChampionIcon id={championId} size={36} rounded="full" tooltip={false} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold">{t("Import for {0}", [champion(championId)?.name ?? ""])}</p>
+          <p className="text-xs text-muted">
+            {myStats && myStats.games > 0
+              ? t("You on this champion: {0} win rate in {1} games · {2} KDA", [pct(myStats.wins / myStats.games), myStats.games, ((myStats.kills + myStats.assists) / Math.max(1, myStats.deaths)).toFixed(2)])
+              : t("You haven't played this champion in your recent games.")}
+          </p>
+        </div>
+        <span className="flex items-center gap-2 text-xs text-muted">
+          {t("Auto-import")}
+          <Switch checked={!disabled} onChange={toggleAuto} label={t("Auto-import")} />
+        </span>
+        <Button size="sm" onClick={importNow} disabled={!bridge?.importBuild || !build}>
+          <Download className="size-3.5" /> {t("Import now")}
+        </Button>
+      </div>
+      {q.isLoading ? (
+        <p className="mt-2 text-xs text-muted">{t("Loading…")}</p>
+      ) : !build ? (
+        <p className="mt-2 text-xs text-muted">{t("Build data for this champion is still being collected.")}</p>
+      ) : (
+        <div className="mt-3 grid gap-3 md:grid-cols-[1.4fr_1fr]">
+          <div>
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-dim">{t("Rune page — tap to choose")}</p>
+            <div className="flex flex-wrap gap-2">
+              {build.runes.slice(0, 3).map((r, i) => (
+                <button
+                  key={i}
+                  onClick={() => choose(i)}
+                  className={cn("flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition", i === chosen ? "border-primary bg-primary-soft" : "border-line-soft hover:border-line")}
+                >
+                  <RuneIcon id={r.perks[0]} size={28} />
+                  <RuneIcon id={r.subStyle} size={18} />
+                  <span className="text-[11px] leading-tight text-muted tabular">
+                    <span className="block font-semibold text-fg">{pct(r.winRate)}</span>
+                    {t("{0} games", [r.games])}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-dim">{t("Spells and core build")}</p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {build.spells[0]?.ids.map((id) => <SpellIcon key={id} id={id} size={26} />)}
+              <span className="mx-1 h-5 w-px bg-line-soft" />
+              {build.popular.items.map((id) => <ItemIcon key={id} id={id} size={26} />)}
+              {build.boots[0] && <ItemIcon id={build.boots[0].items[0]} size={26} />}
+            </div>
+          </div>
+        </div>
+      )}
+      {status && <p className="mt-2 text-xs text-muted">{status}</p>}
+    </div>
   );
 }
 

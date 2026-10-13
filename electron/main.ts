@@ -5,7 +5,7 @@
  *  - loading screen → shows the scouting board (Ctrl+Shift+S),
  *  - in game → transparent widget overlay (Ctrl+Shift+N, Ctrl+Shift+E to move widgets).
  */
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Notification, screen, shell } from "electron";
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, screen, shell, Tray } from "electron";
 import { fork, spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
@@ -47,6 +47,10 @@ interface DesktopPrefs {
   minimizeInGame: boolean;
   /** Switch League from exclusive Fullscreen to Borderless before the game, so widgets are visible. */
   autoBorderless: boolean;
+  /** Start NEXUS (hidden, in the tray) when Windows starts. */
+  openAtLogin: boolean;
+  /** The window's X button hides NEXUS to the tray instead of quitting. */
+  closeToTray: boolean;
 }
 let prefs: DesktopPrefs = {
   import: { ...DEFAULT_IMPORT_PREFS, enabled: true, onHover: false },
@@ -61,7 +65,59 @@ let prefs: DesktopPrefs = {
   widgets: { build: { enabled: true, x: 0.012, y: 0.2 }, stats: { enabled: true, x: 0.012, y: 0.42 } },
   minimizeInGame: true,
   autoBorderless: true,
+  openAtLogin: true,
+  closeToTray: true,
 };
+
+/* Tray, start with Windows, single instance ---------------------------------- */
+let tray: Tray | null = null;
+let quitting = false;
+const startHidden = process.argv.includes("--hidden");
+
+function iconPath() {
+  return app.isPackaged ? path.join(process.resourcesPath, "icon.png") : path.join(__dirname, "..", "build", "icon.png");
+}
+
+function openMain() {
+  if (!mainWindow) createWindow(true);
+  else {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  }
+}
+
+function applyLoginItem() {
+  if (process.platform !== "win32" || !app.isPackaged) return;
+  app.setLoginItemSettings({ openAtLogin: prefs.openAtLogin, args: ["--hidden"] });
+}
+
+function buildTrayMenu() {
+  if (!tray) return;
+  const pl = prefs.language === "pl";
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: pl ? "Otwórz NEXUS" : "Open NEXUS", click: openMain },
+      { label: pl ? "Pokaż / ukryj widgety (Ctrl+Shift+N)" : "Show / hide widgets (Ctrl+Shift+N)", click: () => toggleOverlay() },
+      { label: pl ? "Ustawienia" : "Settings", click: () => (showMain("/settings"), openMain()) },
+      { type: "separator" },
+      { label: pl ? "Zamknij NEXUS" : "Quit NEXUS", click: () => ((quitting = true), app.quit()) },
+    ]),
+  );
+}
+
+function createTray() {
+  if (tray) return;
+  const img = nativeImage.createFromPath(iconPath());
+  tray = new Tray(img.isEmpty() ? img : img.resize({ width: 16, height: 16 }));
+  tray.setToolTip("NEXUS");
+  tray.on("click", openMain);
+  buildTrayMenu();
+}
+
+if (!app.requestSingleInstanceLock()) app.quit();
+else app.on("second-instance", () => openMain());
+app.on("before-quit", () => (quitting = true));
 const watcher = new ChampSelectWatcher();
 
 type ClientState = { connected: boolean; phase: string; summoner: { gameName: string; tagLine: string; puuid: string; platform: string | null } | null };
@@ -177,7 +233,7 @@ async function startServer(): Promise<string> {
   throw new Error("NEXUS server did not start");
 }
 
-function createWindow() {
+function createWindow(show = true) {
   mainWindow = new BrowserWindow({
     width: 1536,
     height: 1000,
@@ -190,7 +246,14 @@ function createWindow() {
     autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
-  mainWindow.once("ready-to-show", () => mainWindow?.show());
+  mainWindow.once("ready-to-show", () => show && mainWindow?.show());
+  // X hides to the tray (League sessions keep working); quit from the tray menu.
+  mainWindow.on("close", (e) => {
+    if (!quitting && prefs.closeToTray && tray) {
+      e.preventDefault();
+      mainWindow?.hide();
+    }
+  });
   mainWindow.loadURL(baseUrl);
   mainWindow.webContents.on("did-fail-load", (_e, code, desc, url, isMainFrame) => {
     if (isMainFrame && code !== -3 && url.startsWith(baseUrl)) mainWindow?.loadURL(offlinePage(baseUrl, desc || `error ${code}`));
@@ -354,10 +417,10 @@ function describeImport(r: ImportResult, name: string): string {
   return `${name}: imported ${parts.join(", ")}${failed.length ? ` (failed: ${failed.join(", ")})` : ""}.`;
 }
 
-async function runImport(championId: number, role: Role | null, manual: boolean, mode: GameModeId = "sr"): Promise<ImportResult> {
+async function runImport(championId: number, role: Role | null, manual: boolean, mode: GameModeId = "sr", runeIndex?: number): Promise<ImportResult> {
   if (!conn) throw new Error("League client is not running.");
   const name = await championName(championId);
-  const result = await importBuild(conn, baseUrl, championId, mode === "sr" ? role : null, name, prefs.import, mode);
+  const result = await importBuild(conn, baseUrl, championId, mode === "sr" ? role : null, name, prefs.import, mode, runeIndex);
   const text = describeImport(result, mode === "sr" ? name : `${name} (${modeInfo(mode).label})`);
   mainWindow?.webContents.send("nexus:import", { ...result, text });
   if (!manual) new Notification({ title: "NEXUS", body: text, silent: true }).show();
@@ -484,7 +547,8 @@ async function pollClient() {
     }
     if (next.phase === "ChampSelect" && conn && prefs.import.enabled) {
       const pick = await watcher.lockedChampion(conn, prefs.import.onHover).catch(() => null);
-      if (pick && watcher.shouldImport(pick.championId, mode === "sr" ? pick.role : null)) runImport(pick.championId, pick.role, false, mode).catch(() => undefined);
+      const off = pick && (prefs.import.disabledChampions ?? []).includes(pick.championId);
+      if (pick && !off && watcher.shouldImport(pick.championId, mode === "sr" ? pick.role : null)) runImport(pick.championId, pick.role, false, mode).catch(() => undefined);
     }
     if (next.phase !== "ChampSelect" && prevPhase === "ChampSelect") watcher.reset();
 
@@ -558,16 +622,19 @@ ipcMain.handle("nexus:set-prefs", (_e, next: Partial<DesktopPrefs>) => {
   if (!prefs.widgetsEnabled) toggleOverlay(false);
   else if (overlayShown()) toggleOverlay(true); // add/remove widgets switched in Settings
   if (discordWas !== prefs.discord) void updatePresence(clientState.phase).catch(() => undefined);
+  applyLoginItem();
+  buildTrayMenu();
 });
 ipcMain.handle("nexus:get-champ-select", async () => {
   if (!conn || clientState.phase !== "ChampSelect") return null;
   return readChampSelect(conn, flow.queueId).catch(() => null);
 });
 ipcMain.handle("nexus:get-last-game", () => lastGame);
-ipcMain.handle("nexus:import-build", async (_e, championId: number, role: Role | null, modeArg?: string) => {
+ipcMain.handle("nexus:import-build", async (_e, championId: number, role: Role | null, modeArg?: string, runeIndex?: number) => {
   try {
     conn = conn ?? (await findConnection());
-    const r = await runImport(Number(championId), role ?? null, true, isGameModeId(modeArg) ? modeArg : "sr");
+    const idx = Number.isInteger(runeIndex) ? Math.max(0, Math.min(4, Number(runeIndex))) : undefined;
+    const r = await runImport(Number(championId), role ?? null, true, isGameModeId(modeArg) ? modeArg : "sr", idx);
     return { ok: r.runes === "ok" || r.spells === "ok" || r.items === "ok", text: describeImport(r, await championName(Number(championId))) };
   } catch (err) {
     return { ok: false, text: err instanceof Error ? err.message : String(err) };
@@ -602,7 +669,9 @@ app.whenReady().then(async () => {
     app.quit();
     return;
   }
-  createWindow();
+  createWindow(!startHidden);
+  createTray();
+  applyLoginItem();
   setTimeout(() => void checkForUpdate(), 8000);
   setInterval(() => void checkForUpdate(), 6 * 3600e3);
   // Overlays only draw over League in Borderless / Windowed display mode.

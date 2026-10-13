@@ -49,9 +49,13 @@ export interface Settings {
   minimizeInGame: boolean;
   /** Desktop: switch League from exclusive Fullscreen to Borderless so widgets are visible. */
   autoBorderless: boolean;
+  /** Desktop: start with Windows (hidden in the tray). */
+  startWithWindows: boolean;
+  /** Desktop: closing the window keeps NEXUS running in the tray. */
+  closeToTray: boolean;
 }
 
-export type WidgetId = "build" | "stats" | "timers" | "lane" | "enemySpells";
+export type WidgetId = "build" | "stats" | "timers" | "lane" | "enemySpells" | "enemyItems";
 
 export interface WidgetConfig {
   enabled: boolean;
@@ -66,6 +70,7 @@ export const WIDGET_META: Record<WidgetId, { name: string; description: string }
   timers: { name: "Objective timers", description: "Dragon, Rift Herald and Baron respawns from the game's event feed." },
   lane: { name: "Lane opponent", description: "CS and level difference against the enemy in your role." },
   enemySpells: { name: "Enemy summoners", description: "Enemy champions with their summoner spells and levels." },
+  enemyItems: { name: "Enemy item alerts", description: "Warns when enemies buy Zhonya's, spell shields, cleanse, anti-heal or stack resistances, with what to do about it." },
 };
 
 const KEY = "nexus.settings.v1";
@@ -94,6 +99,7 @@ export const DEFAULT_SETTINGS: Settings = {
     timers: { enabled: false, x: 0.83, y: 0.08 },
     lane: { enabled: false, x: 0.83, y: 0.22 },
     enemySpells: { enabled: false, x: 0.83, y: 0.34 },
+    enemyItems: { enabled: true, x: 0.83, y: 0.5 },
   },
   overlayOpacity: 0.92,
   overlayScale: 1,
@@ -104,6 +110,8 @@ export const DEFAULT_SETTINGS: Settings = {
   discordPresence: true,
   minimizeInGame: true,
   autoBorderless: true,
+  startWithWindows: true,
+  closeToTray: true,
 };
 
 let cache: Settings | null = null;

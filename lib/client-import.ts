@@ -14,6 +14,10 @@ export interface ImportPrefs {
   items: boolean;
   /** Which key Flash should be on. */
   flashKey: "D" | "F";
+  /** Champions that are never auto-imported. */
+  disabledChampions?: number[];
+  /** Remembered rune page choice per champion (index into build.runes). */
+  runeChoice?: Record<string, number>;
 }
 
 export const DEFAULT_IMPORT_PREFS: ImportPrefs = { runes: true, spells: true, items: true, flashKey: "F" };
@@ -28,8 +32,8 @@ export interface ClientRunePage {
 
 const ROLE_SHORT: Record<Role, string> = { TOP: "Top", JUNGLE: "Jungle", MIDDLE: "Mid", BOTTOM: "ADC", UTILITY: "Support" };
 
-export function toRunePage(build: ChampionBuild, championName: string, mode: GameModeId = "sr"): ClientRunePage | null {
-  const page = build.runes[0];
+export function toRunePage(build: ChampionBuild, championName: string, mode: GameModeId = "sr", index = 0): ClientRunePage | null {
+  const page = build.runes[index] ?? build.runes[0];
   if (!page || page.perks.length < 6) return null;
   const shards = page.shards.length === 3 ? page.shards : DEFAULT_SHARDS;
   return {

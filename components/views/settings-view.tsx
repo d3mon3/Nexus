@@ -222,6 +222,12 @@ export function SettingsView() {
           <Row label={t("Minimise NEXUS during games")} hint={t("Leaves CPU and graphics card to League. The window comes back after the game.")} htmlFor="min-in-game">
             <Switch id="min-in-game" label={t("Minimise NEXUS during games")} checked={settings.minimizeInGame} onChange={(v) => update({ minimizeInGame: v })} />
           </Row>
+          <Row label={t("Start with Windows")} hint={t("NEXUS starts hidden in the tray and opens by itself when champion select begins.")} htmlFor="start-win">
+            <Switch id="start-win" label={t("Start with Windows")} checked={settings.startWithWindows} onChange={(v) => update({ startWithWindows: v })} />
+          </Row>
+          <Row label={t("Keep running in the tray")} hint={t("Closing the window keeps NEXUS in the tray (next to the clock). Quit from the tray menu.")} htmlFor="close-tray">
+            <Switch id="close-tray" label={t("Keep running in the tray")} checked={settings.closeToTray} onChange={(v) => update({ closeToTray: v })} />
+          </Row>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={() => getBridge()?.setOverlayEdit?.(true)} disabled={!desktop}>
               <Move />{" " + t("Move widgets")}</Button>

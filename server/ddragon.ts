@@ -25,6 +25,7 @@ const championsSchema = z.object({
       name: z.string(),
       title: z.string(),
       tags: z.array(z.string()),
+      info: z.object({ attack: z.number(), defense: z.number(), magic: z.number() }).partial().optional(),
     }),
   ),
 });
@@ -71,6 +72,7 @@ export function getStaticBundle(): Promise<StaticBundle> {
             name: c.name,
             title: c.title,
             tags: c.tags,
+            info: c.info?.attack != null && c.info.magic != null ? { attack: c.info.attack, defense: c.info.defense ?? 0, magic: c.info.magic } : undefined,
             // Data Dragon has no positions; prefer curated roles, else derive from class tags.
             roles: known?.roles ?? TAG_ROLES[c.tags[0]] ?? ["MIDDLE"],
           };

@@ -1,12 +1,13 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Award, Clock, Minus } from "lucide-react";
+import { ArrowDown, ArrowUp, Award, Clock, Crown, Minus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api-client";
 import { getBridge, useClientState } from "@/lib/desktop";
 import { formatKda, pct, ROLE_LABEL } from "@/lib/format";
+import { ratePlayers, type PlayerRating } from "@/lib/performance";
 import { t } from "@/lib/i18n";
 import { useMatch, useMatches, usePlayerStats, useProfile } from "@/lib/queries";
 import { resolveRegion } from "@/lib/regions";
@@ -187,6 +188,60 @@ function Summary({ m, puuid, avg, lpChange }: { m: MatchDetail; puuid: string; a
           {avg && <span className="ml-auto self-center text-[11px] text-dim">{t("Average from your last {0} games · win rate {1}", [avg.games, pct(avg.winRate)])}</span>}
         </div>
       </Card>
+
+      <AllPlayers m={m} puuid={puuid} />
     </div>
+  );
+}
+
+const GRADE_TONE: Record<PlayerRating["grade"], string> = {
+  "S+": "text-[#f2b544]",
+  S: "text-[#f2b544]",
+  A: "text-success",
+  B: "text-secondary",
+  C: "text-muted",
+  D: "text-loss",
+};
+
+/** All ten players rated against each other, with MVP and ACE. */
+function AllPlayers({ m, puuid }: { m: MatchDetail; puuid: string }) {
+  const ratings = useMemo(() => new Map(ratePlayers(m.participants, m.durationSec).map((r) => [r.puuid, r])), [m]);
+  const teams = [100, 200] as const;
+  return (
+    <Card>
+      <CardHeader title={t("Player ratings")} icon={<Crown className="size-4 text-warning" />} action={<span className="text-xs text-muted">{t("Compared with the other players in this game")}</span>} />
+      <div className="grid gap-3 p-3 pt-0 lg:grid-cols-2">
+        {teams.map((team) => {
+          const players = m.participants.filter((p) => p.teamId === team);
+          const won = players[0]?.win;
+          return (
+            <div key={team} className="rounded-xl border border-line-soft">
+              <p className={cn("border-b border-line-soft px-3 py-1.5 text-xs font-semibold", won ? "text-win" : "text-loss")}>{won ? t("Victory") : t("Defeat")}</p>
+              <ul>
+                {players.map((p) => {
+                  const r = ratings.get(p.puuid);
+                  return (
+                    <li key={p.puuid} className={cn("flex items-center gap-2.5 px-3 py-1.5", p.puuid === puuid && "bg-primary-soft")}>
+                      <ChampionIcon id={p.championId} size={28} rounded="md" />
+                      <span className="min-w-0 flex-1 truncate text-[13px]">{p.riotId.split("#")[0] || p.championName}</span>
+                      <span className="w-20 text-right text-xs text-muted tabular">
+                        {p.kills}/{p.deaths}/{p.assists}
+                      </span>
+                      {r?.badge ? (
+                        <span className={cn("w-11 rounded px-1 py-0.5 text-center text-[10px] font-bold", r.badge === "MVP" ? "bg-[#f2b544] text-[#070a13]" : "bg-secondary text-[#070a13]")}>{r.badge}</span>
+                      ) : (
+                        <span className="w-11 text-center text-[11px] text-dim tabular">#{r?.rank}</span>
+                      )}
+                      <span className={cn("w-8 text-right text-sm font-bold tabular", r ? GRADE_TONE[r.grade] : "")}>{r?.grade}</span>
+                      <span className="w-8 text-right text-xs text-muted tabular">{r?.score.toFixed(1)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }

@@ -3,7 +3,7 @@
   "productName": "NEXUS",
   "version": "0.2.0",
   "private": true,
-  "description": "NEXUS — Stats Beyond The Game. League of Legends analytics for desktop and web.",
+  "description": "NEXUS \u2014 Stats Beyond The Game. League of Legends analytics for desktop and web.",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "next dev",
@@ -80,6 +80,10 @@
       {
         "from": "public",
         "to": "app/public"
+      },
+      {
+        "from": "build/icon.png",
+        "to": "icon.png"
       }
     ],
     "win": {

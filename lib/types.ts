@@ -193,6 +193,8 @@ export interface ChampionInfo {
   title: string;
   roles: Role[];
   tags: string[];
+  /** Data Dragon 0–10 ratings (absent in the embedded fallback). */
+  info?: { attack: number; defense: number; magic: number };
 }
 
 export interface ChampionStat {
@@ -367,6 +369,8 @@ export interface ScoutPlayer {
   mainRole: Role | null;
   tags: ScoutTag[];
   analysed: number;
+  /** puuid → games played on the same team recently (2+ only); used for premade detection. */
+  teammates?: Record<string, number>;
 }
 
 export interface DesktopReleaseInfo {

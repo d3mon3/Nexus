@@ -73,3 +73,24 @@ export function useQuery<T>(opts: { queryKey: readonly unknown[]; queryFn: () =>
     refetch,
   };
 }
+
+/** Preview shim: subscribes to several queries (reads the shared store, loads missing keys). */
+export function useQueries<T>(opts: { queries: { queryKey: readonly unknown[]; queryFn: () => Promise<T>; enabled?: boolean }[] }) {
+  const [, force] = useReducer((x: number) => x + 1, 0);
+  useEffect(() => {
+    subs.add(force);
+    return () => {
+      subs.delete(force);
+    };
+  }, []);
+  const keys = opts.queries.map((q) => JSON.stringify(q.queryKey));
+  useEffect(() => {
+    opts.queries.forEach((q, i) => {
+      if (q.enabled === false) return;
+      const e = store.get(keys[i]);
+      if (!e) load(keys[i], q.queryFn);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keys.join("|")]);
+  return keys.map((k) => ({ data: store.get(k)?.data as T | undefined }));
+}
