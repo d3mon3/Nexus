@@ -21,9 +21,14 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq git curl openssl ca-certificates >/dev/null
 if ! command -v docker >/dev/null 2>&1; then
-  curl -fsSL https://get.docker.com | sh
+  # Official script first; older releases (e.g. Ubuntu 20.04) fall back to Ubuntu's own packages.
+  curl -fsSL https://get.docker.com | sh || apt-get install -y -qq docker.io >/dev/null
 fi
-docker compose version >/dev/null 2>&1 || die "brak 'docker compose' — zainstaluj Docker ponownie."
+if ! docker compose version >/dev/null 2>&1; then
+  apt-get install -y -qq docker-compose-plugin >/dev/null 2>&1 || apt-get install -y -qq docker-compose-v2 >/dev/null 2>&1 || true
+fi
+systemctl enable --now docker >/dev/null 2>&1 || true
+docker compose version >/dev/null 2>&1 || die "brak 'docker compose' — napisz do Claude, co pokazało się wyżej."
 
 if [ "$(swapon --show | wc -l)" = 0 ] && [ ! -f /swapfile ]; then
   say "Dodaję 2 GB swap (budowanie aplikacji potrzebuje pamięci)"
