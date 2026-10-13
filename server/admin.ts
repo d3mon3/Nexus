@@ -1,8 +1,6 @@
 import "server-only";
 import { createHash, timingSafeEqual } from "node:crypto";
-import { z } from "zod";
 import { env } from "./env";
-import { riotRequest, RiotApiError } from "./riot/client";
 import { ServiceError } from "./services/player";
 
 /**
@@ -41,14 +39,29 @@ export function requireAdmin(req: Request) {
 
 export { maskKey, RIOT_KEY_RE } from "./admin-utils";
 
-/** Calls a cheap endpoint (LoL status) to check that Riot accepts the key. */
+/**
+ * Checks the key against two ordinary endpoints (the Challenger ladder and an Account-V1 lookup).
+ * 200 or 404 means Riot accepted the key; 401/403 on both means it was rejected.
+ */
 export async function testKey(key: string, platform = env.defaultPlatform): Promise<{ ok: boolean; message: string }> {
-  try {
-    await riotRequest(`https://${platform}.api.riotgames.com/lol/status/v4/platform-data`, z.object({ id: z.string() }).passthrough(), { apiKey: key, maxRetries: 1 });
-    return { ok: true, message: "Riot zaakceptował klucz." };
-  } catch (err) {
-    if (err instanceof RiotApiError && (err.status === 401 || err.status === 403))
-      return { ok: false, message: "Riot odrzucił ten klucz (zły albo wygasł). Wygeneruj nowy na developer.riotgames.com." };
-    return { ok: false, message: err instanceof Error ? err.message : "Nie udało się połączyć z Riot." };
+  const regional = ["na1", "br1", "la1", "la2"].includes(platform) ? "americas" : ["kr", "jp1"].includes(platform) ? "asia" : "europe";
+  const urls = [
+    `https://${platform}.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5`,
+    `https://${regional}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/NEXUS/KEYCHECK`,
+  ];
+  const codes: number[] = [];
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { headers: { "X-Riot-Token": key.trim() }, cache: "no-store", signal: AbortSignal.timeout(10_000) });
+      codes.push(res.status);
+      if (res.ok || res.status === 404) return { ok: true, message: "Riot zaakceptował klucz." };
+    } catch {
+      codes.push(0);
+    }
   }
+  if (codes.every((c) => c === 0)) return { ok: false, message: "Serwer nie może połączyć się z Riot (sieć). Spróbuj za chwilę." };
+  if (codes.some((c) => c === 429)) return { ok: true, message: "Riot zaakceptował klucz (limit zapytań chwilowo wyczerpany)." };
+  if (codes.every((c) => c === 401 || c === 403))
+    return { ok: false, message: `Riot odrzucił ten klucz (kod ${codes.join("/")}). Świeżo wygenerowany klucz czasem działa dopiero po 1–2 minutach — spróbuj ponownie, a jeśli dalej nie działa, wygeneruj nowy.` };
+  return { ok: false, message: `Riot odpowiedział nietypowo (kod ${codes.join("/")}). Spróbuj ponownie za chwilę.` };
 }
