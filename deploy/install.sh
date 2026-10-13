@@ -156,9 +156,9 @@ cat <<DONE
   Pobieranie .exe: https://${DOMAIN}/download
   Hasło admina:    ${ADMIN_PASSWORD}
 
-  1. Otwórz panel admina na telefonie i wklej klucz Riot.
-  2. Ten adres wpisz w GitHub → Actions → Build desktop app
-     (pole „server_url”). Po ~15 min .exe pojawi się na stronie /download.
+  (Przy pierwszej instalacji: wklej klucz Riot w panelu admina
+   i zbuduj .exe w GitHub → Actions. Przy aktualizacji nic więcej
+   nie trzeba robić — klucz i ustawienia zostają.)
 
   Hasło jest też w pliku ${DIR}/.env
   Aktualizacja później: sudo bash ${DIR}/deploy/install.sh
