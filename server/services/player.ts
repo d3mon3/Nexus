@@ -7,7 +7,7 @@ import { assertDemoAllowed, isLiveMode } from "../env";
 import * as riot from "../riot/endpoints";
 import { RiotApiError } from "../riot/client";
 import { mapLeagueEntries, mapMatch, mapSpectator } from "../riot/mappers";
-import { ladderPosition, lpChangesFor, recordSnapshot } from "./lp";
+import { ladderPosition, latestMatchLoader, lpChangesFor, recordRanks } from "./lp";
 import { computePlayerStats } from "./stats";
 import { healForeignPuuid } from "../puuid-reset";
 
@@ -63,14 +63,13 @@ export async function getProfile(regionValue: string, riotIdValue: string): Prom
 async function loadProfile(region: RegionInfo, id: { gameName: string; tagLine: string }): Promise<Envelope<PlayerProfile>> {
   {
     const account = await riot.accountByRiotId(region, id.gameName, id.tagLine);
-    const [summoner, entries, mastery, recentSolo] = await Promise.all([
+    const [summoner, entries, mastery] = await Promise.all([
       riot.summonerByPuuid(region.platform, account.puuid),
       riot.leagueEntries(region.platform, account.puuid),
       riot.topMastery(region.platform, account.puuid, 30),
-      riot.matchIds(region, account.puuid, { start: 0, count: 1, queue: 420 }).catch(() => [] as string[]),
     ]);
     const ranked = mapLeagueEntries(entries);
-    await recordSnapshot(account.puuid, region.platform, ranked.find((r) => r.queue === "RANKED_SOLO_5x5"), recentSolo[0] ?? null).catch(() => undefined);
+    await recordRanks(account.puuid, region.platform, ranked, latestMatchLoader(region, account.puuid)).catch(() => undefined);
     return {
       data: {
         account: {

@@ -10,7 +10,7 @@ import { resolveRegion } from "../lib/regions";
 import { env } from "../server/env";
 import * as riot from "../server/riot/endpoints";
 import { mapLeagueEntries } from "../server/riot/mappers";
-import { recordSnapshot } from "../server/services/lp";
+import { latestMatchLoader, recordRanks } from "../server/services/lp";
 
 const MAX_PLAYERS = Number(process.env.LP_TRACK_MAX ?? 60);
 const DAYS = Number(process.env.LP_TRACK_DAYS ?? 14);
@@ -32,10 +32,9 @@ async function main() {
       const region = resolveRegion(p.platform);
       if (!region) continue;
       try {
-        const [entries, ids] = await Promise.all([riot.leagueEntries(region.platform, p.puuid), riot.matchIds(region, p.puuid, { count: 1, queue: 420 })]);
-        const solo = mapLeagueEntries(entries).find((e) => e.queue === "RANKED_SOLO_5x5");
+        const entries = await riot.leagueEntries(region.platform, p.puuid);
         const before = await db.rankSnapshot.count({ where: { puuid: p.puuid } });
-        await recordSnapshot(p.puuid, region.platform, solo, ids[0] ?? null);
+        await recordRanks(p.puuid, region.platform, mapLeagueEntries(entries), latestMatchLoader(region, p.puuid));
         if ((await db.rankSnapshot.count({ where: { puuid: p.puuid } })) > before) changed++;
       } catch {
         /* expired key or Riot busy — try again next round */

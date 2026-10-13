@@ -108,7 +108,7 @@ export function MatchRow({ match, region, puuid, variant = "full", defaultOpen =
             <p className={cn("text-[13px] font-semibold tabular", match.lpChange >= 0 ? "text-win" : "text-loss")}>
               {match.lpChange >= 0 ? "+" : ""}
               {match.lpChange}{" " + t("LP")}</p>
-          ) : (
+          ) : match.queueId !== 420 && match.queueId !== 440 ? null : (
             <Tooltip content={t("LP change is only shown when it can be determined reliably.")}>
               <p className="text-[13px] text-dim">{t("— LP")}</p>
             </Tooltip>
