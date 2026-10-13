@@ -1,5 +1,7 @@
-# Production NEXUS server: app + PostgreSQL + nightly statistics + HTTPS (Caddy).
+# Production NEXUS server: app + PostgreSQL + nightly statistics + HTTPS.
 # Started by deploy/install.sh; settings live in .env next to this file.
+# HTTPS: Caddy (profile "caddy") on a fresh server, or the server's existing nginx,
+# which proxies to the app on 127.0.0.1:${APP_PORT}.
 services:
   db:
     image: postgres:16-alpine
@@ -24,6 +26,8 @@ services:
       DATABASE_URL: postgresql://nexus:${DB_PASSWORD}@db:5432/nexus
       NEXUS_DISABLE_DEMO: "1"
       NEXUS_DATA_DIR: /data
+    ports:
+      - "127.0.0.1:${APP_PORT:-3210}:3000"
     volumes:
       - nexusdata:/data
     depends_on:
@@ -46,6 +50,7 @@ services:
 
   caddy:
     image: caddy:2
+    profiles: ["caddy"]
     restart: unless-stopped
     ports:
       - "80:80"

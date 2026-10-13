@@ -20,7 +20,7 @@ Tak to działa: **jeden serwer** (Twój VPS) trzyma klucz Riot, bazę i statysty
    ```
 4. Po 5–15 minutach skrypt wypisze **adres serwera** (np. `https://5-75-1-2.sslip.io`) i **hasło admina**. Zapisz je.
 
-Skrypt sam instaluje Dockera, bazę PostgreSQL, certyfikat HTTPS i nocne zbieranie statystyk. Ponowne uruchomienie tej samej komendy (albo `sudo bash /opt/nexus/deploy/install.sh`) aktualizuje NEXUS i zostawia dane.
+Skrypt sam instaluje Dockera, bazę PostgreSQL, certyfikat HTTPS i nocne zbieranie statystyk. Jeśli na serwerze działa już nginx z inną stroną, NEXUS dostaje w nim osobną stronę i certyfikat (certbot), a istniejące strony zostają nietknięte. Własna domena zamiast sslip.io: `DOMAIN=nexus.twojadomena.pl` przed komendą (rekord A domeny musi wskazywać na IP serwera). Ponowne uruchomienie tej samej komendy (albo `sudo bash /opt/nexus/deploy/install.sh`) aktualizuje NEXUS i zostawia dane.
 
 > Repozytorium powinno być **publiczne** (w kodzie nie ma żadnych sekretów). Przy prywatnym repo trzeba podać adres z tokenem: `https://TOKEN@github.com/LOGIN/nexus.git`.
 

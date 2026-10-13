@@ -5,6 +5,8 @@
 #
 # It installs Docker, adds swap, downloads NEXUS to /opt/nexus, generates passwords,
 # gets an HTTPS address (<ip>.sslip.io unless DOMAIN=... is given) and starts everything.
+# If nginx already serves other sites on this server, NEXUS gets its own nginx site + certificate
+# next to them and the existing sites are left untouched.
 # Running it again updates NEXUS and keeps your settings and data.
 set -euo pipefail
 
@@ -26,6 +28,12 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 if ! docker compose version >/dev/null 2>&1; then
   apt-get install -y -qq docker-compose-plugin >/dev/null 2>&1 || apt-get install -y -qq docker-compose-v2 >/dev/null 2>&1 || true
+fi
+if ! docker compose version >/dev/null 2>&1; then
+  # Last resort: the official compose plugin binary.
+  mkdir -p /usr/local/lib/docker/cli-plugins
+  curl -fsSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" -o /usr/local/lib/docker/cli-plugins/docker-compose \
+    && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose || true
 fi
 systemctl enable --now docker >/dev/null 2>&1 || true
 docker compose version >/dev/null 2>&1 || die "brak 'docker compose' — napisz do Claude, co pokazało się wyżej."
@@ -52,6 +60,15 @@ if [ ! -f .env ]; then
   [ -n "$IP" ] || die "nie udało się ustalić publicznego IP serwera."
   DOMAIN_VALUE="${DOMAIN:-${IP//./-}.sslip.io}"
   ADMIN_PW="$(openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | head -c 20)"
+  # Port 80 already taken (e.g. nginx serving another site) → share that nginx instead of Caddy.
+  if ss -tlnH 2>/dev/null | awk '{print $4}' | grep -Eq '(^|:)80$'; then
+    command -v nginx >/dev/null 2>&1 || die "port 80 jest zajęty przez inny program niż nginx — napisz do Claude, co działa na serwerze."
+    PROXY=nginx; PROFILES=""
+  else
+    PROXY=caddy; PROFILES=caddy
+  fi
+  APP_PORT_VALUE=3210
+  while ss -tlnH 2>/dev/null | awk '{print $4}' | grep -Eq "(^|:)${APP_PORT_VALUE}$"; do APP_PORT_VALUE=$((APP_PORT_VALUE + 1)); done
   cat > .env <<ENV
 # NEXUS server settings. Riot key: paste it at https://${DOMAIN_VALUE}/admin (not here).
 DOMAIN=${DOMAIN_VALUE}
@@ -62,6 +79,9 @@ TZ=${TZ:-Europe/Warsaw}
 AGGREGATE_HOUR=4
 AGGREGATE_PLAYERS=40
 AGGREGATE_MATCHES=10
+PROXY_MODE=${PROXY}
+COMPOSE_PROFILES=${PROFILES}
+APP_PORT=${APP_PORT_VALUE}
 ENV
   chmod 600 .env
 fi
@@ -80,6 +100,45 @@ fi
 
 say "Buduję i uruchamiam (pierwszy raz trwa 5–15 minut)"
 docker compose up -d --build
+
+if [ "${PROXY_MODE:-caddy}" = nginx ]; then
+  # Debian layout (sites-enabled) if nginx.conf includes it, otherwise conf.d.
+  if grep -Rqs "sites-enabled" /etc/nginx/nginx.conf; then SITE=/etc/nginx/sites-available/nexus; LINK=/etc/nginx/sites-enabled/nexus
+  else SITE=/etc/nginx/conf.d/nexus.conf; LINK=""; fi
+  if [ ! -f "$SITE" ]; then
+    say "Dodaję stronę NEXUS do istniejącego nginx (inne strony zostają bez zmian)"
+    cat > "$SITE" <<NGINX
+# NEXUS — added by /opt/nexus/deploy/install.sh
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${DOMAIN};
+    client_max_body_size 2m;
+    location / {
+        proxy_pass http://127.0.0.1:${APP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Forwarded-For \$remote_addr;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 120s;
+    }
+}
+NGINX
+    [ -n "$LINK" ] && ln -sf "$SITE" "$LINK"
+    if ! nginx -t >/dev/null 2>&1; then
+      rm -f "$SITE"; [ -n "$LINK" ] && rm -f "$LINK"
+      die "konfiguracja nginx nie przeszła testu — wycofałem zmiany, inne strony działają dalej. Napisz do Claude."
+    fi
+    systemctl reload nginx
+  fi
+  if ! grep -q "listen 443" "$SITE"; then
+    say "Pobieram certyfikat HTTPS dla ${DOMAIN}"
+    command -v certbot >/dev/null 2>&1 || apt-get install -y -qq certbot python3-certbot-nginx >/dev/null || true
+    certbot --nginx -d "${DOMAIN}" --non-interactive --agree-tos --register-unsafely-without-email --redirect \
+      || say "Certyfikat się nie udał (strona działa na http). Spróbuj później: sudo certbot --nginx -d ${DOMAIN}"
+  fi
+fi
 
 say "Czekam, aż serwer wystartuje"
 for _ in $(seq 1 90); do
