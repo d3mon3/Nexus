@@ -174,7 +174,12 @@ async function main() {
   const db = new PrismaClient();
 
   const ladders = await Promise.all((["challenger", "grandmaster", "master"] as const).map((t) => riot.apexLeague(region.platform, t)));
-  const ladder = ladders.flatMap((l) => l.entries).sort((a, b) => b.leaguePoints - a.leaguePoints).map((e) => e.puuid);
+  // A fresh random sample every run, so repeated runs cover more players instead of the same top 40.
+  const ladder = ladders
+    .flatMap((l) => l.entries)
+    .map((e) => ({ puuid: e.puuid, r: Math.random() }))
+    .sort((a, b) => a.r - b.r)
+    .map((e) => e.puuid);
 
   const already = async (id: string) => Boolean(await db.aggregatedMatch.findUnique({ where: { matchId: id } }));
 
@@ -196,8 +201,12 @@ async function main() {
         added++;
       }
       console.log(`  ${pi + 1}/${puuids.length} players · ${added} new matches`);
+      if ((pi + 1) % 15 === 0 && ctx.matchCount.size) {
+        await persist(db, ctx, region.platform, "master");
+        Object.assign(ctx, newCtx());
+      }
     }
-    await persist(db, ctx, region.platform, "master");
+    if (ctx.matchCount.size) await persist(db, ctx, region.platform, "master");
   }
 
   /* Other modes: start from ladder players and follow the people met in each match

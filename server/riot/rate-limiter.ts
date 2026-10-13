@@ -20,6 +20,15 @@ export function parseLimitHeader(value: string | null | undefined): Window[] | n
   return windows.length ? windows : null;
 }
 
+/**
+ * Fraction of the key's limit this process may use (RIOT_RATE_SHARE, e.g. 0.6 for the
+ * background aggregator so the website keeps the rest).
+ */
+const SHARE = (() => {
+  const v = Number(typeof process !== "undefined" ? process.env?.RIOT_RATE_SHARE : NaN);
+  return Number.isFinite(v) && v > 0 && v <= 1 ? v : 1;
+})();
+
 const DEV_KEY_LIMITS: Window[] = [
   { limit: 20, seconds: 1 },
   { limit: 100, seconds: 120 },
@@ -46,7 +55,7 @@ class Bucket {
       const span = w.seconds * 1000;
       const inWindow = this.stamps.filter((t) => now - t < span);
       // Keep a 5% safety margin so clock skew doesn't trip a 429.
-      const cap = Math.max(1, Math.floor(w.limit * 0.95));
+      const cap = Math.max(1, Math.floor(w.limit * 0.95 * SHARE));
       if (inWindow.length >= cap) {
         const oldest = inWindow[inWindow.length - cap];
         wait = Math.max(wait, span - (now - oldest) + 10);

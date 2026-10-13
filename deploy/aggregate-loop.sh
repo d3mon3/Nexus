@@ -1,17 +1,19 @@
 #!/bin/sh
 # Builds the champion statistics (Tier List / Champions / Builds) from real ranked games.
-# Runs once as soon as a Riot key exists, then every night at AGGREGATE_HOUR (server time zone TZ).
-# It shares the Riot key's rate limit with the app, so the batch is kept small.
+# Runs as soon as a Riot key exists, then a new batch every AGGREGATE_EVERY_MIN minutes, so the
+# statistics keep growing all day. It uses at most RIOT_RATE_SHARE of the key's rate limit and
+# leaves the rest for the website.
 set -u
 STAMP="${NEXUS_DATA_DIR:-/data}/last-aggregate"
-HOUR="${AGGREGATE_HOUR:-4}"
+EVERY=$(( ${AGGREGATE_EVERY_MIN:-45} * 60 ))
+export RIOT_RATE_SHARE="${RIOT_RATE_SHARE:-0.6}"
 
 has_key() { [ -s "${NEXUS_DATA_DIR:-/data}/riot-key.txt" ] || [ -n "${RIOT_API_KEY:-}" ]; }
 run() {
   npx tsx --conditions=react-server scripts/aggregate.ts \
     --platform "${NEXUS_DEFAULT_PLATFORM:-euw1}" \
-    --players "${AGGREGATE_PLAYERS:-40}" \
-    --matches "${AGGREGATE_MATCHES:-10}" \
+    --players "${AGGREGATE_PLAYERS:-50}" \
+    --matches "${AGGREGATE_MATCHES:-12}" \
     --modes "${AGGREGATE_MODES:-sr,aram,aram-mayhem,arena,urf}" \
     --mode-matches "${AGGREGATE_MODE_MATCHES:-40}"
 }
@@ -31,16 +33,16 @@ while true; do
   now=$(date +%s)
   last=$(cat "$STAMP" 2>/dev/null || echo 0)
   if has_key; then
-    if [ "$last" = 0 ] || { [ $((now - last)) -gt 72000 ] && [ "$(date +%-H)" = "$HOUR" ]; }; then
+    if [ $((now - last)) -ge "$EVERY" ]; then
       echo "[aggregate] starting $(date)"
       if run; then
         date +%s > "$STAMP"
         echo "[aggregate] done $(date)"
       else
-        echo "[aggregate] failed (expired key or Riot busy) — retrying in an hour"
-        sleep 3000
+        echo "[aggregate] failed (expired key or Riot busy) — retrying in 30 minutes"
+        sleep 1800
       fi
     fi
   fi
-  sleep 600
+  sleep 300
 done

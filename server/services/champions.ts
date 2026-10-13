@@ -6,6 +6,7 @@ import { demoChampionBuild, demoChampionStats, demoPatches, gradeStats } from ".
 import { skillSequence } from "../demo/archetypes";
 import { env } from "../env";
 import { NON_SR_MODES, type GameModeId } from "@/lib/modes";
+import { bestWinRatePath, lateItems, popularPath, runePages } from "./build-select";
 
 const now = () => new Date().toISOString();
 const COLLECTING_NOTE = "Statistics are being collected from real ranked games. The first results appear after the server's first aggregation run (it starts automatically).";
@@ -22,7 +23,13 @@ export interface ChampionStatsPayload {
 async function latestRuns() {
   const db = await getDb();
   if (!db) return null;
-  const runs = await db.aggregateRun.findMany({ orderBy: { finishedAt: "desc" }, take: 50 }).catch(() => []);
+  // Sum all runs per patch/platform/band (the aggregator now runs often, in small batches).
+  const grouped = await db.aggregateRun
+    .groupBy({ by: ["patch", "platform", "rankBand"], _sum: { matches: true, totalBans: true }, _max: { finishedAt: true } })
+    .catch(() => []);
+  const runs = grouped
+    .map((g) => ({ patch: g.patch, platform: g.platform, rankBand: g.rankBand, matches: g._sum.matches ?? 0, totalBans: g._sum.totalBans ?? 0, finishedAt: g._max.finishedAt ?? new Date(0) }))
+    .sort((a, b) => b.finishedAt.getTime() - a.finishedAt.getTime());
   return runs.length ? { db, runs } : null;
 }
 
@@ -137,13 +144,11 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
         winRate: v.wins / v.games,
         pickRate: v.games / games,
       });
-      const corePaths = top(merged.core, 20).map(toPath);
-      const qualified = corePaths.filter((p) => p.games >= Math.max(10, games * 0.02));
-      const runes: RunePage[] = top(merged.runes, 3).map(([key, v]) => {
-        const [styles, perks, shards] = key.split("|");
-        const [primaryStyle, subStyle] = styles.split("-").map(Number);
-        return { primaryStyle, subStyle, perks: perks.split("-").map(Number), shards: (shards ?? "").split("-").filter(Boolean).map(Number), games: v.games, winRate: v.wins / v.games };
-      });
+      const coreLength = mode === "sr" ? 3 : 2;
+      const popular = popularPath(merged.core, games, coreLength);
+      const highest = bestWinRatePath(merged.core, games, popular);
+      const late = lateItems(merged.core, popular.items, games);
+      const runes: RunePage[] = runePages(merged.runes, 3);
       const skill = top(merged.skills, 1)[0];
       const priority = (skill?.[0].split("-") ?? ["Q", "E", "W"]) as ("Q" | "W" | "E")[];
       const matchups: Matchup[] = top(merged.matchups, 60)
@@ -156,10 +161,15 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
         patch: stats.data.patch,
         summary: summary ?? { championId, role: mainRole, tier: "C", winRate: 0, pickRate: 0, banRate: 0, games, kda: 0 },
         starting: top(merged.starting, 2).map(toPath),
-        popular: corePaths[0] ?? { items: [], games: 0, winRate: 0, pickRate: 0 },
-        highestWinRate: [...qualified].sort((a, b) => b.winRate - a.winRate)[0] ?? corePaths[0] ?? { items: [], games: 0, winRate: 0, pickRate: 0 },
+        popular,
+        highestWinRate: highest,
         boots: top(merged.boots, 3).map(toPath),
-        situational: top(merged.items, 12).map(([id, v]) => ({ itemId: Number(id), winRate: v.wins / v.games, pickRate: v.games / games })),
+        situational: (late.length >= 4
+          ? late
+          : top(merged.items, 20)
+              .map(([id, v]) => ({ itemId: Number(id), winRate: v.wins / v.games, pickRate: v.games / games }))
+              .filter((x) => !popular.items.includes(x.itemId))
+        ).slice(0, 12),
         runes,
         spells: top(merged.spells, 2).map(([key, v]) => ({ ids: key.split("-").map(Number) as [number, number], games: v.games, winRate: v.wins / v.games })),
         skillOrder: { priority, sequence: skillSequence(priority), winRate: skill ? skill[1].wins / skill[1].games : 0 },
