@@ -80,6 +80,11 @@ export function computePlayerStats(matches: MatchDetail[], puuid: string): Playe
     });
   });
 
+  // LP is only meaningful when every ranked game in the window has a measured change;
+  // otherwise the chart falls back to net wins instead of showing a misleading "0 LP".
+  const ranked = timeline.filter((_, i) => chronological[i].queueId === 420);
+  if (!ranked.length || ranked.some((x) => x.lpChange === null)) for (const x of timeline) x.cumulativeLp = null;
+
   const n = games.length || 1;
   const csPerMin = minutes ? cs / minutes : 0;
   const visionPerMin = minutes ? vision / minutes : 0;

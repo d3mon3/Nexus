@@ -204,7 +204,7 @@ export function SettingsView() {
           </Row>
         </Section>
 
-        <Section id="overlay" icon={<LayoutDashboard />} title={t("In-game widgets")} description={t("Shown over League while you play. Use Borderless or Windowed display mode in League.")}>
+        <Section id="overlay" icon={<LayoutDashboard />} title={t("In-game widgets")} description={t("Small windows over League while you play. Ctrl+Shift+N shows or hides them, Ctrl+Shift+E lets you drag them.")}>
           {(Object.keys(WIDGET_META) as WidgetId[]).map((id) => (
             <Row key={id} label={t(WIDGET_META[id].name)} hint={t(WIDGET_META[id].description)} htmlFor={`w-${id}`}>
               <Switch id={`w-${id}`} label={t(WIDGET_META[id].name)} checked={settings.widgets[id].enabled} onChange={(v) => updateWidget(id, { enabled: v })} />
@@ -215,6 +215,12 @@ export function SettingsView() {
           </Row>
           <Row label={t("Size")}>
             <input type="range" min={0.8} max={1.4} step={0.05} value={settings.overlayScale} onChange={(e) => update({ overlayScale: Number(e.target.value) })} className="w-40 accent-[var(--primary)]" aria-label={t("Overlay size")} />
+          </Row>
+          <Row label={t("Works in Fullscreen")} hint={t("Exclusive Fullscreen hides every overlay. NEXUS switches League to Borderless before the game — it looks the same.")} htmlFor="auto-borderless">
+            <Switch id="auto-borderless" label={t("Works in Fullscreen")} checked={settings.autoBorderless} onChange={(v) => update({ autoBorderless: v })} />
+          </Row>
+          <Row label={t("Minimise NEXUS during games")} hint={t("Leaves CPU and graphics card to League. The window comes back after the game.")} htmlFor="min-in-game">
+            <Switch id="min-in-game" label={t("Minimise NEXUS during games")} checked={settings.minimizeInGame} onChange={(v) => update({ minimizeInGame: v })} />
           </Row>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={() => getBridge()?.setOverlayEdit?.(true)} disabled={!desktop}>

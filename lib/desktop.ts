@@ -59,13 +59,15 @@ export interface NexusBridge {
   setAutoDetect(enabled: boolean): Promise<void>;
   toggleOverlay(show: boolean): Promise<void>;
   spectate?(puuid: string): Promise<{ ok: boolean; error?: string }>;
-  setPrefs?(prefs: { import?: unknown; scoutAutoShow?: boolean; widgetsEnabled?: boolean; autoAccept?: boolean; autoAcceptDelay?: number; discord?: boolean; champSelectAssist?: boolean; postGame?: boolean; language?: string }): Promise<void>;
+  setPrefs?(prefs: { import?: unknown; scoutAutoShow?: boolean; widgetsEnabled?: boolean; autoAccept?: boolean; autoAcceptDelay?: number; discord?: boolean; champSelectAssist?: boolean; postGame?: boolean; language?: string; widgets?: unknown; minimizeInGame?: boolean; autoBorderless?: boolean; overlayScale?: number }): Promise<void>;
   importBuild?(championId: number, role: string | null, mode?: string): Promise<{ ok: boolean; text: string }>;
   toggleScout?(show: boolean): Promise<void>;
   setOverlayEdit?(on: boolean): Promise<void>;
   onImport?(cb: (r: { text: string; runes: string; spells: string; items: string }) => void): () => void;
   onOverlayEdit?(cb: (on: boolean) => void): () => void;
   getChampSelect?(): Promise<ChampSelectState | null>;
+  setWidgetSize?(w: number, h: number): Promise<void>;
+  onWidgetMoved?(cb: (m: { id: string; x: number; y: number }) => void): () => void;
   /** The last finished game this app saw (for the post-game summary). */
   getLastGame?(): Promise<{ gameId: number | null; queueId: number | null; endedAt: number } | null>;
 }

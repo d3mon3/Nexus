@@ -3,6 +3,15 @@
  * {placeholders} are filled in by t(). Missing keys simply stay in English.
  */
 export const PL: Record<string, string> = {
+  "Works in Fullscreen": "Działa na pełnym ekranie",
+  "Exclusive Fullscreen hides every overlay. NEXUS switches League to Borderless before the game — it looks the same.": "Tryb Pełny ekran ukrywa każdą nakładkę. NEXUS przed grą przełącza LoL na Bez ramki — wygląda tak samo.",
+  "Minimise NEXUS during games": "Minimalizuj NEXUS w czasie gry",
+  "Leaves CPU and graphics card to League. The window comes back after the game.": "Zostawia procesor i kartę graficzną dla LoL-a. Okno wróci po grze.",
+  "Small windows over League while you play. Ctrl+Shift+N shows or hides them, Ctrl+Shift+E lets you drag them.": "Małe okienka nad grą. Ctrl+Shift+N pokazuje lub ukrywa, Ctrl+Shift+E pozwala je przesuwać.",
+  "Waiting for game data…": "Czekam na dane z gry…",
+  "Drag to move · Ctrl+Shift+E to lock": "Przeciągnij · Ctrl+Shift+E zablokuj",
+  "Ban": "Ban",
+  "{0} matches analysed": "{0} przeanalizowanych meczów",
   "Last {0} games": "Ostatnie {0} gier",
   "Remake": "Remake",
   " · net wins": " · bilans wygranych",
@@ -639,7 +648,7 @@ export const PL: Record<string, string> = {
   "Summoner's Rift": "Summoner's Rift",
   "Summoner's Rift minimap": "Minimapa Summoner's Rift",
   "Support": "Support",
-  "Survival": "Przeżywalność",
+  "Survival": "Przeżycie",
   "Swap": "Zamień",
   "Swiftplay": "Szybka gra",
   "Switch tabs": "Przełączanie zakładek",

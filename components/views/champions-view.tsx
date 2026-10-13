@@ -100,9 +100,9 @@ export function ChampionsView() {
             {q.data && <span className="text-xs text-dim">{t("Patch") + " "}{q.data.data.patch}</span>}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Select size="sm" className="w-[128px]" label={t("Role")} value={role} onChange={setRole} options={[{ value: "all", label: t("All Roles") }, ...ROLES.map((r) => ({ value: r, label: t(ROLE_LABEL[r]), icon: <RoleIcon role={r} size={14} /> }))]} />
-            <Select size="sm" className="w-[128px]" label={t("Rank")} value={rank} onChange={setRank} options={rankOptions()} />
-            <Select size="sm" className="w-[128px]" label={t("Region")} value={region} onChange={setRegion} options={[{ value: "all", label: t("All Regions") }, ...REGIONS.map((r) => ({ value: r.platform, label: t(r.label) }))]} />
+            <Select size="sm" className="w-[156px]" label={t("Role")} value={role} onChange={setRole} options={[{ value: "all", label: t("All Roles") }, ...ROLES.map((r) => ({ value: r, label: t(ROLE_LABEL[r]), icon: <RoleIcon role={r} size={14} /> }))]} />
+            <Select size="sm" className="w-[156px]" label={t("Rank")} value={rank} onChange={setRank} options={rankOptions()} />
+            <Select size="sm" className="w-[156px]" label={t("Region")} value={region} onChange={setRegion} options={[{ value: "all", label: t("All Regions") }, ...REGIONS.map((r) => ({ value: r.platform, label: t(r.label) }))]} />
             <Select
               size="sm"
               className="w-[150px]"

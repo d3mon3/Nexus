@@ -16,7 +16,7 @@ export function StatRadar({ data: raw, series, height = 190 }: { data: Record<st
   return (
     <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <RadarChart data={data} outerRadius="68%" margin={{ top: 4, right: 18, bottom: 4, left: 18 }}>
+        <RadarChart data={data} outerRadius="62%" margin={{ top: 6, right: 34, bottom: 6, left: 34 }}>
           <PolarGrid gridType="polygon" stroke="rgba(145,154,183,0.18)" />
           <PolarAngleAxis dataKey="axis" tick={{ fill: "#919AB7", fontSize: 11 }} />
           <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />

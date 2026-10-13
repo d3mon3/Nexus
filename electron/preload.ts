@@ -22,6 +22,12 @@ contextBridge.exposeInMainWorld("nexus", {
   setPrefs: (prefs: unknown) => ipcRenderer.invoke("nexus:set-prefs", prefs),
   importBuild: (championId: number, role: string | null, mode?: string) => ipcRenderer.invoke("nexus:import-build", championId, role, mode),
   getChampSelect: () => ipcRenderer.invoke("nexus:get-champ-select"),
+  setWidgetSize: (w: number, h: number) => ipcRenderer.invoke("nexus:widget-size", w, h),
+  onWidgetMoved: (cb: (m: unknown) => void) => {
+    const handler = (_e: unknown, m: unknown) => cb(m);
+    ipcRenderer.on("nexus:widget-moved", handler);
+    return () => ipcRenderer.removeListener("nexus:widget-moved", handler);
+  },
   getLastGame: () => ipcRenderer.invoke("nexus:get-last-game"),
   toggleScout: (show: boolean) => ipcRenderer.invoke("nexus:toggle-scout", show),
   setOverlayEdit: (on: boolean) => ipcRenderer.invoke("nexus:set-overlay-edit", on),

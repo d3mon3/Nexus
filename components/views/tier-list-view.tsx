@@ -67,8 +67,8 @@ export function TierListView() {
         title={t("Tier List")}
         description={
           <>
-            Patch {q.data?.data.patch ?? "…"} ·{" "}
-            {q.data?.data.sampleSize ? `${q.data.data.sampleSize.toLocaleString()} matches analysed` : "sample size unavailable for demo data"}
+            {t("Patch {0}", [q.data?.data.patch ?? "…"])} ·{" "}
+            {q.data?.data.sampleSize ? t("{0} matches analysed", [q.data.data.sampleSize.toLocaleString()]) : t("sample size unavailable for demo data")}
           </>
         }
         actions={<SourceBadge source={q.data?.source} note={t(q.data?.note)} />}
@@ -76,8 +76,8 @@ export function TierListView() {
       <Card className="mb-3 flex flex-wrap items-center gap-2 px-3 pt-1">
         <Tabs value={role} onChange={setRole} label={t("Role")} items={ROLES.map((r) => ({ value: r, label: <span className="flex items-center gap-1.5"><RoleIcon role={r} size={15} />{t(ROLE_LABEL[r])}</span> }))} />
         <div className="ml-auto flex flex-wrap items-center gap-2 pb-2">
-          <Select size="sm" className="w-[120px]" label={t("Rank")} value={rank} onChange={setRank} options={rankOptions()} />
-          <Select size="sm" className="w-[110px]" label={t("Region")} value={region} onChange={setRegion} options={[{ value: "all", label: t("All Regions") }, ...REGIONS.map((r) => ({ value: r.platform, label: t(r.label) }))]} />
+          <Select size="sm" className="w-[156px]" label={t("Rank")} value={rank} onChange={setRank} options={rankOptions()} />
+          <Select size="sm" className="w-[156px]" label={t("Region")} value={region} onChange={setRegion} options={[{ value: "all", label: t("All Regions") }, ...REGIONS.map((r) => ({ value: r.platform, label: t(r.label) }))]} />
           {q.data && <Select size="sm" className="w-[128px]" label={t("Patch")} value={q.data.data.patch} onChange={setPatch} options={q.data.data.patches.map((p) => ({ value: p, label: t("Patch {0}", [p]) }))} />}
           <Segmented
             label={t("View")}
@@ -120,7 +120,7 @@ export function TierListView() {
                     {list.map((r) => {
                       const c = champion(r.championId);
                       return (
-                        <Tooltip key={r.championId} content={<span>{c?.name} · {pct(r.winRate, 1)} WR · {pct(r.pickRate, 1)} PR · {pct(r.banRate, 1)} BR · {r.games.toLocaleString()} games</span>}>
+                        <Tooltip key={r.championId} content={<span>{c?.name} · {pct(r.winRate, 1)} WR · {t("Pick")} {pct(r.pickRate, 1)} · {t("Ban")} {pct(r.banRate, 1)} · {t("{0} games", [r.games])}</span>}>
                           <Link href={`/champions/${c?.key.toLowerCase()}`} className="group flex flex-col items-center gap-1">
                             <ChampionIcon id={r.championId} size={52} tooltip={false} className="transition-all group-hover:-translate-y-0.5 group-hover:border-primary/70 group-hover:shadow-[0_0_16px_-4px_var(--primary-glow)]" />
                             <span className={cn("text-[11px] font-semibold tabular", wrColor(r.winRate))}>{pct(r.winRate, 1)}</span>

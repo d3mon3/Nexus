@@ -50,6 +50,14 @@ await page.evaluate(() => document.querySelectorAll('img[loading=lazy]').forEach
 await page.waitForTimeout(1200);
 if (process.env.GAME_BG) await page.evaluate((bg) => { document.documentElement.style.background = `url(${bg}) center/cover`; }, process.env.GAME_BG);
 await page.waitForTimeout(300);
+if (process.env.CLICK) {
+  await page.locator(process.env.CLICK).first().click();
+  await page.waitForTimeout(400);
+}
+if (process.env.HOVER) {
+  await page.locator(process.env.HOVER).first().hover();
+  await page.waitForTimeout(400);
+}
 await page.screenshot({ path: outFile, fullPage: full === "1" });
 console.log(errors.length ? errors.slice(0, 10).join("\n") : "no errors");
 await browser.close();

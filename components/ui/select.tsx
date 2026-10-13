@@ -5,6 +5,8 @@ import { t } from "@/lib/i18n";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { useAnchoredStyle } from "./floating";
 import { cn } from "@/lib/utils";
 
 export interface SelectOption<T extends string> {
@@ -36,12 +38,14 @@ export function Select<T extends string>({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const listId = useId();
+  const pos = useAnchoredStyle(ref, open, { align, matchWidth: true });
   const current = options.find((o) => o.value === value) ?? options[0];
 
   useEffect(() => {
     if (!open) return;
-    const onDoc = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    const onDoc = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && !listRef.current?.contains(e.target as Node) && setOpen(false);
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
@@ -99,9 +103,13 @@ export function Select<T extends string>({
         </span>
         <ChevronDown className={cn("size-3.5 shrink-0 text-muted transition-transform", open && "rotate-180")} />
       </button>
+      {typeof document !== "undefined" &&
+        createPortal(
       <AnimatePresence>
-        {open && (
+        {open && pos && (
           <motion.ul
+            ref={listRef}
+            style={pos}
             id={listId}
             role="listbox"
             aria-label={label}
@@ -110,8 +118,7 @@ export function Select<T extends string>({
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.12 }}
             className={cn(
-              "panel absolute z-50 mt-1.5 max-h-72 min-w-full overflow-auto p-1 text-sm",
-              align === "right" ? "right-0" : "left-0",
+              "panel max-h-72 overflow-auto p-1 text-sm shadow-[0_16px_40px_-12px_rgba(0,0,0,0.9)]",
             )}
           >
             {options.map((o, i) => (
@@ -135,7 +142,9 @@ export function Select<T extends string>({
             ))}
           </motion.ul>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+          document.body,
+        )}
     </div>
   );
 }

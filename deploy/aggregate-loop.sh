@@ -17,6 +17,16 @@ run() {
 }
 
 sleep 90 # let the app create the database tables first
+
+# LP tracker: snapshot ranks of recently viewed players every few minutes, in the background,
+# so each ranked game can be given its exact LP change.
+(
+  while true; do
+    has_key && npx tsx --conditions=react-server scripts/track-lp.ts
+    sleep "${LP_TRACK_INTERVAL:-180}"
+  done
+) &
+
 while true; do
   now=$(date +%s)
   last=$(cat "$STAMP" 2>/dev/null || echo 0)

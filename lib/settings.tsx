@@ -45,6 +45,10 @@ export interface Settings {
   postGameSummary: boolean;
   /** Desktop: show what you're playing on Discord. */
   discordPresence: boolean;
+  /** Desktop: minimise the NEXUS window during games to leave CPU/GPU to League. */
+  minimizeInGame: boolean;
+  /** Desktop: switch League from exclusive Fullscreen to Borderless so widgets are visible. */
+  autoBorderless: boolean;
 }
 
 export type WidgetId = "build" | "stats" | "timers" | "lane" | "enemySpells";
@@ -98,6 +102,8 @@ export const DEFAULT_SETTINGS: Settings = {
   champSelectAssist: true,
   postGameSummary: true,
   discordPresence: true,
+  minimizeInGame: true,
+  autoBorderless: true,
 };
 
 let cache: Settings | null = null;

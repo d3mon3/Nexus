@@ -24,7 +24,7 @@ const spellId = (name: string) => Number(Object.entries(SPELLS).find(([, s]) => 
 function useSnapshot(): Snap | null {
   const params = useSearchParams();
   const demo = params?.get("demo") === "1";
-  const live = useLiveClient(!demo, 1500);
+  const live = useLiveClient(!demo, 2000);
   const [demoSnap, setDemoSnap] = useState<Snap | null>(null);
   useEffect(() => {
     if (demo) demoLiveSnapshot().then(setDemoSnap);
@@ -37,6 +37,60 @@ function useSnapshot(): Snap | null {
  * in edit mode (Ctrl+Shift+E), dragged anywhere — positions are saved as screen fractions.
  */
 export function OverlayView() {
+  const params = useSearchParams();
+  const widget = params?.get("widget") as WidgetId | null;
+  return widget ? <SingleWidget id={widget} /> : <FullOverlay />;
+}
+
+/**
+ * Desktop: one widget per small transparent window. The window is sized to the content
+ * (reported to the main process) and dragged by the OS in edit mode.
+ */
+function SingleWidget({ id }: { id: WidgetId }) {
+  const { settings, updateWidget } = useSettings();
+  const [edit, setEdit] = useState(false);
+  const snap = useSnapshot();
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    document.documentElement.style.background = "transparent";
+    document.body.style.background = "transparent";
+    document.documentElement.classList.add("overlay-root");
+    const offEdit = getBridge()?.onOverlayEdit?.(setEdit);
+    const offMoved = getBridge()?.onWidgetMoved?.((m) => m.id === id && updateWidget(id, { x: m.x, y: m.y }));
+    return () => {
+      offEdit?.();
+      offMoved?.();
+    };
+  }, [id, updateWidget]);
+  useEffect(() => {
+    const el = box.current;
+    const bridge = getBridge();
+    if (!el || !bridge?.setWidgetSize) return;
+    const report = () => bridge.setWidgetSize!(el.offsetWidth * settings.overlayScale + 2, el.offsetHeight * settings.overlayScale + 2);
+    report();
+    const ro = new ResizeObserver(report);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [settings.overlayScale]);
+  if (!WIDGET_META[id]) return null;
+  const me = snap?.players.find((p) => p.riotId.toLowerCase() === snap.activeRiotId.toLowerCase()) ?? snap?.players[0];
+  return (
+    <div
+      ref={box}
+      className={cn("w-max min-w-[200px] max-w-[320px] select-none rounded-xl border bg-[#070a13]/92 p-3 text-fg", edit ? "cursor-move border-primary ring-2 ring-primary/50" : "border-[#a58df8]/35")}
+      style={{ opacity: settings.overlayOpacity, transform: `scale(${settings.overlayScale})`, transformOrigin: "top left", ...(edit ? ({ WebkitAppRegion: "drag" } as React.CSSProperties) : {}) }}
+    >
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#b8a4fb]">{t(WIDGET_META[id].name)}</span>
+        {edit ? <Move className="size-3.5 text-primary" /> : <Logo size="sm" className="h-[12px] opacity-70" />}
+      </div>
+      {edit && <p className="mb-1.5 text-[10px] text-primary">{t("Drag to move · Ctrl+Shift+E to lock")}</p>}
+      {!snap || !me ? <p className="text-xs text-muted">{t("Waiting for game data…")}</p> : <WidgetBody id={id} snap={snap} me={me} />}
+    </div>
+  );
+}
+
+function FullOverlay() {
   const { settings } = useSettings();
   const params = useSearchParams();
   const [edit, setEdit] = useState(params?.get("edit") === "1");
@@ -112,7 +166,7 @@ function DraggableWidget({ id, edit, children }: { id: WidgetId; edit: boolean; 
       ref={ref}
       onPointerDown={onPointerDown}
       className={cn(
-        "absolute w-max min-w-[220px] max-w-[320px] rounded-xl border bg-[#070a13]/88 p-3 text-fg shadow-[0_10px_30px_-10px_rgba(0,0,0,0.9)] backdrop-blur-md",
+        "absolute w-max min-w-[220px] max-w-[320px] rounded-xl border bg-[#070a13]/92 p-3 text-fg shadow-[0_10px_30px_-10px_rgba(0,0,0,0.9)]",
         edit ? "cursor-grab border-primary/80 ring-2 ring-primary/40 active:cursor-grabbing" : "border-[#a58df8]/35",
       )}
       style={{ left: `${pos.x * 100}%`, top: `${pos.y * 100}%`, transform: `scale(${settings.overlayScale})`, transformOrigin: "top left" }}

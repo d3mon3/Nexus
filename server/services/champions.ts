@@ -64,7 +64,7 @@ export async function getChampionStats(opts: { patch?: string | null; role?: Rol
         merged.set(key, m);
       }
       const stats: ChampionStat[] = [...merged.values()]
-        .filter((m) => m.games >= Math.max(5, Math.round(matches * 0.004)))
+        .filter((m) => m.games >= Math.max(10, Math.round(matches * 0.005)))
         .map((m) => ({
           championId: m.championId,
           role: m.role,

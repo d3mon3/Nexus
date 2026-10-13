@@ -553,7 +553,11 @@ export function gradeStats(rows: ChampionStat[]): ChampionStat[] {
   }
   for (const list of byRoleRows.values()) {
     const scored = list
-      .map((row) => ({ row, score: (row.winRate - 0.5) * 100 * 1.6 + Math.sqrt(row.pickRate) * 18 + row.banRate * 6 - (row.games < 1500 ? 3 : 0) }))
+      .map((row) => {
+        // Shrink small samples toward 50% so 3–0 doesn't become S+ (30 virtual games at 50%).
+        const shrunk = (row.winRate * row.games + 0.5 * 30) / (row.games + 30);
+        return { row, score: (shrunk - 0.5) * 100 * 1.6 + Math.sqrt(row.pickRate) * 18 + row.banRate * 6 - (row.games < 1500 ? 3 : 0) };
+      })
       .sort((a, b) => b.score - a.score);
     scored.forEach(({ row }, i) => {
       const q = (i + 1) / scored.length;

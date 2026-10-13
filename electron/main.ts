@@ -15,7 +15,7 @@ import { normalizeServerUrl } from "../server/admin-utils";
 import type { Role } from "../lib/types";
 import { ChampSelectWatcher, importBuild, type ImportResult } from "./importer";
 import { DiscordPresence } from "./discord";
-import { acceptReadyCheck, findConnection, getLiveClientSnapshot, lcuPost, readChampSelect, readClientState, readGameflowSession, type GameflowInfo, type LcuConnection } from "./lcu";
+import { acceptReadyCheck, findConnection, getLiveClientSnapshot, lcuPost, lcuRequest, readChampSelect, readClientState, readGameflowSession, type GameflowInfo, type LcuConnection } from "./lcu";
 import { modeForQueue, modeInfo, isGameModeId, type GameModeId } from "../lib/modes";
 import { queueName } from "../lib/static-data";
 
@@ -23,7 +23,6 @@ const isDev = process.argv.includes("--dev");
 const DEV_URL = process.env.NEXUS_DEV_URL ?? "http://localhost:3210";
 
 let mainWindow: BrowserWindow | null = null;
-let overlay: BrowserWindow | null = null;
 let scoutWin: BrowserWindow | null = null;
 let editMode = false;
 let server: ChildProcess | null = null;
@@ -41,6 +40,12 @@ interface DesktopPrefs {
   champSelectAssist: boolean;
   postGame: boolean;
   language: "pl" | "en";
+  /** Widget layout from Settings (enabled + screen-fraction position). */
+  widgets: Record<string, { enabled: boolean; x: number; y: number }>;
+  /** Minimise the NEXUS window while a game is running (saves CPU/GPU for League). */
+  minimizeInGame: boolean;
+  /** Switch League from exclusive Fullscreen to Borderless before the game, so widgets are visible. */
+  autoBorderless: boolean;
 }
 let prefs: DesktopPrefs = {
   import: { ...DEFAULT_IMPORT_PREFS, enabled: true, onHover: false },
@@ -52,6 +57,9 @@ let prefs: DesktopPrefs = {
   champSelectAssist: true,
   postGame: true,
   language: "pl",
+  widgets: { build: { enabled: true, x: 0.012, y: 0.2 }, stats: { enabled: true, x: 0.012, y: 0.42 } },
+  minimizeInGame: true,
+  autoBorderless: true,
 };
 const watcher = new ChampSelectWatcher();
 
@@ -204,42 +212,77 @@ function createWindow() {
 const overlayWebPrefs = () => ({ preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true });
 
 /** Full-screen, transparent, click-through window that hosts the in-game widgets. */
-function toggleOverlay(show = !overlay) {
+/* In-game widgets ----------------------------------------------------------
+ * One small transparent window per widget (instead of one full-screen layer), so Windows
+ * only composites a few hundred pixels over the game. Positions are screen fractions. */
+const widgetWins = new Map<string, BrowserWindow>();
+let overlayDisplay: Electron.Display | null = null;
+
+function overlayShown() {
+  return widgetWins.size > 0;
+}
+
+function placeWidget(win: BrowserWindow, id: string) {
+  const d = overlayDisplay ?? screen.getPrimaryDisplay();
+  const cfg = prefs.widgets[id] ?? { x: 0.02, y: 0.2 };
+  win.setPosition(Math.round(d.bounds.x + cfg.x * d.bounds.width), Math.round(d.bounds.y + cfg.y * d.bounds.height));
+}
+
+function toggleOverlay(show = !overlayShown()) {
   if (!show) {
-    overlay?.close();
-    overlay = null;
+    for (const w of widgetWins.values()) w.close();
+    widgetWins.clear();
     editMode = false;
     return;
   }
-  if (overlay) return;
-  const { bounds } = screen.getPrimaryDisplay();
-  overlay = new BrowserWindow({
-    ...bounds,
-    frame: false,
-    transparent: true,
-    resizable: false,
-    movable: false,
-    alwaysOnTop: true,
-    skipTaskbar: true,
-    focusable: false,
-    hasShadow: false,
-    webPreferences: overlayWebPrefs(),
-  });
-  overlay.setAlwaysOnTop(true, "screen-saver");
-  overlay.setIgnoreMouseEvents(true, { forward: true });
-  overlay.loadURL(`${baseUrl}/overlay`);
-  overlay.on("closed", () => (overlay = null));
+  // The game is usually on the screen the mouse is on when it starts.
+  overlayDisplay = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  const ids = Object.entries(prefs.widgets).filter(([, w]) => w.enabled).map(([id]) => id);
+  for (const id of ids) {
+    if (widgetWins.has(id)) continue;
+    const win = new BrowserWindow({
+      width: 300,
+      height: 160,
+      frame: false,
+      transparent: true,
+      resizable: false,
+      alwaysOnTop: true,
+      skipTaskbar: true,
+      focusable: false,
+      hasShadow: false,
+      show: false,
+      backgroundColor: "#00000000",
+      webPreferences: { ...overlayWebPrefs(), backgroundThrottling: false },
+    });
+    win.setAlwaysOnTop(true, "screen-saver");
+    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    win.setIgnoreMouseEvents(true);
+    placeWidget(win, id);
+    win.loadURL(`${baseUrl}/overlay?widget=${encodeURIComponent(id)}`);
+    win.once("ready-to-show", () => win.showInactive());
+    win.on("moved", () => {
+      const d = overlayDisplay ?? screen.getPrimaryDisplay();
+      const [x, y] = win.getPosition();
+      const fx = Math.min(0.98, Math.max(0, (x - d.bounds.x) / d.bounds.width));
+      const fy = Math.min(0.97, Math.max(0, (y - d.bounds.y) / d.bounds.height));
+      prefs.widgets[id] = { ...(prefs.widgets[id] ?? { enabled: true }), x: fx, y: fy };
+      win.webContents.send("nexus:widget-moved", { id, x: fx, y: fy });
+    });
+    win.on("closed", () => widgetWins.delete(id));
+    widgetWins.set(id, win);
+  }
+  for (const [id, w] of widgetWins) if (!ids.includes(id)) w.close();
 }
 
-/** Edit mode makes the overlay interactive so widgets can be dragged. */
+/** Edit mode makes the widget windows draggable (Ctrl+Shift+E). */
 function setEditMode(on: boolean) {
-  if (on && !overlay) toggleOverlay(true);
+  if (on && !overlayShown()) toggleOverlay(true);
   editMode = on;
-  if (!overlay) return;
-  overlay.setIgnoreMouseEvents(!on, { forward: true });
-  overlay.setFocusable(on);
-  if (on) overlay.focus();
-  overlay.webContents.send("nexus:overlay-edit", on);
+  for (const w of widgetWins.values()) {
+    w.setIgnoreMouseEvents(!on);
+    w.setFocusable(on);
+    w.webContents.send("nexus:overlay-edit", on);
+  }
 }
 
 /** Porofessor-style scouting board, centred on screen. */
@@ -274,7 +317,7 @@ function toggleScout(show = !scoutWin) {
 }
 
 function broadcast(state: ClientState) {
-  for (const w of [mainWindow, overlay, scoutWin]) w?.webContents.send("nexus:client-state", state);
+  for (const w of [mainWindow, scoutWin, ...widgetWins.values()]) w?.webContents.send("nexus:client-state", state);
 }
 
 let championNames: Map<number, string> | null = null;
@@ -364,6 +407,28 @@ let lastGame: { gameId: number | null; queueId: number | null; endedAt: number }
 let lastPresenceAt = 0;
 const IN_GAME = new Set(["GameStart", "InProgress", "WaitingForStats", "PreEndOfGame"]);
 
+/** Ask the server to snapshot this player's rank now (before and after games → exact LP per game). */
+async function snapshotRank() {
+  const s = clientState.summoner;
+  if (!s?.puuid || !s.platform || !s.gameName) return;
+  await fetch(`${baseUrl}/api/refresh`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ puuid: s.puuid, platform: s.platform }) }).catch(() => undefined);
+  await fetch(`${baseUrl}/api/player?region=${encodeURIComponent(s.platform)}&riotId=${encodeURIComponent(`${s.gameName}#${s.tagLine}`)}`).catch(() => undefined);
+}
+
+/** Exclusive fullscreen hides every overlay; Borderless looks the same and keeps widgets visible. */
+async function ensureBorderless() {
+  if (!conn || !prefs.autoBorderless || !(prefs.widgetsEnabled || prefs.scoutAutoShow)) return;
+  const cur = await lcuRequest<{ General?: { WindowMode?: number } }>(conn, "GET", "/lol-game-settings/v1/game-settings").catch(() => null);
+  if (cur?.body?.General?.WindowMode !== 0) return; // 0 = Fullscreen, 1 = Windowed, 2 = Borderless
+  const r = await lcuRequest(conn, "PATCH", "/lol-game-settings/v1/game-settings", { General: { WindowMode: 2 } }).catch(() => null);
+  if (r && r.status < 300)
+    new Notification({
+      title: "NEXUS",
+      body: prefs.language === "pl" ? "Przełączyłem LoL na tryb Bez ramki, żeby widgety były widoczne w grze (wygląda jak pełny ekran)." : "Switched League to Borderless so widgets show in game (it looks like fullscreen).",
+      silent: true,
+    }).show();
+}
+
 function showMain(path: string) {
   if (!mainWindow) createWindow();
   mainWindow?.webContents.send("nexus:navigate", path);
@@ -394,7 +459,11 @@ async function pollClient() {
     } else readyCheckAt = 0;
 
     // Champ select → show the assistant page, auto import once per champion/role.
-    if (next.phase === "ChampSelect" && prevPhase !== "ChampSelect" && prefs.champSelectAssist) showMain("/live?view=champ-select");
+    if (next.phase === "ChampSelect" && prevPhase !== "ChampSelect") {
+      if (prefs.champSelectAssist) showMain("/live?view=champ-select");
+      void snapshotRank();
+      void ensureBorderless().catch(() => undefined);
+    }
     if (next.phase === "ChampSelect" && conn && prefs.import.enabled) {
       const pick = await watcher.lockedChampion(conn, prefs.import.onHover).catch(() => null);
       if (pick && watcher.shouldImport(pick.championId, mode === "sr" ? pick.role : null)) runImport(pick.championId, pick.role, false, mode).catch(() => undefined);
@@ -404,6 +473,7 @@ async function pollClient() {
     // Game start → scouting board on the loading screen, widgets once in game.
     if (next.phase === "InProgress" && prevPhase !== "InProgress") {
       mainWindow?.webContents.send("nexus:navigate", "/live");
+      if (prefs.minimizeInGame && mainWindow && !mainWindow.isFocused()) mainWindow.minimize();
       if (prefs.scoutAutoShow) {
         toggleScout(true);
         scoutShownAt = Date.now();
@@ -427,6 +497,9 @@ async function pollClient() {
     if (IN_GAME.has(prevPhase) && (next.phase === "EndOfGame" || (!IN_GAME.has(next.phase) && prevPhase === "InProgress"))) {
       if (!lastGame || lastGame.gameId !== flow.gameId || flow.gameId == null) {
         lastGame = { gameId: flow.gameId, queueId: flow.queueId, endedAt: Date.now() };
+        // Riot updates LP a little after the game; snapshot twice to catch it.
+        setTimeout(() => void snapshotRank(), 45_000);
+        setTimeout(() => void snapshotRank(), 150_000);
         if (prefs.postGame) {
           showMain("/post-game");
           new Notification({ title: "NEXUS", body: prefs.language === "pl" ? "Podsumowanie meczu jest gotowe." : "Your game summary is ready.", silent: true }).show();
@@ -449,7 +522,12 @@ async function pollClient() {
 }
 
 ipcMain.handle("nexus:get-client-state", () => clientState);
-ipcMain.handle("nexus:get-live-client", () => getLiveClientSnapshot());
+// Several widget windows ask for the same data; share one request per second.
+let liveCache: { at: number; value: Promise<Awaited<ReturnType<typeof getLiveClientSnapshot>>> } | null = null;
+ipcMain.handle("nexus:get-live-client", () => {
+  if (!liveCache || Date.now() - liveCache.at > 1000) liveCache = { at: Date.now(), value: getLiveClientSnapshot() };
+  return liveCache.value;
+});
 ipcMain.handle("nexus:set-auto-detect", (_e, enabled: boolean) => {
   autoDetect = Boolean(enabled);
 });
@@ -458,6 +536,7 @@ ipcMain.handle("nexus:set-prefs", (_e, next: Partial<DesktopPrefs>) => {
   prefs = { ...prefs, ...next, import: { ...prefs.import, ...(next?.import ?? {}) } };
   prefs.autoAcceptDelay = Math.min(10, Math.max(0, Number(prefs.autoAcceptDelay) || 0));
   if (!prefs.widgetsEnabled) toggleOverlay(false);
+  else if (overlayShown()) toggleOverlay(true); // add/remove widgets switched in Settings
   if (discordWas !== prefs.discord) void updatePresence(clientState.phase).catch(() => undefined);
 });
 ipcMain.handle("nexus:get-champ-select", async () => {
@@ -488,6 +567,12 @@ ipcMain.handle("nexus:spectate", async (_e, puuid: string) => {
 ipcMain.handle("nexus:toggle-overlay", (_e, show: boolean) => toggleOverlay(Boolean(show)));
 ipcMain.handle("nexus:toggle-scout", (_e, show: boolean) => toggleScout(Boolean(show)));
 ipcMain.handle("nexus:set-overlay-edit", (_e, on: boolean) => setEditMode(Boolean(on)));
+// A widget page reports its rendered size so its window fits it exactly.
+ipcMain.handle("nexus:widget-size", (e, w: number, h: number) => {
+  const win = BrowserWindow.fromWebContents(e.sender);
+  if (!win || ![...widgetWins.values()].includes(win)) return;
+  win.setContentSize(Math.min(520, Math.max(120, Math.ceil(w))), Math.min(520, Math.max(40, Math.ceil(h))));
+});
 
 app.whenReady().then(async () => {
   try {
