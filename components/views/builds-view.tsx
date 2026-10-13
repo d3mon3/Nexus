@@ -19,6 +19,8 @@ import { Input } from "../ui/input";
 import { Tabs } from "../ui/tabs";
 import { Select } from "../ui/select";
 import { rankOptions } from "./champions-view";
+import { ModeTabs } from "../builds/mode-tabs";
+import { isGameModeId, type GameModeId } from "@/lib/modes";
 
 export function BuildsView() {
   const params = useSearchParams();
@@ -31,7 +33,17 @@ export function BuildsView() {
   const [search, setSearch] = useState("");
   const [limit, setLimit] = useState(12);
   const [tab, setTab] = useState<BuildTab>("builds");
-  const stats = useChampionStats({ patch, role: role === "all" ? null : role, rank: rank === "all" ? undefined : rank });
+  const modeParam = params?.get("mode");
+  const mode: GameModeId = isGameModeId(modeParam) ? modeParam : "sr";
+  const sr = mode === "sr";
+  const setMode = (m: GameModeId) => {
+    const next = new URLSearchParams(params?.toString());
+    if (m === "sr") next.delete("mode");
+    else next.set("mode", m);
+    setPatch(undefined);
+    router.replace(`${pathname}?${next}`, { scroll: false });
+  };
+  const stats = useChampionStats({ patch, role: !sr || role === "all" ? null : role, rank: !sr || rank === "all" ? undefined : rank, mode });
 
   const list = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -64,11 +76,12 @@ export function BuildsView() {
         <h1 className="mr-2 text-[22px] font-bold tracking-tight">Runes &amp; Builds</h1>
         <SourceBadge source={stats.data?.source} note={stats.data?.note} />
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <Select size="sm" className="w-[128px]" label="Role" value={role} onChange={setRole} options={[{ value: "all", label: "All Roles" }, ...ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r], icon: <RoleIcon role={r} size={14} /> }))]} />
-          <Select size="sm" className="w-[128px]" label="Rank" value={rank} onChange={setRank} options={rankOptions()} />
+          {sr && <Select size="sm" className="w-[128px]" label="Role" value={role} onChange={setRole} options={[{ value: "all", label: "All Roles" }, ...ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r], icon: <RoleIcon role={r} size={14} /> }))]} />}
+          {sr && <Select size="sm" className="w-[128px]" label="Rank" value={rank} onChange={setRank} options={rankOptions()} />}
           {stats.data && <Select size="sm" className="w-[200px]" label="Patch" value={stats.data.data.patch} onChange={setPatch} options={stats.data.data.patches.map((p) => ({ value: p, label: `Patch ${p}` }))} />}
         </div>
       </div>
+      <ModeTabs value={mode} onChange={setMode} className="mb-2" />
       <Tabs value={tab} onChange={setTab} size="sm" label="Build sections" items={BUILD_TABS} className="mb-3" />
       <div className="grid gap-3 lg:grid-cols-[200px_minmax(0,1fr)]">
         <Card className="h-max p-2 lg:sticky lg:top-[84px]">
@@ -97,7 +110,7 @@ export function BuildsView() {
             </Button>
           )}
         </Card>
-        {selected ? <BuildPanel key={`${selected.id}-${role}`} championId={selected.id} role={role === "all" ? (selectedRow?.games ? selectedRow.role : undefined) : role} patch={stats.data?.data.patch} tab={tab} showTabs={false} /> : null}
+        {selected ? <BuildPanel key={`${selected.id}-${role}-${mode}`} mode={mode} championId={selected.id} role={!sr ? null : role === "all" ? (selectedRow?.games ? selectedRow.role : undefined) : role} patch={stats.data?.data.patch} tab={tab} showTabs={false} /> : null}
       </div>
     </div>
   );

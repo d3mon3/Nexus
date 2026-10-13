@@ -9,6 +9,7 @@
  * development key (100 requests / 2 min) expect roughly 40 matches per minute.
  */
 import { PrismaClient, Prisma } from "@prisma/client";
+import { GAME_MODES } from "../lib/modes";
 import { resolveRegion } from "../lib/regions";
 import { ITEMS } from "../lib/static-data";
 import type { Role } from "../lib/types";
@@ -74,98 +75,77 @@ function skillPriority(levels: number[]): string | null {
   return levels.length >= 9 ? order.map((s) => "QWE"[s - 1]).join("-") : null;
 }
 
-async function main() {
-  const platform = arg("platform", process.env.NEXUS_DEFAULT_PLATFORM ?? "euw1");
-  const region = resolveRegion(platform);
-  if (!region) throw new Error(`Unknown platform ${platform}`);
-  if (!env.riotApiKey || !process.env.DATABASE_URL) throw new Error("A Riot API key (RIOT_API_KEY or /admin) and DATABASE_URL are required.");
-  const playerCount = Number(arg("players", "50"));
-  const perPlayer = Number(arg("matches", "15"));
-  const db = new PrismaClient();
+type Ctx = {
+  buckets: Map<string, Bucket>; // `${patch}|${championId}|${role}`  (role "ANY" outside Summoner's Rift)
+  matchCount: Map<string, number>;
+  bansByPatch: Map<string, number>;
+};
+const newCtx = (): Ctx => ({ buckets: new Map(), matchCount: new Map(), bansByPatch: new Map() });
 
-  const ladders = await Promise.all((["challenger", "grandmaster", "master"] as const).map((t) => riot.apexLeague(region.platform, t)));
-  const puuids = ladders.flatMap((l) => l.entries).sort((a, b) => b.leaguePoints - a.leaguePoints).slice(0, playerCount).map((e) => e.puuid);
-  console.log(`Scanning ${puuids.length} apex players on ${region.label}…`);
+/** Adds one match to the counters. Summoner's Rift keeps lanes and matchups; other modes don't. */
+function countMatch(ctx: Ctx, m: RiotMatch, tl: RiotTimeline | null, sr: boolean) {
+  const patch = patchFromVersion(m.info.gameVersion);
+  const orders = timelineOrders(tl);
+  const pidOf = new Map((tl?.info.participants ?? []).map((p) => [p.puuid, p.participantId]));
+  const { buckets } = ctx;
 
-  const buckets = new Map<string, Bucket>(); // `${patch}|${championId}|${role}`
-  const matchCount = new Map<string, number>();
-  const bansByPatch = new Map<string, number>();
-  let added = 0;
-
-  for (const [pi, puuid] of puuids.entries()) {
-    const ids = await riot.matchIds(region, puuid, { count: perPlayer, queue: 420 }).catch(() => [] as string[]);
-    for (const id of ids) {
-      if (await db.aggregatedMatch.findUnique({ where: { matchId: id } })) continue;
-      let m: RiotMatch;
-      try {
-        m = await riot.match(region, id);
-      } catch {
-        continue;
+  for (const team of m.info.teams)
+    for (const b of team.bans)
+      if (b.championId > 0) {
+        const key = `${patch}|${b.championId}|BAN`;
+        (buckets.get(key) ?? buckets.set(key, emptyBucket()).get(key)!).bans++;
+        ctx.bansByPatch.set(patch, (ctx.bansByPatch.get(patch) ?? 0) + 1);
       }
-      if (m.info.queueId !== 420 || m.info.gameDuration < 600) continue;
-      const tl = await riot.matchTimeline(region, id).catch(() => null);
-      const patch = patchFromVersion(m.info.gameVersion);
-      const orders = timelineOrders(tl);
-      const pidOf = new Map((tl?.info.participants ?? []).map((p) => [p.puuid, p.participantId]));
 
-      for (const team of m.info.teams)
-        for (const b of team.bans)
-          if (b.championId > 0) {
-            const key = `${patch}|${b.championId}|BAN`;
-            (buckets.get(key) ?? buckets.set(key, emptyBucket()).get(key)!).bans++;
-            bansByPatch.set(patch, (bansByPatch.get(patch) ?? 0) + 1);
-          }
+  for (const p of m.info.participants) {
+    if (sr && !ROLES.has(p.teamPosition)) continue;
+    const role = sr ? (p.teamPosition as Role) : "ANY";
+    const key = `${patch}|${p.championId}|${role}`;
+    const b = buckets.get(key) ?? buckets.set(key, emptyBucket()).get(key)!;
+    b.games++;
+    if (p.win) b.wins++;
+    b.kills += p.kills;
+    b.deaths += p.deaths;
+    b.assists += p.assists;
 
-      for (const p of m.info.participants) {
-        if (!ROLES.has(p.teamPosition)) continue;
-        const role = p.teamPosition as Role;
-        const key = `${patch}|${p.championId}|${role}`;
-        const b = buckets.get(key) ?? buckets.set(key, emptyBucket()).get(key)!;
-        b.games++;
-        if (p.win) b.wins++;
-        b.kills += p.kills;
-        b.deaths += p.deaths;
-        b.assists += p.assists;
+    const pid = pidOf.get(p.puuid);
+    const bought = (pid ? orders.items.get(pid) : undefined) ?? [];
+    const finalItems = [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5].filter((i) => i > 0 && !CONSUMABLE.has(i));
+    const order = bought.length ? bought.filter((i, idx) => finalItems.includes(i) && bought.indexOf(i) === idx) : finalItems;
+    const boots = order.find((i) => BOOTS.has(i));
+    const core = order.filter((i) => !BOOTS.has(i) && !STARTERS.has(i) && ITEMS[i]).slice(0, 5);
+    if (core.length >= (sr ? 3 : 2)) bump(b.builds.core, [boots ?? 0, ...core].filter(Boolean).join("-"), p.win);
+    if (boots) bump(b.builds.boots, String(boots), p.win);
+    for (const it of finalItems) if (!BOOTS.has(it)) bump(b.builds.items, String(it), p.win);
+    const start = bought.slice(0, 4).filter((i) => STARTERS.has(i) || i === 1036 || !sr);
+    if (start.length) bump(b.builds.starting, start.slice(0, 3).join("-"), p.win);
 
-        const pid = pidOf.get(p.puuid);
-        const bought = (pid ? orders.items.get(pid) : undefined) ?? [];
-        const finalItems = [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5].filter((i) => i > 0 && !CONSUMABLE.has(i));
-        const order = bought.length ? bought.filter((i, idx) => finalItems.includes(i) && bought.indexOf(i) === idx) : finalItems;
-        const boots = order.find((i) => BOOTS.has(i));
-        const core = order.filter((i) => !BOOTS.has(i) && !STARTERS.has(i) && ITEMS[i]).slice(0, 5);
-        if (core.length >= 3) bump(b.builds.core, [boots ?? 0, ...core].filter(Boolean).join("-"), p.win);
-        if (boots) bump(b.builds.boots, String(boots), p.win);
-        for (const it of finalItems) if (!BOOTS.has(it)) bump(b.builds.items, String(it), p.win);
-        const start = bought.slice(0, 4).filter((i) => STARTERS.has(i) || i === 1036);
-        if (start.length) bump(b.builds.starting, start.join("-"), p.win);
-
-        const styles = p.perks?.styles ?? [];
-        if (styles.length >= 2) {
-          const perks = [...styles[0].selections, ...styles[1].selections].map((s) => s.perk);
-          const sp = p.perks?.statPerks;
-          const shards = sp?.offense && sp?.flex && sp?.defense ? [sp.offense, sp.flex, sp.defense].join("-") : "";
-          bump(b.builds.runes, `${styles[0].style}-${styles[1].style}|${perks.join("-")}|${shards}`, p.win);
-        }
-        bump(b.builds.spells, [p.summoner1Id, p.summoner2Id].sort((x, y) => x - y).join("-"), p.win);
-        const prio = pid ? skillPriority(orders.skills.get(pid) ?? []) : null;
-        if (prio) bump(b.builds.skills, prio, p.win);
-        const opponent = m.info.participants.find((o) => o.teamId !== p.teamId && o.teamPosition === p.teamPosition);
-        if (opponent) bump(b.builds.matchups, String(opponent.championId), p.win);
-      }
-      matchCount.set(patch, (matchCount.get(patch) ?? 0) + 1);
-      await db.aggregatedMatch.create({ data: { matchId: id, patch } });
-      added++;
+    const styles = p.perks?.styles ?? [];
+    if (styles.length >= 2 && styles[0].selections.length >= 4) {
+      const perks = [...styles[0].selections, ...styles[1].selections].map((s) => s.perk);
+      const sp = p.perks?.statPerks;
+      const shards = sp?.offense && sp?.flex && sp?.defense ? [sp.offense, sp.flex, sp.defense].join("-") : "";
+      bump(b.builds.runes, `${styles[0].style}-${styles[1].style}|${perks.join("-")}|${shards}`, p.win);
     }
-    console.log(`  ${pi + 1}/${puuids.length} players · ${added} new matches`);
+    bump(b.builds.spells, [p.summoner1Id, p.summoner2Id].sort((x, y) => x - y).join("-"), p.win);
+    const prio = pid ? skillPriority(orders.skills.get(pid) ?? []) : null;
+    if (prio) bump(b.builds.skills, prio, p.win);
+    if (sr) {
+      const opponent = m.info.participants.find((o) => o.teamId !== p.teamId && o.teamPosition === p.teamPosition);
+      if (opponent) bump(b.builds.matchups, String(opponent.championId), p.win);
+    }
   }
+  ctx.matchCount.set(patch, (ctx.matchCount.get(patch) ?? 0) + 1);
+  return patch;
+}
 
-  // Persist: merge counters into existing rows.
-  for (const [key, b] of buckets) {
+async function persist(db: PrismaClient, ctx: Ctx, platform: string, rankBand: string) {
+  for (const [key, b] of ctx.buckets) {
     const [patch, championIdStr, role] = key.split("|");
     if (role === "BAN") continue;
     const championId = Number(championIdStr);
-    const bans = buckets.get(`${patch}|${championId}|BAN`)?.bans ?? 0;
-    const where = { patch_platform_rankBand_championId_role: { patch, platform: region.platform, rankBand: "master", championId, role } };
+    const bans = ctx.buckets.get(`${patch}|${championId}|BAN`)?.bans ?? 0;
+    const where = { patch_platform_rankBand_championId_role: { patch, platform, rankBand, championId, role } };
     const existing = await db.championAggregate.findUnique({ where });
     const merged = existing ? mergeBuilds(existing.builds as Bucket["builds"], b.builds) : b.builds;
     const data = {
@@ -177,10 +157,86 @@ async function main() {
       assists: (existing?.assists ?? 0) + b.assists,
       builds: merged as unknown as Prisma.InputJsonValue,
     };
-    await db.championAggregate.upsert({ where, create: { patch, platform: region.platform, rankBand: "master", championId, role, ...data }, update: data });
+    await db.championAggregate.upsert({ where, create: { patch, platform, rankBand, championId, role, ...data }, update: data });
   }
-  for (const [patch, matches] of matchCount) await db.aggregateRun.create({ data: { patch, platform: region.platform, rankBand: "master", matches, totalBans: bansByPatch.get(patch) ?? 0 } });
-  console.log(`Done — ${added} matches added.`);
+  for (const [patch, matches] of ctx.matchCount) await db.aggregateRun.create({ data: { patch, platform, rankBand, matches, totalBans: ctx.bansByPatch.get(patch) ?? 0 } });
+}
+
+async function main() {
+  const platform = arg("platform", process.env.NEXUS_DEFAULT_PLATFORM ?? "euw1");
+  const region = resolveRegion(platform);
+  if (!region) throw new Error(`Unknown platform ${platform}`);
+  if (!env.riotApiKey || !process.env.DATABASE_URL) throw new Error("A Riot API key (RIOT_API_KEY or /admin) and DATABASE_URL are required.");
+  const playerCount = Number(arg("players", "50"));
+  const perPlayer = Number(arg("matches", "15"));
+  const modeTarget = Number(arg("mode-matches", "60"));
+  const modes = arg("modes", "sr,aram,aram-mayhem,arena,urf").split(",").map((m) => m.trim()).filter(Boolean);
+  const db = new PrismaClient();
+
+  const ladders = await Promise.all((["challenger", "grandmaster", "master"] as const).map((t) => riot.apexLeague(region.platform, t)));
+  const ladder = ladders.flatMap((l) => l.entries).sort((a, b) => b.leaguePoints - a.leaguePoints).map((e) => e.puuid);
+
+  const already = async (id: string) => Boolean(await db.aggregatedMatch.findUnique({ where: { matchId: id } }));
+
+  /* Summoner's Rift ranked: top of the apex ladder. */
+  if (modes.includes("sr")) {
+    const ctx = newCtx();
+    const puuids = ladder.slice(0, playerCount);
+    console.log(`[sr] scanning ${puuids.length} apex players on ${region.label}…`);
+    let added = 0;
+    for (const [pi, puuid] of puuids.entries()) {
+      const ids = await riot.matchIds(region, puuid, { count: perPlayer, queue: 420 }).catch(() => [] as string[]);
+      for (const id of ids) {
+        if (await already(id)) continue;
+        const m = await riot.match(region, id).catch(() => null);
+        if (!m || m.info.queueId !== 420 || m.info.gameDuration < 600) continue;
+        const tl = await riot.matchTimeline(region, id).catch(() => null);
+        const patch = countMatch(ctx, m, tl, true);
+        await db.aggregatedMatch.create({ data: { matchId: id, patch } });
+        added++;
+      }
+      console.log(`  ${pi + 1}/${puuids.length} players · ${added} new matches`);
+    }
+    await persist(db, ctx, region.platform, "master");
+  }
+
+  /* Other modes: start from ladder players and follow the people met in each match
+     (whoever plays ARAM tends to play it again), until enough matches are collected. */
+  for (const modeId of modes.filter((m) => m !== "sr")) {
+    const mode = GAME_MODES.find((m) => m.id === modeId);
+    if (!mode) continue;
+    const ctx = newCtx();
+    const queue = [...ladder.slice(0, 25)];
+    const seen = new Set<string>();
+    let added = 0;
+    let lookups = 0;
+    console.log(`[${mode.id}] collecting up to ${modeTarget} matches…`);
+    while (queue.length && added < modeTarget && lookups < modeTarget * 3) {
+      const puuid = queue.shift()!;
+      if (seen.has(puuid)) continue;
+      seen.add(puuid);
+      for (const q of mode.queues) {
+        lookups++;
+        const ids = await riot.matchIds(region, puuid, { count: 10, queue: q }).catch(() => [] as string[]);
+        for (const id of ids) {
+          if (added >= modeTarget) break;
+          if (await already(id)) continue;
+          const m = await riot.match(region, id).catch(() => null);
+          if (!m || !mode.queues.includes(m.info.queueId) || m.info.gameDuration < 300) continue;
+          const tl = await riot.matchTimeline(region, id).catch(() => null);
+          const patch = countMatch(ctx, m, tl, false);
+          await db.aggregatedMatch.create({ data: { matchId: id, patch } });
+          added++;
+          for (const p of m.info.participants) if (!seen.has(p.puuid)) queue.push(p.puuid);
+        }
+        if (ids.length) break; // found the active queue for this mode
+      }
+    }
+    console.log(`  ${added} new ${mode.label} matches`);
+    if (added) await persist(db, ctx, region.platform, mode.id);
+  }
+
+  console.log("Done.");
   await db.$disconnect();
 }
 

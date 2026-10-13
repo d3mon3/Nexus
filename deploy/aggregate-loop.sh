@@ -11,7 +11,9 @@ run() {
   npx tsx --conditions=react-server scripts/aggregate.ts \
     --platform "${NEXUS_DEFAULT_PLATFORM:-euw1}" \
     --players "${AGGREGATE_PLAYERS:-40}" \
-    --matches "${AGGREGATE_MATCHES:-10}"
+    --matches "${AGGREGATE_MATCHES:-10}" \
+    --modes "${AGGREGATE_MODES:-sr,aram,aram-mayhem,arena,urf}" \
+    --mode-matches "${AGGREGATE_MODE_MATCHES:-40}"
 }
 
 sleep 90 # let the app create the database tables first

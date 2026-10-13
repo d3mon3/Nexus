@@ -9,6 +9,7 @@ import { getBridge, useClientState } from "@/lib/desktop";
 import { resolveRegion } from "@/lib/regions";
 import { SettingsProvider, useSettings } from "@/lib/settings";
 import { StaticDataProvider } from "@/lib/static-context";
+import { LangProvider, type Lang } from "@/lib/i18n";
 
 /** Keeps the Electron shell in sync with settings and surfaces import results as toasts. */
 function DesktopSync() {
@@ -43,7 +44,7 @@ function MotionPrefs({ children }: { children: ReactNode }) {
   return <MotionConfig reducedMotion={settings.reduceMotion ? "always" : "user"}>{children}</MotionConfig>;
 }
 
-export function Providers({ children }: { children: ReactNode }) {
+export function Providers({ children, lang = "pl" }: { children: ReactNode; lang?: Lang }) {
   const [client] = useState(
     () =>
       new QueryClient({
@@ -54,6 +55,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} themes={["dark", "light"]} value={{ dark: "dark", light: "light" }}>
       <QueryClientProvider client={client}>
         <SettingsProvider>
+          <LangProvider initial={lang}>
           <StaticDataProvider>
             <MotionPrefs>{children}</MotionPrefs>
             <DesktopSync />
@@ -63,6 +65,7 @@ export function Providers({ children }: { children: ReactNode }) {
               toastOptions={{ className: "!bg-[#101729] !border !border-[#2b3355] !text-[#F5F6FF] !shadow-[0_0_24px_-8px_#7042FF]" }}
             />
           </StaticDataProvider>
+          </LangProvider>
         </SettingsProvider>
       </QueryClientProvider>
     </ThemeProvider>

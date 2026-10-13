@@ -90,8 +90,8 @@ export const api = {
   match: (region: string, matchId: string, puuid?: string) => getJson<Envelope<MatchDetail>>(`/api/match/${encodeURIComponent(matchId)}`, { region, puuid }),
   live: (region: string, puuid: string) => getJson<Envelope<LiveGame | null>>("/api/player/live", { region, puuid }),
   stats: (region: string, puuid: string, count = 20, queue = "all") => getJson<Envelope<PlayerStats>>("/api/player/stats", { region, puuid, count, queue }),
-  championStats: (p: { patch?: string; role?: Role | null; rank?: string; region?: string }) => getJson<Envelope<ChampionStatsPayload>>("/api/champions", p),
-  championBuild: (id: number, role?: Role | null, patch?: string) => getJson<Envelope<ChampionBuild | null>>(`/api/champions/${id}`, { role, patch }),
+  championStats: (p: { patch?: string; role?: Role | null; rank?: string; region?: string; mode?: string }) => getJson<Envelope<ChampionStatsPayload>>("/api/champions", p),
+  championBuild: (id: number, role?: Role | null, patch?: string, mode?: string) => getJson<Envelope<ChampionBuild | null>>(`/api/champions/${id}`, { role, patch, mode: mode && mode !== "sr" ? mode : undefined }),
   leaderboard: (p: { region: string; tier: string; page: number; pageSize: number; sort: string; q?: string }) => getJson<Envelope<LeaderboardPage>>("/api/leaderboard", p),
   championDetail: (key: string) => getJson<ChampionDetail>(`/api/static/champion/${encodeURIComponent(key)}`),
   scout: (region: string, p: LiveParticipant, depth: number) =>

@@ -16,7 +16,7 @@ export const qk = {
   live: (puuid: string) => ["live", puuid] as const,
   stats: (puuid: string, count: number, queue: string) => ["stats", puuid, count, queue] as const,
   championStats: (p: object) => ["championStats", p] as const,
-  build: (id: number, role: string | null | undefined, patch: string | undefined) => ["build", id, role ?? "auto", patch ?? "latest"] as const,
+  build: (id: number, role: string | null | undefined, patch: string | undefined, mode = "sr") => ["build", id, role ?? "auto", patch ?? "latest", mode] as const,
   leaderboard: (p: object) => ["leaderboard", p] as const,
   pros: ["pros"] as const,
 };
@@ -75,7 +75,7 @@ export function usePlayerStats(region: string | undefined, puuid: string | undef
   });
 }
 
-export function useChampionStats(p: { patch?: string; role?: Role | null; rank?: string; region?: string }) {
+export function useChampionStats(p: { patch?: string; role?: Role | null; rank?: string; region?: string; mode?: string }) {
   return useQuery({
     queryKey: qk.championStats(p),
     queryFn: () => api.championStats(p),
@@ -84,10 +84,10 @@ export function useChampionStats(p: { patch?: string; role?: Role | null; rank?:
   });
 }
 
-export function useChampionBuild(id: number | null | undefined, role?: Role | null, patch?: string) {
+export function useChampionBuild(id: number | null | undefined, role?: Role | null, patch?: string, mode: string = "sr") {
   return useQuery({
-    queryKey: qk.build(id ?? 0, role, patch),
-    queryFn: () => api.championBuild(id!, role, patch),
+    queryKey: qk.build(id ?? 0, role, patch, mode),
+    queryFn: () => api.championBuild(id!, role, patch, mode),
     enabled: Boolean(id),
     staleTime: 5 * 60_000,
     placeholderData: keepPreviousData,

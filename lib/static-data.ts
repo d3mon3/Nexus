@@ -322,8 +322,11 @@ export const QUEUES: Record<number, string> = {
   490: "Quickplay",
   700: "Clash",
   900: "URF",
+  1010: "ARURF",
   1700: "Arena",
+  1710: "Arena",
   1900: "URF",
+  2400: "ARAM Chaos",
 };
 
 export const QUEUE_FILTERS: { value: string; label: string; ids: number[] | null }[] = [
@@ -332,6 +335,8 @@ export const QUEUE_FILTERS: { value: string; label: string; ids: number[] | null
   { value: "flex", label: "Ranked Flex", ids: [440] },
   { value: "normal", label: "Normal", ids: [400, 430, 480, 490] },
   { value: "aram", label: "ARAM", ids: [450] },
+  { value: "aram-mayhem", label: "ARAM Chaos", ids: [2400] },
+  { value: "arena", label: "Arena", ids: [1700, 1710] },
 ];
 
 export function queueName(id: number): string {

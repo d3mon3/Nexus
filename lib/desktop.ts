@@ -49,7 +49,7 @@ export interface NexusBridge {
   toggleOverlay(show: boolean): Promise<void>;
   spectate?(puuid: string): Promise<{ ok: boolean; error?: string }>;
   setPrefs?(prefs: { import?: unknown; scoutAutoShow?: boolean; widgetsEnabled?: boolean }): Promise<void>;
-  importBuild?(championId: number, role: string | null): Promise<{ ok: boolean; text: string }>;
+  importBuild?(championId: number, role: string | null, mode?: string): Promise<{ ok: boolean; text: string }>;
   toggleScout?(show: boolean): Promise<void>;
   setOverlayEdit?(on: boolean): Promise<void>;
   onImport?(cb: (r: { text: string; runes: string; spells: string; items: string }) => void): () => void;

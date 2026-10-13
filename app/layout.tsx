@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Cinzel, Inter } from "next/font/google";
+import { cookies, headers } from "next/headers";
 import { Providers } from "@/components/providers";
+import { LANG_COOKIE, pickLang } from "@/lib/i18n-shared";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin", "latin-ext"], variable: "--font-inter", display: "swap" });
@@ -14,11 +16,12 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: "#070A13", colorScheme: "dark light" };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const lang = pickLang((await cookies()).get(LANG_COOKIE)?.value, (await headers()).get("accept-language"));
   return (
-    <html lang="en" className={`${inter.variable} ${cinzel.variable}`} suppressHydrationWarning>
+    <html lang={lang} className={`${inter.variable} ${cinzel.variable}`} suppressHydrationWarning>
       <body>
-        <Providers>{children}</Providers>
+        <Providers lang={lang}>{children}</Providers>
       </body>
     </html>
   );

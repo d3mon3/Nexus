@@ -6,6 +6,7 @@ import { getBridge } from "@/lib/desktop";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { formatKda, pct, ROLE_LABEL, wrColor } from "@/lib/format";
+import type { GameModeId } from "@/lib/modes";
 import { useChampionBuild, useChampionDetail } from "@/lib/queries";
 import { useStatic } from "@/lib/static-context";
 import type { BuildPath, ChampionBuild, Matchup, Role } from "@/lib/types";
@@ -45,7 +46,9 @@ export function BuildPanel({
   showHeader = true,
   tab: tabProp,
   showTabs = true,
+  mode = "sr",
 }: {
+  mode?: GameModeId;
   championId: number;
   role?: Role | null;
   patch?: string;
@@ -58,7 +61,7 @@ export function BuildPanel({
   const c = champion(championId);
   const [localRole, setLocalRole] = useState<Role | null>(roleProp ?? null);
   const role = roleProp ?? localRole;
-  const q = useChampionBuild(championId, role, patch);
+  const q = useChampionBuild(championId, mode === "sr" ? role : null, patch, mode);
   const [localTab, setLocalTab] = useState<BuildTab>("builds");
   const tab = tabProp ?? localTab;
   const b = q.data?.data;
@@ -105,7 +108,7 @@ export function BuildPanel({
           Pick {pct(b.summary.pickRate, 1)} · Ban {pct(b.summary.banRate, 1)} · {b.summary.games.toLocaleString()} games · patch {b.patch}
         </span>
         <div className="ml-auto flex items-center gap-2">
-          {roles.length > 1 && (
+          {mode === "sr" && roles.length > 1 && (
             <Select
               size="sm"
               className="w-[120px]"
@@ -115,7 +118,7 @@ export function BuildPanel({
               options={roles.map((r) => ({ value: r, label: ROLE_LABEL[r], icon: <RoleIcon role={r} size={14} /> }))}
             />
           )}
-          <ImportButton championId={championId} role={b.role} />
+          <ImportButton championId={championId} role={b.role} mode={mode} />
           <Link href={`/champions/${c?.key.toLowerCase()}`} className="text-primary hover:underline">
             Champion page
           </Link>
@@ -394,7 +397,7 @@ function MatchupList({ title, icon, list }: { title: string; icon: ReactNode; li
 }
 
 /** Desktop only: writes this build (runes, spells, item set) into the League client now. */
-export function ImportButton({ championId, role }: { championId: number; role: Role }) {
+export function ImportButton({ championId, role, mode = "sr" }: { championId: number; role: Role; mode?: GameModeId }) {
   const [busy, setBusy] = useState(false);
   const bridge = typeof window !== "undefined" ? getBridge() : null;
   if (!bridge?.importBuild) return null;
@@ -405,7 +408,7 @@ export function ImportButton({ championId, role }: { championId: number; role: R
       disabled={busy}
       onClick={async () => {
         setBusy(true);
-        const r = await bridge.importBuild!(championId, role);
+        const r = await bridge.importBuild!(championId, mode === "sr" ? role : null, mode);
         setBusy(false);
         (r.ok ? toast.success : toast.error)(r.ok ? "Imported to League client" : "Import failed", { description: r.text });
       }}

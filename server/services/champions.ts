@@ -5,6 +5,7 @@ import { getStaticBundle } from "../ddragon";
 import { demoChampionBuild, demoChampionStats, demoPatches, gradeStats } from "../demo";
 import { skillSequence } from "../demo/archetypes";
 import { env } from "../env";
+import { NON_SR_MODES, type GameModeId } from "@/lib/modes";
 
 const now = () => new Date().toISOString();
 const COLLECTING_NOTE = "Statistics are being collected from real ranked games. The first results appear after the server's first aggregation run (it starts automatically).";
@@ -25,20 +26,29 @@ async function latestRuns() {
   return runs.length ? { db, runs } : null;
 }
 
-export async function getChampionStats(opts: { patch?: string | null; role?: Role | null; rank?: string | null; region?: string | null }): Promise<Envelope<ChampionStatsPayload>> {
+/** rankBand filter for a mode: SR uses rank bands, other modes store their id as the band. */
+function bandFilter(mode: GameModeId, rank?: string | null) {
+  if (mode !== "sr") return { rankBand: mode };
+  return rank ? { rankBand: rank } : { rankBand: { notIn: NON_SR_MODES } };
+}
+const bandMatches = (band: string, mode: GameModeId, rank?: string | null) => (mode !== "sr" ? band === mode : rank ? band === rank : !NON_SR_MODES.includes(band));
+
+export async function getChampionStats(opts: { patch?: string | null; role?: Role | null; rank?: string | null; region?: string | null; mode?: GameModeId | null }): Promise<Envelope<ChampionStatsPayload>> {
+  const mode: GameModeId = opts.mode ?? "sr";
   const agg = await latestRuns();
   if (agg) {
-    const patches = [...new Set(agg.runs.map((r) => r.patch))];
+    const modeRuns = agg.runs.filter((r) => bandMatches(r.rankBand, mode, null));
+    const patches = [...new Set(modeRuns.map((r) => r.patch))];
     const patch = opts.patch && patches.includes(opts.patch) ? opts.patch : patches[0];
-    const runs = agg.runs.filter((r) => r.patch === patch && (!opts.region || r.platform === opts.region) && (!opts.rank || r.rankBand === opts.rank));
+    const runs = modeRuns.filter((r) => r.patch === patch && (!opts.region || r.platform === opts.region) && bandMatches(r.rankBand, mode, opts.rank));
     const matches = runs.reduce((s, r) => s + r.matches, 0);
     if (matches > 0) {
       const rows = await agg.db.championAggregate.findMany({
         where: {
           patch,
-          ...(opts.role ? { role: opts.role } : {}),
+          ...(opts.role && mode === "sr" ? { role: opts.role } : {}),
           ...(opts.region ? { platform: opts.region } : {}),
-          ...(opts.rank ? { rankBand: opts.rank } : {}),
+          ...bandFilter(mode, opts.rank),
         },
       });
       const merged = new Map<string, { championId: number; role: Role; games: number; wins: number; bans: number; k: number; d: number; a: number }>();
@@ -72,7 +82,7 @@ export async function getChampionStats(opts: { patch?: string | null; role?: Rol
   const { version } = await getStaticBundle();
   const patches = demoPatches(version);
   const patch = opts.patch && patches.includes(opts.patch) ? opts.patch : patches[0];
-  if (env.demoDisabled) return { data: { patch, patches: [patch], rows: [], sampleSize: 0 }, source: "aggregate", fetchedAt: now(), note: COLLECTING_NOTE };
+  if (env.demoDisabled || mode !== "sr") return { data: { patch, patches: [patch], rows: [], sampleSize: 0 }, source: "aggregate", fetchedAt: now(), note: COLLECTING_NOTE };
   return {
     data: { patch, patches, rows: demoChampionStats({ patch, role: opts.role, rank: opts.rank, region: opts.region }), sampleSize: null },
     source: "demo",
@@ -98,11 +108,12 @@ const top = (c: Counter | undefined, n: number) =>
     .sort((a, b) => b[1].games - a[1].games)
     .slice(0, n);
 
-export async function getChampionBuild(championId: number, role: Role | null, patchValue?: string | null): Promise<Envelope<ChampionBuild | null>> {
-  const stats = await getChampionStats({ patch: patchValue, role: null });
-  if (stats.source === "aggregate") {
+export async function getChampionBuild(championId: number, role: Role | null, patchValue?: string | null, modeValue?: GameModeId | null): Promise<Envelope<ChampionBuild | null>> {
+  const mode: GameModeId = modeValue ?? "sr";
+  const stats = await getChampionStats({ patch: patchValue, role: null, mode });
+  if (stats.source === "aggregate" && stats.data.rows.length) {
     const db = (await getDb())!;
-    const rows = await db.championAggregate.findMany({ where: { patch: stats.data.patch, championId, ...(role ? { role } : {}) } });
+    const rows = await db.championAggregate.findMany({ where: { patch: stats.data.patch, championId, ...bandFilter(mode), ...(role && mode === "sr" ? { role } : {}) } });
     if (rows.length) {
       const mainRole = (role ?? rows.sort((a, b) => b.games - a.games)[0].role) as Role;
       const summary = stats.data.rows.find((r) => r.championId === championId && r.role === mainRole);
@@ -140,6 +151,7 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
         .map(([id, v]) => ({ opponentId: Number(id), games: v.games, winRate: v.wins / v.games }));
       const build: ChampionBuild = {
         championId,
+        mode,
         role: mainRole,
         patch: stats.data.patch,
         summary: summary ?? { championId, role: mainRole, tier: "C", winRate: 0, pickRate: 0, banRate: 0, games, kda: 0 },
@@ -157,7 +169,7 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
       return { data: build, source: "aggregate", fetchedAt: now(), note: `${games.toLocaleString()} games on patch ${stats.data.patch}.` };
     }
   }
-  if (env.demoDisabled) return { data: null, source: "aggregate", fetchedAt: now(), note: COLLECTING_NOTE };
+  if (env.demoDisabled || mode !== "sr") return { data: null, source: "aggregate", fetchedAt: now(), note: COLLECTING_NOTE };
   return {
     data: demoChampionBuild(championId, role, stats.data.patch),
     source: "demo",

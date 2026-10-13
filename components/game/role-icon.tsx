@@ -38,5 +38,7 @@ export function RoleIcon({ role, className, size = 18 }: { role: Role; className
           <path d="M9 3h6l-1 4h-4zM4 7h5l3 3 3-3h5l-4 5h-3l1 9h-4l1-9H8z" />
         </svg>
       );
+    default:
+      return null;
   }
 }

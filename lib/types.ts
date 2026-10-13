@@ -234,6 +234,9 @@ export interface Matchup {
 
 export interface ChampionBuild {
   championId: number;
+  /** Game mode the build is for (see lib/modes.ts); older payloads omit it (= "sr"). */
+  mode?: import("./modes").GameModeId;
+  /** Lane for Summoner's Rift; other modes use "ANY". */
   role: Role;
   patch: string;
   summary: ChampionStat;
