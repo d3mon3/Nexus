@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpDown, Clock, CornerDownLeft, Search, Star, User } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -60,7 +62,7 @@ export function CommandPalette({ open, onClose, initialQuery = "" }: { open: boo
       out.push({
         id: "player-hint",
         group: "Player",
-        label: <span className="text-muted">Add a tag to search a player — e.g. {query}#EUW</span>,
+        label: <span className="text-muted">{t("Add a tag to search a player — e.g.") + " "}{query}{t("#EUW")}</span>,
         icon: <User className="size-4" />,
         href: profileHref(settings.region, query, settings.region.replace(/\d+$/, "").toUpperCase()),
       });
@@ -124,7 +126,7 @@ export function CommandPalette({ open, onClose, initialQuery = "" }: { open: boo
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label="Search"
+            aria-label={t("Search")}
             initial={{ opacity: 0, y: -12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
@@ -142,15 +144,15 @@ export function CommandPalette({ open, onClose, initialQuery = "" }: { open: boo
                   setActive(0);
                 }}
                 onKeyDown={onKey}
-                placeholder="Search a player (Name#TAG), champion or page…"
+                placeholder={t("Search a player (Name#TAG), champion or page…")}
                 className="h-14 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-dim"
                 aria-controls="palette-results"
                 aria-activedescendant={results[active] ? `pr-${results[active].id}` : undefined}
               />
-              <kbd className="rounded border border-line px-1.5 py-0.5 text-[10px] text-muted">ESC</kbd>
+              <kbd className="rounded border border-line px-1.5 py-0.5 text-[10px] text-muted">{t("ESC")}</kbd>
             </div>
             <ul id="palette-results" role="listbox" className="max-h-[50vh] overflow-y-auto p-2">
-              {results.length === 0 && <li className="px-3 py-8 text-center text-sm text-muted">Type a Riot ID like <span className="text-fg">d3monek#EUW</span> or a champion name.</li>}
+              {results.length === 0 && <li className="px-3 py-8 text-center text-sm text-muted">{t("Type a Riot ID like") + " "}<span className="text-fg">{t("d3monek#EUW")}</span>{" " + t("or a champion name.")}</li>}
               {results.map((r, i) => {
                 const header = r.group !== lastGroup ? r.group : null;
                 lastGroup = r.group;
@@ -166,8 +168,8 @@ export function CommandPalette({ open, onClose, initialQuery = "" }: { open: boo
                       className={cn("flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm", i === active ? "bg-primary-soft text-fg" : "text-fg/90")}
                     >
                       <span className="grid size-7 place-items-center text-muted">{r.icon}</span>
-                      <span className="flex-1 truncate">{r.label}</span>
-                      {r.hint && <span className="truncate text-xs text-dim">{r.hint}</span>}
+                      <span className="flex-1 truncate">{t(r.label)}</span>
+                      {r.hint && <span className="truncate text-xs text-dim">{t(r.hint)}</span>}
                       {i === active && <CornerDownLeft className="size-3.5 text-primary" />}
                     </div>
                   </li>
@@ -176,11 +178,9 @@ export function CommandPalette({ open, onClose, initialQuery = "" }: { open: boo
             </ul>
             <div className="flex items-center gap-4 border-t border-line-soft px-4 py-2 text-[11px] text-dim">
               <span className="flex items-center gap-1">
-                <ArrowUpDown className="size-3" /> navigate
-              </span>
+                <ArrowUpDown className="size-3" />{" " + t("navigate")}</span>
               <span className="flex items-center gap-1">
-                <CornerDownLeft className="size-3" /> open
-              </span>
+                <CornerDownLeft className="size-3" />{" " + t("open")}</span>
             </div>
           </motion.div>
         </motion.div>

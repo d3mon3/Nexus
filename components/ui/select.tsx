@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
@@ -93,7 +95,7 @@ export function Select<T extends string>({
       >
         <span className="flex min-w-0 items-center gap-2 truncate">
           {current?.icon}
-          {current?.label}
+          {t(current?.label)}
         </span>
         <ChevronDown className={cn("size-3.5 shrink-0 text-muted transition-transform", open && "rotate-180")} />
       </button>
@@ -127,7 +129,7 @@ export function Select<T extends string>({
                 )}
               >
                 {o.icon}
-                <span className="flex-1">{o.label}</span>
+                <span className="flex-1">{t(o.label)}</span>
                 {o.value === value && <Check className="size-3.5 text-primary" />}
               </li>
             ))}

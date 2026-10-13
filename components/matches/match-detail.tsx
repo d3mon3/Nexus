@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import Link from "next/link";
 import { compact, formatKda, kda } from "@/lib/format";
 import { useMatch } from "@/lib/queries";
@@ -53,20 +55,20 @@ export function Scoreboard({ match, region, puuid }: { match: MatchDetail; regio
           <div key={teamId} className="overflow-x-auto">
             <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 px-1">
               <p className={cn("text-xs font-semibold", won ? "text-win" : "text-loss")}>
-                {won ? "Victory" : "Defeat"} <span className="text-muted">· {teamId === 100 ? "Blue" : "Red"} team · {kills} kills · {compact(gold)} gold</span>
+                {won ? t("Victory") : t("Defeat")} <span className="text-muted">· {teamId === 100 ? t("Blue") : t("Red")}{" " + t("team ·") + " "}{kills}{" " + t("kills ·") + " "}{compact(gold)}{" " + t("gold")}</span>
               </p>
               <Objectives o={obj} />
             </div>
             <table className="w-full min-w-[720px] text-[12px]">
               <thead className="text-[10px] uppercase tracking-wider text-dim">
                 <tr>
-                  <th className="px-2 py-1 text-left font-medium">Player</th>
-                  <th className="px-2 py-1 text-left font-medium">KDA</th>
-                  <th className="px-2 py-1 text-left font-medium">Damage</th>
-                  <th className="px-2 py-1 text-right font-medium">Gold</th>
-                  <th className="px-2 py-1 text-right font-medium">CS</th>
-                  <th className="px-2 py-1 text-right font-medium">Vision</th>
-                  <th className="px-2 py-1 text-left font-medium">Items</th>
+                  <th className="px-2 py-1 text-left font-medium">{t("Player")}</th>
+                  <th className="px-2 py-1 text-left font-medium">{t("KDA")}</th>
+                  <th className="px-2 py-1 text-left font-medium">{t("Damage")}</th>
+                  <th className="px-2 py-1 text-right font-medium">{t("Gold")}</th>
+                  <th className="px-2 py-1 text-right font-medium">{t("CS")}</th>
+                  <th className="px-2 py-1 text-right font-medium">{t("Vision")}</th>
+                  <th className="px-2 py-1 text-left font-medium">{t("Items")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -114,7 +116,7 @@ function Row({ p, me, maxDmg, mins, teamKills, region }: { p: ParticipantSummary
         <span className="ml-1.5 text-[11px] text-dim">{kp}%</span>
       </td>
       <td className="px-2 py-1.5">
-        <Tooltip content={`${p.damageToChampions.toLocaleString()} damage to champions · ${p.damageTaken.toLocaleString()} taken`}>
+        <Tooltip content={t("{0} damage to champions · {1} taken", [p.damageToChampions.toLocaleString(), p.damageTaken.toLocaleString()])}>
           <div className="flex w-[120px] items-center gap-2">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
               <div className="h-full rounded-full bg-gradient-to-r from-primary-glow to-secondary" style={{ width: `${(p.damageToChampions / maxDmg) * 100}%` }} />

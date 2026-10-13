@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { Download, Footprints, Shield, ThumbsDown, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
 import { getBridge } from "@/lib/desktop";
@@ -70,7 +72,7 @@ export function BuildPanel({
   if (!q.error && q.data && !b)
     return (
       <Card>
-        <EmptyState title="Build data is being collected" description={q.data.note ?? "No build data for this champion yet."} />
+        <EmptyState title={t("Build data is being collected")} description={t(q.data.note) ?? t("No build data for this champion yet.")} />
       </Card>
     );
   if (q.error || !b)
@@ -88,40 +90,37 @@ export function BuildPanel({
       <ChampionIcon id={championId} size={58} rounded="full" ring="primary" tooltip={false} />
       <div className="min-w-0">
         <h2 className="text-[19px] font-bold">{c?.name}</h2>
-        <p className="text-[13px] capitalize text-muted">{c?.title}</p>
+        <p className="text-[13px] capitalize text-muted">{t(c?.title)}</p>
       </div>
       <div className="ml-auto flex items-center gap-1">
         <div className="grid place-items-center gap-0.5 rounded-lg border border-[#ff4d78]/30 bg-[#ff4d78]/8 px-3 py-1">
           <TierBadge tier={b.summary.tier} className="border-0 bg-transparent" />
-          <span className="text-[10px] text-muted">Tier</span>
+          <span className="text-[10px] text-muted">{t("Tier")}</span>
         </div>
-        <Stat label="Win Rate">
+        <Stat label={t("Win Rate")}>
           <span className="text-fg">{pct(b.summary.winRate)}</span>
         </Stat>
-        <Stat label="KDA">
+        <Stat label={t("KDA")}>
           <span className="text-success">{formatKda(b.summary.kda)}</span>
         </Stat>
       </div>
       <div className="flex w-full flex-wrap items-center gap-2 text-xs text-muted">
-        <SourceBadge source={q.data?.source} note={q.data?.note} />
-        <span className="tabular">
-          Pick {pct(b.summary.pickRate, 1)} · Ban {pct(b.summary.banRate, 1)} · {b.summary.games.toLocaleString()} games · patch {b.patch}
+        <SourceBadge source={q.data?.source} note={t(q.data?.note)} />
+        <span className="tabular">{t("Pick") + " "}{pct(b.summary.pickRate, 1)}{" " + t("· Ban") + " "}{pct(b.summary.banRate, 1)} · {b.summary.games.toLocaleString()}{" " + t("games · patch") + " "}{b.patch}
         </span>
         <div className="ml-auto flex items-center gap-2">
           {mode === "sr" && roles.length > 1 && (
             <Select
               size="sm"
               className="w-[120px]"
-              label="Role"
+              label={t("Role")}
               value={b.role}
               onChange={(v) => changeRole(v)}
-              options={roles.map((r) => ({ value: r, label: ROLE_LABEL[r], icon: <RoleIcon role={r} size={14} /> }))}
+              options={roles.map((r) => ({ value: r, label: t(ROLE_LABEL[r]), icon: <RoleIcon role={r} size={14} /> }))}
             />
           )}
           <ImportButton championId={championId} role={b.role} mode={mode} />
-          <Link href={`/champions/${c?.key.toLowerCase()}`} className="text-primary hover:underline">
-            Champion page
-          </Link>
+          <Link href={`/champions/${c?.key.toLowerCase()}`} className="text-primary hover:underline">{t("Champion page")}</Link>
         </div>
       </div>
     </div>
@@ -130,7 +129,7 @@ export function BuildPanel({
   return (
     <div className="space-y-3">
       {showTabs && (
-        <Tabs value={tab} onChange={setLocalTab} size="sm" label="Build sections" items={BUILD_TABS} className="border-b border-line-soft" />
+        <Tabs value={tab} onChange={setLocalTab} size="sm" label={t("Build sections")} items={BUILD_TABS} className="border-b border-line-soft" />
       )}
 
       {tab === "builds" && (
@@ -139,17 +138,17 @@ export function BuildPanel({
             <Card>
               {header}
               <CardBody className="space-y-4 pt-4">
-                <PathRow title="Most Common Build" path={b.popular} />
-                <PathRow title="High Winrate Build" path={b.highestWinRate} />
+                <PathRow title={t("Most Common Build")} path={b.popular} />
+                <PathRow title={t("High Winrate Build")} path={b.highestWinRate} />
                 <div className="grid gap-4 border-t border-line-soft pt-4 sm:grid-cols-3">
-                  <MiniList title="Starting Items" icon={<Shield className="size-3.5 text-secondary" />} rows={b.starting.map((p) => ({ ids: p.items, wr: p.winRate, pick: p.pickRate, kind: "item" as const }))} />
-                  <MiniList title="Boots" icon={<Footprints className="size-3.5 text-secondary" />} rows={b.boots.map((p) => ({ ids: p.items, wr: p.winRate, pick: p.pickRate, kind: "item" as const }))} />
-                  <MiniList title="Summoner Spells" rows={b.spells.map((s) => ({ ids: s.ids, wr: s.winRate, pick: s.games / Math.max(1, b.summary.games), kind: "spell" as const }))} />
+                  <MiniList title={t("Starting Items")} icon={<Shield className="size-3.5 text-secondary" />} rows={b.starting.map((p) => ({ ids: p.items, wr: p.winRate, pick: p.pickRate, kind: "item" as const }))} />
+                  <MiniList title={t("Boots")} icon={<Footprints className="size-3.5 text-secondary" />} rows={b.boots.map((p) => ({ ids: p.items, wr: p.winRate, pick: p.pickRate, kind: "item" as const }))} />
+                  <MiniList title={t("Summoner Spells")} rows={b.spells.map((s) => ({ ids: s.ids, wr: s.winRate, pick: s.games / Math.max(1, b.summary.games), kind: "spell" as const }))} />
                 </div>
               </CardBody>
             </Card>
             <Card>
-              <CardHeader title="Situational Items" />
+              <CardHeader title={t("Situational Items")} />
               <CardBody>
                 <SituationalStrip b={b} />
               </CardBody>
@@ -158,7 +157,7 @@ export function BuildPanel({
           <div className="space-y-3">
             <RunesCard b={b} />
             <Card>
-              <CardHeader title="Skill Order" />
+              <CardHeader title={t("Skill Order")} />
               <CardBody>
                 <SkillGrid b={b} compact />
               </CardBody>
@@ -193,8 +192,8 @@ export function BuildPanel({
       )}
 
       <div className="grid gap-3 md:grid-cols-2">
-        <MatchupList title="Hardest matchups" icon={<ThumbsDown className="size-4 text-loss" />} list={b.counters} />
-        <MatchupList title="Best matchups" icon={<ThumbsUp className="size-4 text-win" />} list={b.favorable} />
+        <MatchupList title={t("Hardest matchups")} icon={<ThumbsDown className="size-4 text-loss" />} list={b.counters} />
+        <MatchupList title={t("Best matchups")} icon={<ThumbsUp className="size-4 text-win" />} list={b.favorable} />
       </div>
     </div>
   );
@@ -220,7 +219,7 @@ function PathRow({ title, path }: { title: string; path: BuildPath }) {
           ))}
         </div>
         <div className="ml-auto text-right">
-          <p className={cn("text-[13px] font-semibold tabular", wrColor(path.winRate))}>{pct(path.winRate)} WR</p>
+          <p className={cn("text-[13px] font-semibold tabular", wrColor(path.winRate))}>{pct(path.winRate)}{" " + t("WR")}</p>
           <p className="text-[12px] text-muted tabular">{wl(path.games, path.winRate)}</p>
         </div>
       </div>
@@ -252,16 +251,16 @@ function RunesCard({ b }: { b: ChampionBuild }) {
   const pick = page.games / Math.max(1, b.summary.games);
   return (
     <Card>
-      <CardHeader title="Runes" />
+      <CardHeader title={t("Runes")} />
       <CardBody>
         <RuneTree page={page} compact />
         <div className="mt-3 grid grid-cols-2 border-t border-line-soft pt-3">
           <div>
-            <p className="text-[12px] text-muted">Pick Rate</p>
+            <p className="text-[12px] text-muted">{t("Pick Rate")}</p>
             <p className="text-[15px] font-bold tabular">{pct(pick)}</p>
           </div>
           <div>
-            <p className="text-[12px] text-muted">Win Rate</p>
+            <p className="text-[12px] text-muted">{t("Win Rate")}</p>
             <p className={cn("text-[15px] font-bold tabular", wrColor(page.winRate))}>{pct(page.winRate)}</p>
           </div>
         </div>
@@ -273,7 +272,7 @@ function RunesCard({ b }: { b: ChampionBuild }) {
 function RunePages({ b }: { b: ChampionBuild }) {
   const [i, setI] = useState(0);
   const page = b.runes[i];
-  if (!page) return <EmptyState title="No rune data" />;
+  if (!page) return <EmptyState title={t("No rune data")} />;
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -283,10 +282,9 @@ function RunePages({ b }: { b: ChampionBuild }) {
             onClick={() => setI(idx)}
             className={cn("rounded-lg border px-3 py-2 text-left text-xs transition-colors", idx === i ? "border-primary/70 bg-primary-soft" : "border-line hover:border-primary/40")}
           >
-            <p className="font-semibold text-fg">Page {idx + 1}</p>
+            <p className="font-semibold text-fg">{t("Page") + " "}{idx + 1}</p>
             <p className="text-muted tabular">
-              {pct(r.winRate, 1)} WR · {r.games.toLocaleString()} games
-            </p>
+              {pct(r.winRate, 1)}{" " + t("WR ·") + " "}{r.games.toLocaleString()}{" " + t("games")}</p>
           </button>
         ))}
       </div>
@@ -305,9 +303,8 @@ function SkillGrid({ b, compact = false }: { b: ChampionBuild; compact?: boolean
   return (
     <div className="space-y-3">
       {!compact && (
-        <p className="text-sm">
-          Max order <span className="font-semibold text-fg">{b.skillOrder.priority.join(" > ")}</span> · <span className={cn("font-semibold", wrColor(b.skillOrder.winRate))}>{pct(b.skillOrder.winRate, 1)}</span>{" "}
-          <span className="text-muted">win rate</span>
+        <p className="text-sm">{t("Max order") + " "}<span className="font-semibold text-fg">{b.skillOrder.priority.join(" > ")}</span> · <span className={cn("font-semibold", wrColor(b.skillOrder.winRate))}>{pct(b.skillOrder.winRate, 1)}</span>{" "}
+          <span className="text-muted">{t("win rate")}</span>
         </p>
       )}
       <div className="overflow-x-auto">
@@ -354,7 +351,7 @@ function SituationalStrip({ b }: { b: ChampionBuild }) {
           <p className={cn("mt-1 text-[10px] font-semibold tabular", wrColor(s.winRate))}>{pct(s.winRate)}</p>
         </div>
       ))}
-      {b.situational.length === 0 && <EmptyState title="No situational items" />}
+      {b.situational.length === 0 && <EmptyState title={t("No situational items")} />}
     </div>
   );
 }
@@ -366,12 +363,12 @@ function Situational({ b }: { b: ChampionBuild }) {
         <div key={s.itemId} className="flex items-center gap-3 rounded-lg border border-line-soft p-2.5 hover:border-primary/40">
           <ItemIcon id={s.itemId} size={38} />
           <div className="flex-1">
-            <p className={cn("text-sm font-semibold tabular", wrColor(s.winRate))}>{pct(s.winRate, 1)} WR</p>
-            <p className="text-[11px] text-muted tabular">{pct(s.pickRate)} of games</p>
+            <p className={cn("text-sm font-semibold tabular", wrColor(s.winRate))}>{pct(s.winRate, 1)}{" " + t("WR")}</p>
+            <p className="text-[11px] text-muted tabular">{pct(s.pickRate)}{" " + t("of games")}</p>
           </div>
         </div>
       ))}
-      {b.situational.length === 0 && <EmptyState title="No situational items" />}
+      {b.situational.length === 0 && <EmptyState title={t("No situational items")} />}
     </div>
   );
 }
@@ -387,10 +384,10 @@ function MatchupList({ title, icon, list }: { title: string; icon: ReactNode; li
             <ChampionIcon id={m.opponentId} size={30} tooltip={false} />
             <span className="flex-1 text-sm">{champion(m.opponentId)?.name}</span>
             <span className={cn("text-sm font-semibold tabular", wrColor(m.winRate))}>{pct(m.winRate, 1)}</span>
-            <span className="w-20 text-right text-[11px] text-muted tabular">{m.games.toLocaleString()} games</span>
+            <span className="w-20 text-right text-[11px] text-muted tabular">{m.games.toLocaleString()}{" " + t("games")}</span>
           </Link>
         ))}
-        {list.length === 0 && <EmptyState title="Not enough matchup data" className="py-4" />}
+        {list.length === 0 && <EmptyState title={t("Not enough matchup data")} className="py-4" />}
       </CardBody>
     </Card>
   );
@@ -410,10 +407,10 @@ export function ImportButton({ championId, role, mode = "sr" }: { championId: nu
         setBusy(true);
         const r = await bridge.importBuild!(championId, mode === "sr" ? role : null, mode);
         setBusy(false);
-        (r.ok ? toast.success : toast.error)(r.ok ? "Imported to League client" : "Import failed", { description: r.text });
+        (r.ok ? toast.success : toast.error)(r.ok ? t("Imported to League client") : t("Import failed"), { description: t(r.text) });
       }}
     >
-      <Download /> {busy ? "Importing…" : "Import to client"}
+      <Download /> {busy ? t("Importing…") : t("Import to client")}
     </Button>
   );
 }

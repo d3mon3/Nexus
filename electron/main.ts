@@ -14,7 +14,10 @@ import { DEFAULT_IMPORT_PREFS, type ImportPrefs } from "../lib/client-import";
 import { normalizeServerUrl } from "../server/admin-utils";
 import type { Role } from "../lib/types";
 import { ChampSelectWatcher, importBuild, type ImportResult } from "./importer";
-import { findConnection, getLiveClientSnapshot, lcuPost, readClientState, type LcuConnection } from "./lcu";
+import { DiscordPresence } from "./discord";
+import { acceptReadyCheck, findConnection, getLiveClientSnapshot, lcuPost, readChampSelect, readClientState, readGameflowSession, type GameflowInfo, type LcuConnection } from "./lcu";
+import { modeForQueue, modeInfo, isGameModeId, type GameModeId } from "../lib/modes";
+import { queueName } from "../lib/static-data";
 
 const isDev = process.argv.includes("--dev");
 const DEV_URL = process.env.NEXUS_DEV_URL ?? "http://localhost:3210";
@@ -31,8 +34,25 @@ interface DesktopPrefs {
   import: ImportPrefs & { enabled: boolean; onHover: boolean };
   scoutAutoShow: boolean;
   widgetsEnabled: boolean;
+  autoAccept: boolean;
+  /** Seconds to wait before accepting (gives you time to decline). */
+  autoAcceptDelay: number;
+  discord: boolean;
+  champSelectAssist: boolean;
+  postGame: boolean;
+  language: "pl" | "en";
 }
-let prefs: DesktopPrefs = { import: { ...DEFAULT_IMPORT_PREFS, enabled: true, onHover: false }, scoutAutoShow: true, widgetsEnabled: true };
+let prefs: DesktopPrefs = {
+  import: { ...DEFAULT_IMPORT_PREFS, enabled: true, onHover: false },
+  scoutAutoShow: true,
+  widgetsEnabled: true,
+  autoAccept: false,
+  autoAcceptDelay: 2,
+  discord: true,
+  champSelectAssist: true,
+  postGame: true,
+  language: "pl",
+};
 const watcher = new ChampSelectWatcher();
 
 type ClientState = { connected: boolean; phase: string; summoner: { gameName: string; tagLine: string; puuid: string; platform: string | null } | null };
@@ -63,6 +83,7 @@ function loadEnvFile(dir: string): Record<string, string> {
 
 declare const __NEXUS_SERVER_URL__: string;
 declare const __NEXUS_BUILD_TAG__: string;
+declare const __NEXUS_DISCORD_CLIENT_ID__: string;
 const BUILD_TAG = typeof __NEXUS_BUILD_TAG__ === "string" ? __NEXUS_BUILD_TAG__ : "";
 
 /**
@@ -271,18 +292,84 @@ function describeImport(r: ImportResult, name: string): string {
   return `${name}: imported ${parts.join(", ")}${failed.length ? ` (failed: ${failed.join(", ")})` : ""}.`;
 }
 
-async function runImport(championId: number, role: Role | null, manual: boolean): Promise<ImportResult> {
+async function runImport(championId: number, role: Role | null, manual: boolean, mode: GameModeId = "sr"): Promise<ImportResult> {
   if (!conn) throw new Error("League client is not running.");
   const name = await championName(championId);
-  const result = await importBuild(conn, baseUrl, championId, role, name, prefs.import);
-  const text = describeImport(result, name);
+  const result = await importBuild(conn, baseUrl, championId, mode === "sr" ? role : null, name, prefs.import, mode);
+  const text = describeImport(result, mode === "sr" ? name : `${name} (${modeInfo(mode).label})`);
   mainWindow?.webContents.send("nexus:import", { ...result, text });
   if (!manual) new Notification({ title: "NEXUS", body: text, silent: true }).show();
   return result;
 }
 
+/* Discord Rich Presence ---------------------------------------------------- */
+const DISCORD_ID = typeof __NEXUS_DISCORD_CLIENT_ID__ === "string" ? __NEXUS_DISCORD_CLIENT_ID__ : "";
+const discord = new DiscordPresence(DISCORD_ID);
+const DISCORD_TEXT = {
+  pl: { lobby: "W lobby", queue: "Szuka meczu", select: "Wybór bohatera", inGame: "W grze", get: "Pobierz NEXUS" },
+  en: { lobby: "In lobby", queue: "In queue", select: "Champion select", inGame: "In game", get: "Get NEXUS" },
+};
+let championIds: Map<string, number> | null = null;
+async function championIdByName(name: string): Promise<number | null> {
+  if (!championIds) {
+    const res = await fetch(`${baseUrl}/api/static`).then((r) => r.json() as Promise<{ champions: { id: number; name: string }[] }>);
+    championIds = new Map(res.champions.map((c) => [c.name.toLowerCase(), c.id]));
+  }
+  return championIds.get(name.toLowerCase()) ?? null;
+}
+const championIconUrl = (id: number) => `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${id}.png`;
+
+async function updatePresence(phase: string) {
+  if (!discord.enabled) return;
+  if (!prefs.discord || !clientState.connected) return discord.update(null);
+  const tx = DISCORD_TEXT[prefs.language] ?? DISCORD_TEXT.en;
+  const queue = flow.queueId != null ? queueName(flow.queueId) : "";
+  const buttons = baseUrl.startsWith("https://") ? [{ label: tx.get, url: `${baseUrl}/download` }] : undefined;
+  const base = { largeImageUrl: "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yasuo_0.jpg", largeText: "NEXUS", buttons };
+  switch (phase) {
+    case "Lobby":
+      return discord.update({ ...base, details: tx.lobby, state: queue || undefined });
+    case "Matchmaking":
+    case "ReadyCheck":
+      return discord.update({ ...base, details: tx.queue, state: queue || undefined, startTimestamp: phaseSince });
+    case "ChampSelect":
+      return discord.update({ ...base, details: tx.select, state: queue || undefined, startTimestamp: phaseSince });
+    case "GameStart":
+    case "InProgress": {
+      const live = await getLiveClientSnapshot();
+      const me = live?.players.find((p) => p.riotId === live.activeRiotId);
+      const champId = me ? await championIdByName(me.championName).catch(() => null) : null;
+      const k = me ? `${me.kills}/${me.deaths}/${me.assists}` : "";
+      return discord.update({
+        ...base,
+        details: me ? `${me.championName} · ${queue || live?.gameMode || ""}` : tx.inGame,
+        state: me ? `${tx.inGame} · ${k}` : queue || undefined,
+        startTimestamp: live ? Date.now() - Math.round(live.gameTime * 1000) : phaseSince,
+        largeImageUrl: champId ? championIconUrl(champId) : base.largeImageUrl,
+        largeText: me?.championName ?? "NEXUS",
+      });
+    }
+    default:
+      return discord.update(null);
+  }
+}
+
 let conn: LcuConnection | null = null;
 let scoutShownAt = 0;
+let flow: GameflowInfo = { queueId: null, gameId: null, gameMode: null };
+let phaseSince = Date.now();
+let readyCheckAt = 0;
+let lastGame: { gameId: number | null; queueId: number | null; endedAt: number } | null = null;
+let lastPresenceAt = 0;
+const IN_GAME = new Set(["GameStart", "InProgress", "WaitingForStats", "PreEndOfGame"]);
+
+function showMain(path: string) {
+  if (!mainWindow) createWindow();
+  mainWindow?.webContents.send("nexus:navigate", path);
+  if (mainWindow?.isMinimized()) mainWindow.restore();
+  mainWindow?.showInactive();
+}
+
 async function pollClient() {
   if (!autoDetect) return;
   try {
@@ -291,11 +378,25 @@ async function pollClient() {
     const prevPhase = clientState.phase;
     clientState = next;
     broadcast(next);
+    if (next.phase !== prevPhase) phaseSince = Date.now();
 
-    // Champ select → auto import once per champion/role.
+    // Queue / mode of the current lobby or game.
+    if (conn && next.phase !== prevPhase && ["Lobby", "Matchmaking", "ChampSelect", "GameStart", "InProgress"].includes(next.phase)) {
+      flow = await readGameflowSession(conn).catch(() => flow);
+    }
+    const mode = modeForQueue(flow.queueId, flow.gameMode);
+
+    // Ready check → accept after the chosen delay (unless the player already answered).
+    if (next.phase === "ReadyCheck" && conn && prefs.autoAccept) {
+      readyCheckAt ||= Date.now();
+      if (Date.now() - readyCheckAt >= prefs.autoAcceptDelay * 1000) await acceptReadyCheck(conn).catch(() => false);
+    } else readyCheckAt = 0;
+
+    // Champ select → show the assistant page, auto import once per champion/role.
+    if (next.phase === "ChampSelect" && prevPhase !== "ChampSelect" && prefs.champSelectAssist) showMain("/live?view=champ-select");
     if (next.phase === "ChampSelect" && conn && prefs.import.enabled) {
       const pick = await watcher.lockedChampion(conn, prefs.import.onHover).catch(() => null);
-      if (pick && watcher.shouldImport(pick.championId, pick.role)) runImport(pick.championId, pick.role, false).catch(() => undefined);
+      if (pick && watcher.shouldImport(pick.championId, mode === "sr" ? pick.role : null)) runImport(pick.championId, pick.role, false, mode).catch(() => undefined);
     }
     if (next.phase !== "ChampSelect" && prevPhase === "ChampSelect") watcher.reset();
 
@@ -320,11 +421,28 @@ async function pollClient() {
       toggleOverlay(false);
       toggleScout(false);
     }
+
+    // Game over → post-game summary.
+    if (IN_GAME.has(prevPhase) && (next.phase === "EndOfGame" || (!IN_GAME.has(next.phase) && prevPhase === "InProgress"))) {
+      if (!lastGame || lastGame.gameId !== flow.gameId || flow.gameId == null) {
+        lastGame = { gameId: flow.gameId, queueId: flow.queueId, endedAt: Date.now() };
+        if (prefs.postGame) {
+          showMain("/post-game");
+          new Notification({ title: "NEXUS", body: prefs.language === "pl" ? "Podsumowanie meczu jest gotowe." : "Your game summary is ready.", silent: true }).show();
+        }
+      }
+    }
+
+    if (next.phase !== prevPhase || Date.now() - lastPresenceAt > 15_000) {
+      lastPresenceAt = Date.now();
+      void updatePresence(next.phase).catch(() => undefined);
+    }
   } catch {
     conn = null; // client closed or restarted — the lockfile password changes
     if (clientState.connected) {
       clientState = { connected: false, phase: "None", summoner: null };
       broadcast(clientState);
+      discord.update(null);
     }
   }
 }
@@ -335,13 +453,21 @@ ipcMain.handle("nexus:set-auto-detect", (_e, enabled: boolean) => {
   autoDetect = Boolean(enabled);
 });
 ipcMain.handle("nexus:set-prefs", (_e, next: Partial<DesktopPrefs>) => {
+  const discordWas = prefs.discord;
   prefs = { ...prefs, ...next, import: { ...prefs.import, ...(next?.import ?? {}) } };
+  prefs.autoAcceptDelay = Math.min(10, Math.max(0, Number(prefs.autoAcceptDelay) || 0));
   if (!prefs.widgetsEnabled) toggleOverlay(false);
+  if (discordWas !== prefs.discord) void updatePresence(clientState.phase).catch(() => undefined);
 });
-ipcMain.handle("nexus:import-build", async (_e, championId: number, role: Role | null) => {
+ipcMain.handle("nexus:get-champ-select", async () => {
+  if (!conn || clientState.phase !== "ChampSelect") return null;
+  return readChampSelect(conn, flow.queueId).catch(() => null);
+});
+ipcMain.handle("nexus:get-last-game", () => lastGame);
+ipcMain.handle("nexus:import-build", async (_e, championId: number, role: Role | null, modeArg?: string) => {
   try {
     conn = conn ?? (await findConnection());
-    const r = await runImport(Number(championId), role ?? null, true);
+    const r = await runImport(Number(championId), role ?? null, true, isGameModeId(modeArg) ? modeArg : "sr");
     return { ok: r.runes === "ok" || r.spells === "ok" || r.items === "ok", text: describeImport(r, await championName(Number(championId))) };
   } catch (err) {
     return { ok: false, text: err instanceof Error ? err.message : String(err) };
@@ -391,5 +517,6 @@ app.on("window-all-closed", () => {
 
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
+  discord.close();
   server?.kill();
 });

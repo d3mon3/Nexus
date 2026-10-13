@@ -113,3 +113,12 @@ export function useScoutPlayer(region: string, p: LiveParticipant, depth: number
     retry: 1,
   });
 }
+
+export function useCounters(opponent: number | null | undefined, role: Role | null | undefined) {
+  return useQuery({
+    queryKey: ["counters", opponent ?? 0, role ?? ""],
+    queryFn: () => api.counters(opponent!, role!),
+    enabled: Boolean(opponent && role),
+    staleTime: 10 * 60_000,
+  });
+}

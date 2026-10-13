@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { asset } from "@/lib/assets";
 import { ITEMS, RUNE_STYLES, RUNES, SPELLS, STAT_SHARDS } from "@/lib/static-data";
 import { useStatic } from "@/lib/static-context";
@@ -29,7 +31,7 @@ export function ChampionIcon({
   const img = (
     <GameImage
       src={c ? asset.championIcon(c.key) : undefined}
-      alt={c?.name ?? `Champion ${id}`}
+      alt={c?.name ?? t("Champion {0}", [id])}
       style={{ width: size, height: size, fontSize: size * 0.42 }}
       className={cn(
         "shrink-0 border border-white/10",
@@ -83,5 +85,5 @@ export function RuneIcon({ id, size = 22, className, dim = false }: { id: number
 }
 
 export function ProfileIcon({ id, size = 64, className }: { id: number; size?: Size; className?: string }) {
-  return <GameImage src={asset.profileIcon(id)} alt="Profile icon" style={{ width: size, height: size }} className={className} />;
+  return <GameImage src={asset.profileIcon(id)} alt={t("Profile icon")} style={{ width: size, height: size }} className={className} />;
 }

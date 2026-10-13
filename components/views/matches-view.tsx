@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
@@ -20,15 +22,15 @@ export function MatchesView() {
     if (!puuid || !player) return;
     await api.refresh(puuid, player.platform).catch(() => undefined);
     await qc.invalidateQueries({ queryKey: ["matches", puuid] });
-    toast.success("Match history refreshed");
+    toast.success(t("Match history refreshed"));
   };
   return (
     <div>
-      <PageHeader title="Match History" description="Every game with builds, damage and objectives. Expand a match for the full scoreboard." />
+      <PageHeader title={t("Match History")} description={t("Every game with builds, damage and objectives. Expand a match for the full scoreboard.")} />
       <PlayerPicker player={player} onChange={setPlayer} className="mb-3" />
       {!player ? (
         <Card>
-          <EmptyState title="Choose a player" description="Enter a Riot ID above to load their matches." />
+          <EmptyState title={t("Choose a player")} description={t("Enter a Riot ID above to load their matches.")} />
         </Card>
       ) : profile.isLoading ? (
         <Skeleton className="h-[480px] rounded-[14px]" />

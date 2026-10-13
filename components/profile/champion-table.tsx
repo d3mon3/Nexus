@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -41,17 +43,17 @@ export function ChampionPerformanceTable({ stats, loading, mastery }: { stats: P
 
   return (
     <Card>
-      <CardHeader title="Champion Performance" action={stats && <span className="text-xs text-dim">from the last {stats.games} games · mastery from Champion-Mastery-V4</span>} />
+      <CardHeader title={t("Champion Performance")} action={stats && <span className="text-xs text-dim">{t("from the last") + " "}{stats.games}{" " + t("games · mastery from Champion-Mastery-V4")}</span>} />
       <CardBody className="overflow-x-auto">
         {loading ? (
           <SkeletonRows rows={8} />
         ) : rows.length === 0 ? (
-          <EmptyState title="No champion data" />
+          <EmptyState title={t("No champion data")} />
         ) : (
           <table className="w-full min-w-[640px] text-sm">
             <thead className="text-left text-[11px] uppercase tracking-wider text-dim">
               <tr>
-                <th className="px-3 py-2 font-medium">Champion</th>
+                <th className="px-3 py-2 font-medium">{t("Champion")}</th>
                 {header("games", "Games", "text-right")}
                 {header("winrate", "Win rate")}
                 {header("kda", "KDA")}

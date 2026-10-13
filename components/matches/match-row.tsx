@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
@@ -40,7 +42,7 @@ export function MatchRow({ match, region, puuid, variant = "full", defaultOpen =
   const mins = Math.max(1, match.durationSec / 60);
   const win = me.win;
   const remake = match.durationSec < 300;
-  const result = remake ? "Remake" : win ? "Victory" : "Defeat";
+  const result = remake ? t("Remake") : win ? t("Victory") : t("Defeat");
   const tone = remake ? "text-muted" : win ? "text-victory" : "text-loss";
   const full = variant === "full";
 
@@ -56,7 +58,7 @@ export function MatchRow({ match, region, puuid, variant = "full", defaultOpen =
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        aria-label={`${result} as ${me.championName}, ${me.kills}/${me.deaths}/${me.assists}. Show details`}
+        aria-label={t("{0} as {1}, {2}/{3}/{4}. Show details", [result, me.championName, me.kills, me.deaths, me.assists])}
         className={cn("flex w-full items-center text-left", full ? "justify-between gap-3 px-4 py-2.5 sm:gap-5" : "gap-3 py-1.5 pl-4 pr-2")}
       >
         <div className={cn("shrink-0", full ? "w-[78px]" : "w-[68px]")}>
@@ -75,15 +77,15 @@ export function MatchRow({ match, region, puuid, variant = "full", defaultOpen =
 
         <div className={cn("shrink-0", full ? "w-[92px]" : "w-[84px]")}>
           <KdaLine k={me.kills} d={me.deaths} a={me.assists} size={full ? "lg" : "md"} />
-          <p className={cn("text-[12px] font-semibold tabular", kdaColor(ratio))}>{formatKda(ratio)} KDA</p>
+          <p className={cn("text-[12px] font-semibold tabular", kdaColor(ratio))}>{formatKda(ratio)}{" " + t("KDA")}</p>
         </div>
 
         {full && (
           <div className="hidden w-[86px] shrink-0 md:block">
             <p className="text-[12px] text-fg tabular">
-              {me.cs} CS <span className="text-muted">({(me.cs / mins).toFixed(1)})</span>
+              {me.cs}{" " + t("CS") + " "}<span className="text-muted">({(me.cs / mins).toFixed(1)})</span>
             </p>
-            <p className="text-[12px] text-muted tabular">{compact(me.gold)} Gold</p>
+            <p className="text-[12px] text-muted tabular">{compact(me.gold)}{" " + t("Gold")}</p>
           </div>
         )}
 
@@ -96,7 +98,7 @@ export function MatchRow({ match, region, puuid, variant = "full", defaultOpen =
 
         {!full && (
           <div className="hidden w-[58px] shrink-0 xl:block">
-            <p className="text-[12px] text-fg tabular">{me.cs} CS</p>
+            <p className="text-[12px] text-fg tabular">{me.cs}{" " + t("CS")}</p>
             <p className="text-[12px] text-muted tabular">{compact(me.gold)}</p>
           </div>
         )}
@@ -105,17 +107,16 @@ export function MatchRow({ match, region, puuid, variant = "full", defaultOpen =
           {match.lpChange !== null ? (
             <p className={cn("text-[13px] font-semibold tabular", match.lpChange >= 0 ? "text-win" : "text-loss")}>
               {match.lpChange >= 0 ? "+" : ""}
-              {match.lpChange} LP
-            </p>
+              {match.lpChange}{" " + t("LP")}</p>
           ) : (
-            <Tooltip content="LP change is only shown when it can be determined reliably.">
-              <p className="text-[13px] text-dim">— LP</p>
+            <Tooltip content={t("LP change is only shown when it can be determined reliably.")}>
+              <p className="text-[13px] text-dim">{t("— LP")}</p>
             </Tooltip>
           )}
           <p className="text-[11px] text-muted tabular">{minutes(match.durationSec)}</p>
         </div>
 
-        {full && <p className="hidden w-[96px] shrink-0 text-right text-[11px] text-secondary/90 xl:block">{match.queueId === 450 ? "Howling Abyss" : "Summoner's Rift"}</p>}
+        {full && <p className="hidden w-[96px] shrink-0 text-right text-[11px] text-secondary/90 xl:block">{match.queueId === 450 ? t("Howling Abyss") : t("Summoner's Rift")}</p>}
         <ChevronDown className={cn("size-4 shrink-0 text-muted transition-transform group-hover:text-fg", open && "rotate-180")} />
       </button>
 

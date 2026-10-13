@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { useId } from "react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartTooltipBox } from "./chart-tooltip";
@@ -62,7 +64,7 @@ export function TrendChart({
               key={s.key}
               type="monotone"
               dataKey={s.key}
-              name={s.label}
+              name={t(s.label)}
               stroke={s.color}
               strokeWidth={2.2}
               fill={`url(#fill-${id}-${s.key})`}

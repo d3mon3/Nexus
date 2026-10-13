@@ -2,6 +2,7 @@
  * Pure conversions from a NEXUS ChampionBuild into the payloads the League client
  * accepts (rune page, summoner spells, item set). Shared by the Electron importer and tests.
  */
+import { modeInfo, type GameModeId } from "./modes";
 import type { ChampionBuild, Role } from "./types";
 
 export const DEFAULT_SHARDS = [5008, 5008, 5011];
@@ -27,13 +28,13 @@ export interface ClientRunePage {
 
 const ROLE_SHORT: Record<Role, string> = { TOP: "Top", JUNGLE: "Jungle", MIDDLE: "Mid", BOTTOM: "ADC", UTILITY: "Support" };
 
-export function toRunePage(build: ChampionBuild, championName: string): ClientRunePage | null {
+export function toRunePage(build: ChampionBuild, championName: string, mode: GameModeId = "sr"): ClientRunePage | null {
   const page = build.runes[0];
   if (!page || page.perks.length < 6) return null;
   const shards = page.shards.length === 3 ? page.shards : DEFAULT_SHARDS;
   return {
     // The client limits page names; keep it short.
-    name: `${NEXUS_PREFIX} ${championName} ${ROLE_SHORT[build.role]}`.slice(0, 32),
+    name: `${NEXUS_PREFIX} ${championName} ${mode === "sr" ? (ROLE_SHORT[build.role] ?? "") : modeInfo(mode).label}`.trim().slice(0, 32),
     primaryStyleId: page.primaryStyle,
     subStyleId: page.subStyle,
     selectedPerkIds: [...page.perks.slice(0, 6), ...shards],
@@ -57,8 +58,8 @@ export function toSpells(build: ChampionBuild, flashKey: "D" | "F"): { spell1Id:
 export interface ClientItemSet {
   title: string;
   type: "custom";
-  map: "SR";
-  mode: "CLASSIC";
+  map: "SR" | "HA" | "any";
+  mode: string;
   priority: false;
   sortrank: number;
   startedFrom: "blank";
@@ -72,7 +73,9 @@ export interface ClientItemSet {
 const block = (type: string, ids: number[]) => ({ type, items: ids.filter((id) => id > 0).map((id) => ({ id: String(id), count: 1 })) });
 const wr = (v: number) => `${(v * 100).toFixed(1)}% WR`;
 
-export function toItemSet(build: ChampionBuild, championName: string, uid: string): ClientItemSet {
+export function toItemSet(build: ChampionBuild, championName: string, uid: string, mode: GameModeId = "sr"): ClientItemSet {
+  const info = modeInfo(mode);
+  const suffix = mode === "sr" ? ROLE_SHORT[build.role] ?? "" : info.label;
   const starting = build.starting[0];
   const blocks = [
     starting && block(`Starting Items · ${wr(starting.winRate)}`, starting.items),
@@ -83,15 +86,15 @@ export function toItemSet(build: ChampionBuild, championName: string, uid: strin
     block("Consumables", [2003, 2055, 3340, 3364]),
   ].filter(Boolean) as ClientItemSet["blocks"];
   return {
-    title: `${NEXUS_PREFIX} ${championName} ${ROLE_SHORT[build.role]} (${build.patch})`,
+    title: `${NEXUS_PREFIX} ${championName} ${suffix} (${build.patch})`,
     type: "custom",
-    map: "SR",
-    mode: "CLASSIC",
+    map: info.itemSetMap,
+    mode: "any",
     priority: false,
     sortrank: 0,
     startedFrom: "blank",
     associatedChampions: [build.championId],
-    associatedMaps: [11],
+    associatedMaps: info.itemSetMap === "HA" ? [12] : info.itemSetMap === "SR" ? [11] : [],
     uid,
     blocks: blocks.filter((b) => b.items.length > 0),
     preferredItemSlots: [],

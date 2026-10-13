@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { Coins, Crosshair, Move, Swords, Timer } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -53,11 +55,9 @@ export function OverlayView() {
     <div className={cn("fixed inset-0 select-none overflow-hidden", edit && "bg-black/35")} style={{ opacity: settings.overlayOpacity }}>
       {edit && (
         <div className="absolute left-1/2 top-6 -translate-x-1/2 rounded-xl border border-primary/60 bg-[#0b0f1a]/95 px-4 py-2 text-center text-sm text-fg shadow-[0_0_30px_-8px_var(--primary-glow)]">
-          <p className="font-semibold">Edit layout — drag widgets to move them</p>
-          <p className="text-xs text-muted">Press Ctrl+Shift+E again to lock. Turn widgets on or off in NEXUS → Settings.</p>
-          <button className="mt-1 text-xs text-primary hover:underline" onClick={() => (getBridge()?.setOverlayEdit ? getBridge()!.setOverlayEdit!(false) : setEdit(false))}>
-            Done
-          </button>
+          <p className="font-semibold">{t("Edit layout — drag widgets to move them")}</p>
+          <p className="text-xs text-muted">{t("Press Ctrl+Shift+E again to lock. Turn widgets on or off in NEXUS → Settings.")}</p>
+          <button className="mt-1 text-xs text-primary hover:underline" onClick={() => (getBridge()?.setOverlayEdit ? getBridge()!.setOverlayEdit!(false) : setEdit(false))}>{t("Done")}</button>
         </div>
       )}
       {ids.map((id) => (
@@ -70,7 +70,7 @@ export function OverlayView() {
 }
 
 function Waiting() {
-  return <p className="text-xs text-muted">Waiting for a game…</p>;
+  return <p className="text-xs text-muted">{t("Waiting for a game…")}</p>;
 }
 
 function DraggableWidget({ id, edit, children }: { id: WidgetId; edit: boolean; children: ReactNode }) {
@@ -118,7 +118,7 @@ function DraggableWidget({ id, edit, children }: { id: WidgetId; edit: boolean; 
       style={{ left: `${pos.x * 100}%`, top: `${pos.y * 100}%`, transform: `scale(${settings.overlayScale})`, transformOrigin: "top left" }}
     >
       <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#b8a4fb]">{WIDGET_META[id].name}</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#b8a4fb]">{t(WIDGET_META[id].name)}</span>
         {edit ? <Move className="size-3.5 text-primary" /> : <Logo size="sm" className="h-[12px] opacity-70" />}
       </div>
       {children}
@@ -160,7 +160,7 @@ function BuildWidget({ me }: { me: Player }) {
           <ItemIcon key={id} id={id} size={32} className={cn(id === next ? "ring-2 ring-primary shadow-[0_0_12px_var(--primary-glow)]" : me.items.includes(id) ? "opacity-35 grayscale" : undefined)} />
         ))}
       </div>
-      {next && <p className="mt-1.5 text-[11px] text-muted">Next: highlighted item</p>}
+      {next && <p className="mt-1.5 text-[11px] text-muted">{t("Next: highlighted item")}</p>}
     </div>
   );
 }
@@ -204,7 +204,7 @@ function TimersWidget({ snap }: { snap: Snap }) {
       {rows.map(([label, v]) => (
         <div key={label} className="flex items-center justify-between gap-6 text-sm">
           <span className="text-fg/85">{label}</span>
-          <span className={cn("font-bold tabular", v === 0 ? "text-success" : "text-fg")}>{v === null ? "—" : v === 0 ? "UP" : duration(v)}</span>
+          <span className={cn("font-bold tabular", v === 0 ? "text-success" : "text-fg")}>{v === null ? "—" : v === 0 ? t("UP") : duration(v)}</span>
         </div>
       ))}
     </div>
@@ -214,7 +214,7 @@ function TimersWidget({ snap }: { snap: Snap }) {
 function LaneWidget({ snap, me }: { snap: Snap; me: Player }) {
   const { findChampion } = useStatic();
   const opp = snap.players.find((p) => p.team !== me.team && p.position && p.position === me.position);
-  if (!opp) return <p className="text-xs text-muted">No lane opponent detected (needs a matchmade game).</p>;
+  if (!opp) return <p className="text-xs text-muted">{t("No lane opponent detected (needs a matchmade game).")}</p>;
   const cs = me.cs - opp.cs;
   const lvl = me.level - opp.level;
   const tone = (v: number) => (v > 0 ? "text-success" : v < 0 ? "text-loss" : "text-fg");
@@ -224,12 +224,10 @@ function LaneWidget({ snap, me }: { snap: Snap; me: Player }) {
       <div className="flex-1 text-center">
         <p className={cn("text-sm font-bold tabular", tone(cs))}>
           {cs > 0 ? "+" : ""}
-          {cs} CS
-        </p>
+          {cs}{" " + t("CS")}</p>
         <p className={cn("text-xs font-semibold tabular", tone(lvl))}>
           {lvl > 0 ? "+" : ""}
-          {lvl} lvl
-        </p>
+          {lvl}{" " + t("lvl")}</p>
       </div>
       <ChampionIcon id={findChampion(opp.championName)?.id ?? 0} size={30} rounded="md" tooltip={false} />
     </div>
@@ -246,7 +244,7 @@ function EnemyWidget({ snap, me }: { snap: Snap; me: Player }) {
           <ChampionIcon id={findChampion(p.championName)?.id ?? 0} size={24} rounded="md" tooltip={false} />
           <SpellIcon id={spellId(p.spells[0])} size={20} />
           <SpellIcon id={spellId(p.spells[1])} size={20} />
-          <span className="ml-auto text-[11px] text-muted tabular">Lvl {p.level}</span>
+          <span className="ml-auto text-[11px] text-muted tabular">{t("Lvl") + " "}{p.level}</span>
         </div>
       ))}
     </div>

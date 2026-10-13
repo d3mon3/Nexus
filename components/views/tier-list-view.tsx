@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { motion } from "framer-motion";
 import { ArrowDown, ArrowUp, LayoutGrid, Rows3 } from "lucide-react";
 import Link from "next/link";
@@ -62,28 +64,28 @@ export function TierListView() {
   return (
     <div>
       <PageHeader
-        title="Tier List"
+        title={t("Tier List")}
         description={
           <>
             Patch {q.data?.data.patch ?? "…"} ·{" "}
             {q.data?.data.sampleSize ? `${q.data.data.sampleSize.toLocaleString()} matches analysed` : "sample size unavailable for demo data"}
           </>
         }
-        actions={<SourceBadge source={q.data?.source} note={q.data?.note} />}
+        actions={<SourceBadge source={q.data?.source} note={t(q.data?.note)} />}
       />
       <Card className="mb-3 flex flex-wrap items-center gap-2 px-3 pt-1">
-        <Tabs value={role} onChange={setRole} label="Role" items={ROLES.map((r) => ({ value: r, label: <span className="flex items-center gap-1.5"><RoleIcon role={r} size={15} />{ROLE_LABEL[r]}</span> }))} />
+        <Tabs value={role} onChange={setRole} label={t("Role")} items={ROLES.map((r) => ({ value: r, label: <span className="flex items-center gap-1.5"><RoleIcon role={r} size={15} />{t(ROLE_LABEL[r])}</span> }))} />
         <div className="ml-auto flex flex-wrap items-center gap-2 pb-2">
-          <Select size="sm" className="w-[120px]" label="Rank" value={rank} onChange={setRank} options={rankOptions()} />
-          <Select size="sm" className="w-[110px]" label="Region" value={region} onChange={setRegion} options={[{ value: "all", label: "All Regions" }, ...REGIONS.map((r) => ({ value: r.platform, label: r.label }))]} />
-          {q.data && <Select size="sm" className="w-[128px]" label="Patch" value={q.data.data.patch} onChange={setPatch} options={q.data.data.patches.map((p) => ({ value: p, label: `Patch ${p}` }))} />}
+          <Select size="sm" className="w-[120px]" label={t("Rank")} value={rank} onChange={setRank} options={rankOptions()} />
+          <Select size="sm" className="w-[110px]" label={t("Region")} value={region} onChange={setRegion} options={[{ value: "all", label: t("All Regions") }, ...REGIONS.map((r) => ({ value: r.platform, label: t(r.label) }))]} />
+          {q.data && <Select size="sm" className="w-[128px]" label={t("Patch")} value={q.data.data.patch} onChange={setPatch} options={q.data.data.patches.map((p) => ({ value: p, label: t("Patch {0}", [p]) }))} />}
           <Segmented
-            label="View"
+            label={t("View")}
             value={view}
             onChange={setView}
             items={[
-              { value: "tiers", label: <><LayoutGrid className="size-3.5" /> Tiers</> },
-              { value: "table", label: <><Rows3 className="size-3.5" /> Table</> },
+              { value: "tiers", label: <><LayoutGrid className="size-3.5" />{" " + t("Tiers")}</> },
+              { value: "table", label: <><Rows3 className="size-3.5" />{" " + t("Table")}</> },
             ]}
           />
         </div>
@@ -101,7 +103,7 @@ export function TierListView() {
         </Card>
       ) : rows.length === 0 ? (
         <Card>
-          <EmptyState title={q.data?.data.sampleSize === 0 ? "Statistics are being collected" : "No data for this filter"} description={q.data?.data.sampleSize === 0 ? q.data.note : undefined} />
+          <EmptyState title={q.data?.data.sampleSize === 0 ? t("Statistics are being collected") : t("No data for this filter")} description={q.data?.data.sampleSize === 0 ? t(q.data.note) : undefined} />
         </Card>
       ) : view === "tiers" ? (
         <div className="space-y-2">
@@ -114,7 +116,7 @@ export function TierListView() {
                     <TierBadge tier={g} size="lg" className="border-0 bg-transparent" />
                   </div>
                   <div className="flex flex-1 flex-wrap gap-2 p-3">
-                    {list.length === 0 && <span className="self-center text-sm text-dim">No champions in this tier</span>}
+                    {list.length === 0 && <span className="self-center text-sm text-dim">{t("No champions in this tier")}</span>}
                     {list.map((r) => {
                       const c = champion(r.championId);
                       return (
@@ -138,13 +140,13 @@ export function TierListView() {
             <thead className="text-left text-[11px] uppercase tracking-wider text-dim">
               <tr>
                 <th className="px-3 py-2 font-medium">#</th>
-                <th className="px-3 py-2 font-medium">Champion</th>
+                <th className="px-3 py-2 font-medium">{t("Champion")}</th>
                 {th("tier", "Tier")}
                 {th("winRate", "Win rate")}
                 {th("pickRate", "Pick rate")}
                 {th("banRate", "Ban rate")}
                 {th("games", "Games")}
-                <th className="px-3 py-2 text-right font-medium">KDA</th>
+                <th className="px-3 py-2 text-right font-medium">{t("KDA")}</th>
               </tr>
             </thead>
             <tbody>

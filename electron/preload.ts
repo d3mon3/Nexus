@@ -20,7 +20,9 @@ contextBridge.exposeInMainWorld("nexus", {
   toggleOverlay: (show: boolean) => ipcRenderer.invoke("nexus:toggle-overlay", show),
   spectate: (puuid: string) => ipcRenderer.invoke("nexus:spectate", puuid),
   setPrefs: (prefs: unknown) => ipcRenderer.invoke("nexus:set-prefs", prefs),
-  importBuild: (championId: number, role: string | null) => ipcRenderer.invoke("nexus:import-build", championId, role),
+  importBuild: (championId: number, role: string | null, mode?: string) => ipcRenderer.invoke("nexus:import-build", championId, role, mode),
+  getChampSelect: () => ipcRenderer.invoke("nexus:get-champ-select"),
+  getLastGame: () => ipcRenderer.invoke("nexus:get-last-game"),
   toggleScout: (show: boolean) => ipcRenderer.invoke("nexus:toggle-scout", show),
   setOverlayEdit: (on: boolean) => ipcRenderer.invoke("nexus:set-overlay-edit", on),
   onImport: (cb: (r: unknown) => void) => {

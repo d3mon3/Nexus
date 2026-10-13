@@ -1,10 +1,14 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { useEffect } from "react";
 import { useClientState, useIsDesktop } from "@/lib/desktop";
 import { useProfile } from "@/lib/queries";
 import { resolveRegion } from "@/lib/regions";
 import { useSettings } from "@/lib/settings";
+import { useSearchParams } from "next/navigation";
+import { ChampSelectAssistant } from "../live/champ-select-assistant";
 import { LivePanel } from "../live/live-panel";
 import { Card } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
@@ -28,11 +32,13 @@ export function LiveView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client?.summoner?.puuid, client?.connected, settings.autoDetectClient]);
 
+  const view = useSearchParams()?.get("view");
   return (
     <div className="space-y-3">
+      {desktop && <ChampSelectAssistant forceShow={view === "champ-select"} />}
       {!player ? (
         <Card>
-          <EmptyState title="Choose a player" description="Enter a Riot ID below to check whether they're in a game." />
+          <EmptyState title={t("Choose a player")} description={t("Enter a Riot ID below to check whether they're in a game.")} />
         </Card>
       ) : profile.isLoading ? (
         <Skeleton className="h-[420px] rounded-[14px]" />
@@ -43,7 +49,7 @@ export function LiveView() {
       ) : (
         <LivePanel region={player.platform} puuid={puuid} player={player} />
       )}
-      <PlayerPicker player={player} onChange={setPlayer} label={desktop ? (client?.connected ? `Watching · League client ${client.phase}` : "Watching · League client not running") : "Watching player"} />
+      <PlayerPicker player={player} onChange={setPlayer} label={desktop ? (client?.connected ? t("Watching · League client {0}", [client.phase]) : t("Watching · League client not running")) : t("Watching player")} />
     </div>
   );
 }

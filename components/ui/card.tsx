@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +11,7 @@ export function CardHeader({ title, action, className, icon }: { title: ReactNod
     <div className={cn("flex items-center justify-between gap-3 px-4 pt-3 pb-1.5", className)}>
       <h2 className="flex items-center gap-2 text-[14px] font-semibold tracking-tight text-fg">
         {icon}
-        {title}
+        {t(title)}
       </h2>
       {action}
     </div>

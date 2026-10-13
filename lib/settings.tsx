@@ -36,6 +36,15 @@ export interface Settings {
   widgets: Record<WidgetId, WidgetConfig>;
   overlayOpacity: number;
   overlayScale: number;
+  /** Desktop: accept the ready check automatically after `autoAcceptDelay` seconds. */
+  autoAccept: boolean;
+  autoAcceptDelay: number;
+  /** Desktop: open the champ-select assistant (counters, bans) when champ select starts. */
+  champSelectAssist: boolean;
+  /** Desktop: open the post-game summary when a game ends. */
+  postGameSummary: boolean;
+  /** Desktop: show what you're playing on Discord. */
+  discordPresence: boolean;
 }
 
 export type WidgetId = "build" | "stats" | "timers" | "lane" | "enemySpells";
@@ -84,6 +93,11 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   overlayOpacity: 0.92,
   overlayScale: 1,
+  autoAccept: false,
+  autoAcceptDelay: 2,
+  champSelectAssist: true,
+  postGameSummary: true,
+  discordPresence: true,
 };
 
 let cache: Settings | null = null;

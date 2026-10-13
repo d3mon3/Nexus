@@ -1,3 +1,4 @@
+import { getLang, t } from "./i18n-core";
 import type { Division, RankedEntry, Role, Tier } from "./types";
 
 export function kda(k: number, d: number, a: number): number {
@@ -26,24 +27,24 @@ export function duration(sec: number): string {
 }
 
 export function minutes(sec: number): string {
-  return `${Math.round(sec / 60)} min`;
+  return t("{0} min", [Math.round(sec / 60)]);
 }
 
 export function timeAgo(ts: number, now = Date.now()): string {
   const diff = Math.max(0, now - ts);
   const m = Math.floor(diff / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m} min ago`;
+  if (m < 1) return t("just now");
+  if (m < 60) return t("{0} min ago", [m]);
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h} hour${h === 1 ? "" : "s"} ago`;
+  if (h < 24) return h === 1 ? t("1 hour ago") : t("{0} hours ago", [h]);
   const d = Math.floor(h / 24);
-  if (d < 30) return `${d} day${d === 1 ? "" : "s"} ago`;
+  if (d < 30) return d === 1 ? t("1 day ago") : t("{0} days ago", [d]);
   const mo = Math.floor(d / 30);
-  return `${mo} month${mo === 1 ? "" : "s"} ago`;
+  return mo === 1 ? t("1 month ago") : t("{0} months ago", [mo]);
 }
 
 export function shortDate(ts: number): string {
-  return new Date(ts).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return new Date(ts).toLocaleDateString(getLang() === "pl" ? "pl-PL" : "en-GB", { day: "numeric", month: "short" });
 }
 
 export const TIER_LABEL: Record<Tier, string> = {
@@ -74,7 +75,8 @@ export const TIER_COLOR: Record<Tier, string> = {
 
 export function rankLabel(tier: Tier, division: Division | null): string {
   const apex = tier === "MASTER" || tier === "GRANDMASTER" || tier === "CHALLENGER";
-  return apex || !division ? TIER_LABEL[tier] : `${TIER_LABEL[tier]} ${division}`;
+  const name = t(TIER_LABEL[tier]);
+  return apex || !division ? name : `${name} ${division}`;
 }
 
 export function winRate(e: Pick<RankedEntry, "wins" | "losses">): number {

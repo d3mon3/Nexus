@@ -9,7 +9,7 @@ import { getBridge, useClientState } from "@/lib/desktop";
 import { resolveRegion } from "@/lib/regions";
 import { SettingsProvider, useSettings } from "@/lib/settings";
 import { StaticDataProvider } from "@/lib/static-context";
-import { LangProvider, type Lang } from "@/lib/i18n";
+import { LangProvider, useLanguage, type Lang } from "@/lib/i18n";
 
 /** Keeps the Electron shell in sync with settings and surfaces import results as toasts. */
 function DesktopSync() {
@@ -22,14 +22,25 @@ function DesktopSync() {
     if (!settings.myAccount && s?.gameName && platform) update({ myAccount: { gameName: s.gameName, tagLine: s.tagLine, platform }, region: platform });
   }, [client?.summoner, settings.myAccount, update]);
   const anyWidget = Object.values(settings.widgets).some((w) => w.enabled);
+  const { lang } = useLanguage();
   useEffect(() => {
-    getBridge()?.setPrefs?.({ import: settings.importPrefs, scoutAutoShow: settings.scoutAutoShow, widgetsEnabled: anyWidget });
-  }, [settings.importPrefs, settings.scoutAutoShow, anyWidget]);
+    getBridge()?.setPrefs?.({
+      import: settings.importPrefs,
+      scoutAutoShow: settings.scoutAutoShow,
+      widgetsEnabled: anyWidget,
+      autoAccept: settings.autoAccept,
+      autoAcceptDelay: settings.autoAcceptDelay,
+      champSelectAssist: settings.champSelectAssist,
+      postGame: settings.postGameSummary,
+      discord: settings.discordPresence,
+      language: lang,
+    });
+  }, [settings.importPrefs, settings.scoutAutoShow, anyWidget, settings.autoAccept, settings.autoAcceptDelay, settings.champSelectAssist, settings.postGameSummary, settings.discordPresence, lang]);
   useEffect(
     () =>
       getBridge()?.onImport?.((r) => {
         const ok = [r.runes, r.spells, r.items].includes("ok");
-        (ok ? toast.success : toast.error)(ok ? "Build imported" : "Import failed", { description: r.text });
+        (ok ? toast.success : toast.error)(ok ? t("Build imported") : t("Import failed"), { description: t(r.text) });
       }),
     [],
   );

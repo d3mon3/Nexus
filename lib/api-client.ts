@@ -93,6 +93,7 @@ export const api = {
   championStats: (p: { patch?: string; role?: Role | null; rank?: string; region?: string; mode?: string }) => getJson<Envelope<ChampionStatsPayload>>("/api/champions", p),
   championBuild: (id: number, role?: Role | null, patch?: string, mode?: string) => getJson<Envelope<ChampionBuild | null>>(`/api/champions/${id}`, { role, patch, mode: mode && mode !== "sr" ? mode : undefined }),
   leaderboard: (p: { region: string; tier: string; page: number; pageSize: number; sort: string; q?: string }) => getJson<Envelope<LeaderboardPage>>("/api/leaderboard", p),
+  counters: (opponent: number, role: Role) => getJson<Envelope<{ patch: string; opponentId: number; role: Role; picks: { championId: number; games: number; winRate: number }[] }>>("/api/champions/counters", { opponent, role }),
   championDetail: (key: string) => getJson<ChampionDetail>(`/api/static/champion/${encodeURIComponent(key)}`),
   scout: (region: string, p: LiveParticipant, depth: number) =>
     getJson<Envelope<ScoutPlayer>>("/api/scout", {

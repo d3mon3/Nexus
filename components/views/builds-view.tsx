@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { Search } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -73,20 +75,20 @@ export function BuildsView() {
   return (
     <div>
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <h1 className="mr-2 text-[22px] font-bold tracking-tight">Runes &amp; Builds</h1>
-        <SourceBadge source={stats.data?.source} note={stats.data?.note} />
+        <h1 className="mr-2 text-[22px] font-bold tracking-tight">{t("Runes & Builds")}</h1>
+        <SourceBadge source={stats.data?.source} note={t(stats.data?.note)} />
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          {sr && <Select size="sm" className="w-[128px]" label="Role" value={role} onChange={setRole} options={[{ value: "all", label: "All Roles" }, ...ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r], icon: <RoleIcon role={r} size={14} /> }))]} />}
-          {sr && <Select size="sm" className="w-[128px]" label="Rank" value={rank} onChange={setRank} options={rankOptions()} />}
-          {stats.data && <Select size="sm" className="w-[200px]" label="Patch" value={stats.data.data.patch} onChange={setPatch} options={stats.data.data.patches.map((p) => ({ value: p, label: `Patch ${p}` }))} />}
+          {sr && <Select size="sm" className="w-[128px]" label={t("Role")} value={role} onChange={setRole} options={[{ value: "all", label: t("All Roles") }, ...ROLES.map((r) => ({ value: r, label: t(ROLE_LABEL[r]), icon: <RoleIcon role={r} size={14} /> }))]} />}
+          {sr && <Select size="sm" className="w-[128px]" label={t("Rank")} value={rank} onChange={setRank} options={rankOptions()} />}
+          {stats.data && <Select size="sm" className="w-[200px]" label={t("Patch")} value={stats.data.data.patch} onChange={setPatch} options={stats.data.data.patches.map((p) => ({ value: p, label: t("Patch {0}", [p]) }))} />}
         </div>
       </div>
       <ModeTabs value={mode} onChange={setMode} className="mb-2" />
-      <Tabs value={tab} onChange={setTab} size="sm" label="Build sections" items={BUILD_TABS} className="mb-3" />
+      <Tabs value={tab} onChange={setTab} size="sm" label={t("Build sections")} items={BUILD_TABS} className="mb-3" />
       <div className="grid gap-3 lg:grid-cols-[200px_minmax(0,1fr)]">
         <Card className="h-max p-2 lg:sticky lg:top-[84px]">
-          <Input wrapperClassName="mb-2" icon={<Search />} placeholder="Search champion…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search champion" />
-          <ul className="max-h-[70vh] space-y-1 overflow-y-auto pr-1" role="listbox" aria-label="Champions">
+          <Input wrapperClassName="mb-2" icon={<Search />} placeholder={t("Search champion…")} value={search} onChange={(e) => setSearch(e.target.value)} aria-label={t("Search champion")} />
+          <ul className="max-h-[70vh] space-y-1 overflow-y-auto pr-1" role="listbox" aria-label={t("Champions")}>
             {list.slice(0, search ? 60 : limit).map((r) => {
               const c = champion(r.championId);
               const active = selected?.id === r.championId;
@@ -105,9 +107,7 @@ export function BuildsView() {
             })}
           </ul>
           {!search && list.length > limit && (
-            <Button size="sm" variant="secondary" className="mt-2 w-full" onClick={() => setLimit((l) => l + 24)}>
-              Show More
-            </Button>
+            <Button size="sm" variant="secondary" className="mt-2 w-full" onClick={() => setLimit((l) => l + 24)}>{t("Show More")}</Button>
           )}
         </Card>
         {selected ? <BuildPanel key={`${selected.id}-${role}-${mode}`} mode={mode} championId={selected.id} role={!sr ? null : role === "all" ? (selectedRow?.games ? selectedRow.role : undefined) : role} patch={stats.data?.data.patch} tab={tab} showTabs={false} /> : null}

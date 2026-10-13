@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import { parseRiotId, REGIONS, type Platform } from "@/lib/regions";
@@ -27,8 +29,8 @@ export function Onboarding() {
     <div className="space-y-3">
       <Card className="glow-border mx-auto mt-6 max-w-xl p-6 text-center">
         <Sparkles className="mx-auto size-8 text-primary" />
-        <h1 className="mt-3 text-2xl font-bold">Welcome to NEXUS</h1>
-        <p className="mt-1 text-sm text-muted">Enter your Riot ID to build your personal dashboard.</p>
+        <h1 className="mt-3 text-2xl font-bold">{t("Welcome to NEXUS")}</h1>
+        <p className="mt-1 text-sm text-muted">{t("Enter your Riot ID to build your personal dashboard.")}</p>
         <form
           className="mt-5 flex flex-col gap-2 sm:flex-row"
           onSubmit={(e) => {
@@ -36,11 +38,9 @@ export function Onboarding() {
             if (parsed) update({ myAccount: { ...parsed, platform: region }, region });
           }}
         >
-          <Input wrapperClassName="flex-1" placeholder="Name#TAG" value={value} onChange={(e) => setValue(e.target.value)} aria-label="Your Riot ID" />
-          <Select className="w-full sm:w-28" label="Region" value={region} onChange={setRegion} options={REGIONS.map((r) => ({ value: r.platform, label: r.label }))} />
-          <Button type="submit" variant="primary" disabled={!parsed}>
-            Continue
-          </Button>
+          <Input wrapperClassName="flex-1" placeholder={t("Name#TAG")} value={value} onChange={(e) => setValue(e.target.value)} aria-label={t("Your Riot ID")} />
+          <Select className="w-full sm:w-28" label={t("Region")} value={region} onChange={setRegion} options={REGIONS.map((r) => ({ value: r.platform, label: t(r.label) }))} />
+          <Button type="submit" variant="primary" disabled={!parsed}>{t("Continue")}</Button>
         </form>
       </Card>
       <div className="mx-auto grid max-w-4xl gap-3 md:grid-cols-2">

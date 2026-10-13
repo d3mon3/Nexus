@@ -10,6 +10,10 @@ on:
         description: "Adres Twojego serwera NEXUS (np. https://1-2-3-4.sslip.io). Puste = repo variable NEXUS_SERVER_URL."
         required: false
         default: ""
+      discord_client_id:
+        description: "Discord Application ID dla Rich Presence (opcjonalnie; puste = repo variable NEXUS_DISCORD_CLIENT_ID)."
+        required: false
+        default: ""
   push:
     tags: ["v*"]
 
@@ -41,6 +45,7 @@ jobs:
           # The installer connects to this server (it holds the Riot key). Never put the key itself here.
           NEXUS_SERVER_URL: ${{ inputs.server_url || vars.NEXUS_SERVER_URL }}
           # Must match the release tag below so installed apps can tell when a newer one exists.
+          NEXUS_DISCORD_CLIENT_ID: ${{ inputs.discord_client_id || vars.NEXUS_DISCORD_CLIENT_ID }}
           NEXUS_BUILD_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('build-{0}', github.run_number) }}
       - uses: actions/upload-artifact@v4
         with:

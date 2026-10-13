@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,7 +16,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname() ?? "/";
   const desktop = useIsDesktop();
   return (
-    <nav aria-label="Main" className="flex flex-col gap-1">
+    <nav aria-label={t("Main")} className="flex flex-col gap-1">
       {NAV.map((item) => {
         const active = isActive(pathname, item);
         const Icon = item.icon;
@@ -37,7 +39,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
               />
             )}
             <Icon className={cn("relative size-[18px] transition-transform group-hover:scale-110", active ? "text-fg" : "text-muted group-hover:text-primary")} strokeWidth={1.8} />
-            <span className="relative">{item.label}</span>
+            <span className="relative">{t(item.label)}</span>
           </Link>
         );
       })}
@@ -51,9 +53,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             pathname === "/download" ? "border-primary/70 bg-primary-soft text-fg" : "border-primary/35 bg-primary-soft/50 text-primary hover:border-primary/70 hover:text-fg",
           )}
         >
-          <Download className="size-[18px]" strokeWidth={1.9} />
-          Download app
-        </Link>
+          <Download className="size-[18px]" strokeWidth={1.9} />{t("Download app")}</Link>
       )}
     </nav>
   );
@@ -63,7 +63,7 @@ export function Sidebar() {
   return (
     <aside className="sticky top-0 hidden h-dvh w-[188px] shrink-0 flex-col overflow-hidden border-r border-line-soft bg-sidebar/80 backdrop-blur-xl lg:flex">
       <div className="px-5 pt-4 pb-5">
-        <Link href="/" aria-label="NEXUS home">
+        <Link href="/" aria-label={t("NEXUS home")}>
           <Logo />
         </Link>
       </div>
@@ -89,12 +89,8 @@ function SidebarArt() {
       <div className="absolute inset-0 bg-[radial-gradient(120%_70%_at_20%_100%,rgba(112,66,255,0.35),transparent_70%)]" />
       <div className="absolute bottom-6 left-5 right-3">
         <p className="font-jp text-[26px] font-light tracking-[0.12em] text-fg/80">ネクサス</p>
-        <p className="mt-2 text-[12px] tracking-[0.9em] text-fg/70">NEXUS</p>
-        <p className="mt-5 text-[10px] font-medium leading-[1.9] tracking-[0.42em] text-muted">
-          STATS BEYOND
-          <br />
-          THE GAME
-        </p>
+        <p className="mt-2 text-[12px] tracking-[0.9em] text-fg/70">{t("NEXUS")}</p>
+        <p className="mt-5 text-[10px] font-medium leading-[1.9] tracking-[0.42em] text-muted">{t("STATS BEYOND")}<br />{t("THE GAME")}</p>
       </div>
     </div>
   );

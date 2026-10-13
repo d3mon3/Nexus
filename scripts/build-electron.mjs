@@ -5,6 +5,8 @@ import { build } from "esbuild";
 const serverUrl = (process.env.NEXUS_SERVER_URL ?? "").trim();
 // Release tag of this build (set by GitHub Actions) — lets the app notice newer installers.
 const buildTag = (process.env.NEXUS_BUILD_TAG ?? "").trim();
+// Discord application id for Rich Presence (public value, not a secret).
+const discordId = (process.env.NEXUS_DISCORD_CLIENT_ID ?? "").trim();
 if (serverUrl) console.log(`[nexus] desktop app will use server ${serverUrl}`);
 const common = {
   bundle: true,
@@ -14,7 +16,7 @@ const common = {
   external: ["electron"],
   sourcemap: true,
   logLevel: "info",
-  define: { __NEXUS_SERVER_URL__: JSON.stringify(serverUrl), __NEXUS_BUILD_TAG__: JSON.stringify(buildTag) },
+  define: { __NEXUS_SERVER_URL__: JSON.stringify(serverUrl), __NEXUS_BUILD_TAG__: JSON.stringify(buildTag), __NEXUS_DISCORD_CLIENT_ID__: JSON.stringify(discordId) },
 };
 await build({ ...common, entryPoints: ["electron/main.ts"], outfile: "dist-electron/main.js" });
 await build({ ...common, entryPoints: ["electron/preload.ts"], outfile: "dist-electron/preload.js" });

@@ -38,6 +38,17 @@ export interface LiveClientSnapshot {
   events: { name: string; time: number; team?: "ORDER" | "CHAOS" }[];
 }
 
+/** Champion select seen from the League client (desktop app only). */
+export interface ChampSelectState {
+  queueId: number | null;
+  phase: string;
+  myCellId: number;
+  myBanTurn: boolean;
+  myTeam: { cellId: number; championId: number; intentId: number; position: string }[];
+  theirTeam: { cellId: number; championId: number; position: string }[];
+  bans: number[];
+}
+
 export interface NexusBridge {
   platform: string;
   version: string;
@@ -48,12 +59,15 @@ export interface NexusBridge {
   setAutoDetect(enabled: boolean): Promise<void>;
   toggleOverlay(show: boolean): Promise<void>;
   spectate?(puuid: string): Promise<{ ok: boolean; error?: string }>;
-  setPrefs?(prefs: { import?: unknown; scoutAutoShow?: boolean; widgetsEnabled?: boolean }): Promise<void>;
+  setPrefs?(prefs: { import?: unknown; scoutAutoShow?: boolean; widgetsEnabled?: boolean; autoAccept?: boolean; autoAcceptDelay?: number; discord?: boolean; champSelectAssist?: boolean; postGame?: boolean; language?: string }): Promise<void>;
   importBuild?(championId: number, role: string | null, mode?: string): Promise<{ ok: boolean; text: string }>;
   toggleScout?(show: boolean): Promise<void>;
   setOverlayEdit?(on: boolean): Promise<void>;
   onImport?(cb: (r: { text: string; runes: string; spells: string; items: string }) => void): () => void;
   onOverlayEdit?(cb: (on: boolean) => void): () => void;
+  getChampSelect?(): Promise<ChampSelectState | null>;
+  /** The last finished game this app saw (for the post-game summary). */
+  getLastGame?(): Promise<{ gameId: number | null; queueId: number | null; endedAt: number } | null>;
 }
 
 declare global {
@@ -105,4 +119,25 @@ export function useLiveClient(enabled: boolean, intervalMs = 2000): LiveClientSn
     };
   }, [enabled, intervalMs]);
   return snap;
+}
+
+/** Polls champ select while the client is in that phase (desktop app only). */
+export function useChampSelect(active: boolean, intervalMs = 1500): ChampSelectState | null {
+  const [state, setState] = useState<ChampSelectState | null>(null);
+  useEffect(() => {
+    const bridge = getBridge();
+    if (!active || !bridge?.getChampSelect) {
+      setState(null);
+      return;
+    }
+    let alive = true;
+    const tick = () => bridge.getChampSelect!().then((s) => alive && setState(s)).catch(() => undefined);
+    tick();
+    const id = setInterval(tick, intervalMs);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [active, intervalMs]);
+  return state;
 }

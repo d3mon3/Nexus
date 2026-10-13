@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import type { ReactNode } from "react";
 
 /** Shared tooltip chrome for Recharts `content` render props. */
@@ -10,7 +12,7 @@ export function ChartTooltipBox({ title, rows }: { title?: ReactNode; rows: { la
       {rows.map((r, i) => (
         <p key={i} className="flex items-center gap-2 text-muted">
           {r.color && <span className="size-2 rounded-full" style={{ background: r.color }} />}
-          <span>{r.label}</span>
+          <span>{t(r.label)}</span>
           <span className="ml-auto pl-3 font-semibold text-fg tabular">{r.value}</span>
         </p>
       ))}

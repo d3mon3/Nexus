@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { Crown, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -29,11 +31,11 @@ export function LeaderboardsView() {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   useEffect(() => {
-    const t = setTimeout(() => {
+    const tt = setTimeout(() => {
       setQuery(search.trim());
       setPage(1);
     }, 350);
-    return () => clearTimeout(t);
+    return () => clearTimeout(tt);
   }, [search]);
   const pageSize = 25;
   const q = useLeaderboard({ region, tier, page, pageSize, sort, q: query || undefined });
@@ -42,32 +44,32 @@ export function LeaderboardsView() {
 
   return (
     <div>
-      <PageHeader title="Leaderboards" description="Ranked Solo/Duo apex ladder — Challenger, Grandmaster and Master." actions={<SourceBadge source={q.data?.source} note={q.data?.note} />} />
+      <PageHeader title={t("Leaderboards")} description={t("Ranked Solo/Duo apex ladder — Challenger, Grandmaster and Master.")} actions={<SourceBadge source={q.data?.source} note={t(q.data?.note)} />} />
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Select className="w-[110px]" label="Region" value={region} onChange={(v) => (setRegion(v), setPage(1))} options={REGIONS.map((r) => ({ value: r.platform, label: r.label }))} />
+        <Select className="w-[110px]" label={t("Region")} value={region} onChange={(v) => (setRegion(v), setPage(1))} options={REGIONS.map((r) => ({ value: r.platform, label: t(r.label) }))} />
         <Segmented
-          label="Tier"
+          label={t("Tier")}
           value={tier}
           onChange={(v) => (setTier(v), setPage(1))}
           items={[
-            { value: "all", label: "All" },
-            { value: "challenger", label: "Challenger" },
-            { value: "grandmaster", label: "Grandmaster" },
-            { value: "master", label: "Master" },
+            { value: "all", label: t("All") },
+            { value: "challenger", label: t("Challenger") },
+            { value: "grandmaster", label: t("Grandmaster") },
+            { value: "master", label: t("Master") },
           ]}
         />
         <Select
           className="w-[150px]"
-          label="Sort"
+          label={t("Sort")}
           value={sort}
           onChange={(v) => (setSort(v), setPage(1))}
           options={[
-            { value: "lp", label: "Sort by LP" },
-            { value: "winrate", label: "Sort by Win Rate" },
-            { value: "games", label: "Sort by Games" },
+            { value: "lp", label: t("Sort by LP") },
+            { value: "winrate", label: t("Sort by Win Rate") },
+            { value: "games", label: t("Sort by Games") },
           ]}
         />
-        <Input wrapperClassName="ml-auto w-[240px]" icon={<Search />} placeholder={q.data?.source === "riot" ? "Find Name#TAG on ladder" : "Search player…"} value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search leaderboard" />
+        <Input wrapperClassName="ml-auto w-[240px]" icon={<Search />} placeholder={q.data?.source === "riot" ? t("Find Name#TAG on ladder") : t("Search player…")} value={search} onChange={(e) => setSearch(e.target.value)} aria-label={t("Search leaderboard")} />
       </div>
 
       {top3 && top3.length === 3 && (
@@ -90,7 +92,7 @@ export function LeaderboardsView() {
                   ) : (
                     <p className="truncate font-semibold">{e.riotId}</p>
                   )}
-                  <p className="text-sm text-primary tabular">{e.lp.toLocaleString()} LP</p>
+                  <p className="text-sm text-primary tabular">{e.lp.toLocaleString()}{" " + t("LP")}</p>
                 </div>
                 <RankEmblem tier={e.tier} size={52} className="ml-auto" />
               </Card>
@@ -105,18 +107,18 @@ export function LeaderboardsView() {
         ) : q.error ? (
           <ErrorState error={q.error} onRetry={() => q.refetch()} />
         ) : !d?.entries.length ? (
-          <EmptyState title="No players found" description={query ? `Nobody matching “${query}” in this ladder.` : undefined} />
+          <EmptyState title={t("No players found")} description={query ? t("Nobody matching “{0}” in this ladder.", [query]) : undefined} />
         ) : (
           <table className={cn("w-full min-w-[760px] text-sm transition-opacity", q.isFetching && "opacity-60")}>
             <thead className="text-left text-[11px] uppercase tracking-wider text-dim">
               <tr>
-                <th className="px-4 py-3 font-medium">Rank</th>
-                <th className="px-4 py-3 font-medium">Player</th>
-                <th className="px-4 py-3 font-medium">Tier</th>
-                <th className="px-4 py-3 text-right font-medium">LP</th>
-                <th className="px-4 py-3 font-medium">Win rate</th>
-                <th className="px-4 py-3 text-right font-medium">Games</th>
-                <th className="px-4 py-3 font-medium">Champions</th>
+                <th className="px-4 py-3 font-medium">{t("Rank")}</th>
+                <th className="px-4 py-3 font-medium">{t("Player")}</th>
+                <th className="px-4 py-3 font-medium">{t("Tier")}</th>
+                <th className="px-4 py-3 text-right font-medium">{t("LP")}</th>
+                <th className="px-4 py-3 font-medium">{t("Win rate")}</th>
+                <th className="px-4 py-3 text-right font-medium">{t("Games")}</th>
+                <th className="px-4 py-3 font-medium">{t("Champions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -136,13 +138,13 @@ export function LeaderboardsView() {
                             <span className="text-muted">#{id.tagLine}</span>
                           </Link>
                         ) : (
-                          <span className="text-muted">{e.riotId || "Unknown"}</span>
+                          <span className="text-muted">{e.riotId || t("Unknown")}</span>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-2.5">
                       <span className="flex items-center gap-1.5">
-                        <RankEmblem tier={e.tier} size={22} /> {TIER_LABEL[e.tier]}
+                        <RankEmblem tier={e.tier} size={22} /> {t(TIER_LABEL[e.tier])}
                       </span>
                     </td>
                     <td className="px-4 py-2.5 text-right font-semibold tabular text-primary">{e.lp.toLocaleString()}</td>

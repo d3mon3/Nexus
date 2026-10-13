@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy, Ellipsis, History, Pencil, Radio, RefreshCw, Star } from "lucide-react";
 import Link from "next/link";
@@ -104,7 +106,7 @@ export function ProfileBanner({
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="truncate text-[24px] font-bold tracking-tight text-fg">{account.gameName}</h1>
               <span className="text-lg text-muted">#{account.tagLine}</span>
-              <Tooltip content={solo ? rankLabel(solo.tier, solo.division) : "Unranked"}>
+              <Tooltip content={solo ? rankLabel(solo.tier, solo.division) : t("Unranked")}>
                 <RankEmblem tier={solo?.tier ?? null} size={30} />
               </Tooltip>
               <SourceBadge source={source} note={note} className="ml-1" />
@@ -115,14 +117,14 @@ export function ProfileBanner({
                 {regionLabel(account.platform)}
               </span>
               <span className="h-4 w-px bg-line" />
-              <span>Level {account.summonerLevel}</span>
+              <span>{t("Level") + " "}{account.summonerLevel}</span>
               {profile.ladder && (
                 <>
                   <span className="h-4 w-px bg-line" />
-                  <Tooltip content={`Ladder position · ${profile.ladder.scope}`}>
+                  <Tooltip content={t("Ladder position · {0}", [profile.ladder.scope])}>
                     <span>
                       <span className="font-semibold text-primary">#{profile.ladder.position.toLocaleString("en-US")}</span>
-                      {profile.ladder.topPercent !== null && <span className="text-muted"> (Top {profile.ladder.topPercent}%)</span>}
+                      {profile.ladder.topPercent !== null && <span className="text-muted">{" " + t("(Top") + " "}{profile.ladder.topPercent}%)</span>}
                     </span>
                   </Tooltip>
                 </>
@@ -130,7 +132,7 @@ export function ProfileBanner({
             </div>
             {main && (
               <p className="mt-2 flex items-center gap-2 text-[14px] text-fg/90">
-                <ChampionIcon id={main.id} size={24} rounded="full" /> Main: {main.name}
+                <ChampionIcon id={main.id} size={24} rounded="full" />{" " + t("Main:") + " "}{main.name}
               </p>
             )}
             <Motto value={motto} editable={isMine} onSave={(v) => update({ motto: v })} />
@@ -140,22 +142,20 @@ export function ProfileBanner({
                 <Button variant="primary" className="h-10 px-5">
                   <span className={cn("grid size-4 place-items-center rounded-full border-2 border-white/90", inGame && "animate-pulse-glow")}>
                     <span className="size-1.5 rounded-full bg-white" />
-                  </span>
-                  Live Game
-                </Button>
+                  </span>{t("Live Game")}</Button>
               </Link>
               <MoreMenu player={player} onRefresh={onRefresh} refreshing={refreshing} />
               <Button variant="outline" className="h-10 px-5" onClick={() => {
                 toggleFavorite(player);
-                toast.success(fav ? "Removed from favorites" : "Added to favorites", { description: `${account.gameName}#${account.tagLine}` });
+                toast.success(fav ? t("Removed from favorites") : t("Added to favorites"), { description: `${account.gameName}#${account.tagLine}` });
               }} aria-pressed={fav}>
-                <Star className={cn(fav && "fill-warning text-warning")} /> {fav ? "Favorited" : "Favorite"}
+                <Star className={cn(fav && "fill-warning text-warning")} /> {fav ? t("Favorited") : t("Favorite")}
               </Button>
             </div>
           </div>
 
           <div className="hidden self-end md:block">
-            <p className="mb-2 text-xs font-medium text-fg/80">Favorite Champions</p>
+            <p className="mb-2 text-xs font-medium text-fg/80">{t("Favorite Champions")}</p>
             <div className="flex items-center gap-2">
               {favChamps.map((id) => (
                 <ChampionIcon key={id} id={id} size={50} className="border-primary/40 transition-transform hover:-translate-y-0.5 hover:border-primary" />
@@ -170,7 +170,7 @@ export function ProfileBanner({
         </div>
       </div>
       <div className="relative border-t border-line-soft/60 px-3 sm:px-5">
-        <Tabs value={tab} onChange={onTab} items={PROFILE_TABS.map((t) => ({ value: t.value, label: t.label }))} label="Profile sections" className="[&_button]:pb-2.5 [&_button]:pt-1.5" />
+        <Tabs value={tab} onChange={onTab} items={PROFILE_TABS.map((tt) => ({ value: tt.value, label: t(tt.label) }))} label={t("Profile sections")} className="[&_button]:pb-2.5 [&_button]:pt-1.5" />
       </div>
     </section>
   );
@@ -194,17 +194,17 @@ function Motto({ value, editable, onSave }: { value?: string; editable: boolean;
           setEditing(false);
         }}
       >
-        <input ref={ref} value={draft} maxLength={60} onChange={(e) => setDraft(e.target.value)} onBlur={() => setEditing(false)} className="w-72 rounded-md border border-primary/50 bg-black/30 px-2 py-1 text-sm text-fg outline-none" aria-label="Profile motto" />
-        <button type="submit" onMouseDown={(e) => e.preventDefault()} className="text-success" aria-label="Save motto">
+        <input ref={ref} value={draft} maxLength={60} onChange={(e) => setDraft(e.target.value)} onBlur={() => setEditing(false)} className="w-72 rounded-md border border-primary/50 bg-black/30 px-2 py-1 text-sm text-fg outline-none" aria-label={t("Profile motto")} />
+        <button type="submit" onMouseDown={(e) => e.preventDefault()} className="text-success" aria-label={t("Save motto")}>
           <Check className="size-4" />
         </button>
       </form>
     );
   return (
     <p className="mt-2 flex items-center gap-2 text-[13.5px] text-fg/75">
-      “{value || "Add a motto"}”
+      “{value || t("Add a motto")}”
       {editable && (
-        <button onClick={() => { setDraft(value ?? ""); setEditing(true); }} aria-label="Edit motto" className="text-dim hover:text-primary">
+        <button onClick={() => { setDraft(value ?? ""); setEditing(true); }} aria-label={t("Edit motto")} className="text-dim hover:text-primary">
           <Pencil className="size-3.5" />
         </button>
       )}
@@ -231,13 +231,13 @@ function MoreMenu({ player, onRefresh, refreshing }: { player: PlayerRef; onRefr
       className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-fg/90 hover:bg-surface-hover"
     >
       {icon}
-      {label}
+      {t(label)}
     </button>
   );
   const riotId = `${player.gameName}#${player.tagLine}`;
   return (
     <div ref={ref} className="relative">
-      <Button variant="outline" size="icon" className="size-10" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="More actions">
+      <Button variant="outline" size="icon" className="size-10" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label={t("More actions")}>
         <Ellipsis />
       </Button>
       <AnimatePresence>
@@ -245,11 +245,10 @@ function MoreMenu({ player, onRefresh, refreshing }: { player: PlayerRef; onRefr
           <motion.div role="menu" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="panel absolute left-0 z-50 mt-2 w-52 p-1.5">
             {item(<RefreshCw className={cn("size-4", refreshing && "animate-spin")} />, "Refresh data", onRefresh)}
             {item(<Copy className="size-4" />, "Copy Riot ID", () => {
-              navigator.clipboard?.writeText(riotId).then(() => toast.success("Riot ID copied", { description: riotId }));
+              navigator.clipboard?.writeText(riotId).then(() => toast.success(t("Riot ID copied"), { description: riotId }));
             })}
             <Link role="menuitem" href={`/matches?player=${encodeURIComponent(riotId)}&region=${player.platform}`} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-fg/90 hover:bg-surface-hover">
-              <History className="size-4" /> Full match history
-            </Link>
+              <History className="size-4" />{" " + t("Full match history")}</Link>
           </motion.div>
         )}
       </AnimatePresence>

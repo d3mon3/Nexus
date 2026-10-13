@@ -29,6 +29,20 @@ if (process.env.ADMIN_MOCK) {
   await page.addInitScript(() => sessionStorage.setItem("nexus.admin.pw", "x"));
   await page.route(/\/api\/admin\/status/, (r) => r.fulfill({ contentType: "application/json", body: process.env.ADMIN_MOCK }));
 }
+if (process.env.MOCK_CS) {
+  await page.addInitScript(() => {
+    const state = { connected: true, phase: "ChampSelect", summoner: { gameName: "d3monek", tagLine: "EUW", puuid: "demo-ZDNtb25layNFVVc", platform: "euw1" } };
+    window.nexus = {
+      platform: "win32", version: "dev",
+      getClientState: async () => state, onClientState: () => () => {}, getLiveClient: async () => null, setAutoDetect: async () => {}, toggleOverlay: async () => {},
+      setPrefs: async () => {},
+      getChampSelect: async () => ({ queueId: 420, phase: "BAN_PICK", myCellId: 2, myBanTurn: false,
+        myTeam: [{ cellId: 0, championId: 266, intentId: 0, position: "top" }, { cellId: 1, championId: 64, intentId: 0, position: "jungle" }, { cellId: 2, championId: 0, intentId: 157, position: "middle" }, { cellId: 3, championId: 0, intentId: 0, position: "bottom" }, { cellId: 4, championId: 0, intentId: 0, position: "utility" }],
+        theirTeam: [{ cellId: 5, championId: 103, position: "" }, { cellId: 6, championId: 122, position: "" }, { cellId: 7, championId: 0, position: "" }, { cellId: 8, championId: 0, position: "" }, { cellId: 9, championId: 0, position: "" }],
+        bans: [238, 777, 555] }),
+    };
+  });
+}
 if (process.env.SETTINGS) await page.addInitScript((v) => localStorage.setItem("nexus.settings.v1", v), process.env.SETTINGS);
 await page.goto(`http://localhost:${port}/?theme=${theme}#${route}`);
 await page.waitForTimeout(1600);

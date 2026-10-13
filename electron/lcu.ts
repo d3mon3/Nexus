@@ -231,3 +231,52 @@ export async function readClientState(conn: LcuConnection) {
       : null,
   };
 }
+
+/* ------------------------------------------------------- gameflow & champ select */
+
+export interface GameflowInfo {
+  queueId: number | null;
+  gameMode: string | null;
+  /** Game id while in game (used to tell games apart). */
+  gameId: number | null;
+}
+
+export async function readGameflowSession(conn: LcuConnection): Promise<GameflowInfo> {
+  const s = await lcuGet<{ gameData?: { gameId?: number; queue?: { id?: number; gameMode?: string } } }>(conn, "/lol-gameflow/v1/session").catch(() => null);
+  return { queueId: s?.gameData?.queue?.id ?? null, gameMode: s?.gameData?.queue?.gameMode ?? null, gameId: s?.gameData?.gameId ?? null };
+}
+
+/** Accepts the ready check if one is waiting for this player. Returns true when it accepted. */
+export async function acceptReadyCheck(conn: LcuConnection): Promise<boolean> {
+  const rc = await lcuGet<{ state?: string; playerResponse?: string }>(conn, "/lol-matchmaking/v1/ready-check").catch(() => null);
+  if (!rc || rc.state !== "InProgress" || rc.playerResponse !== "None") return false;
+  const status = await lcuPost(conn, "/lol-matchmaking/v1/ready-check/accept", {});
+  return status < 300;
+}
+
+interface RawChampSelect {
+  localPlayerCellId: number;
+  myTeam: { cellId: number; championId: number; championPickIntent: number; assignedPosition: string }[];
+  theirTeam: { cellId: number; championId: number; championPickIntent?: number; assignedPosition: string }[];
+  bans?: { myTeamBans?: number[]; theirTeamBans?: number[] };
+  actions?: { actorCellId: number; type: string; completed: boolean; championId: number; isInProgress?: boolean }[][];
+  timer?: { phase?: string };
+}
+
+/** Champ select as the NEXUS page needs it (see ChampSelectState in lib/desktop.ts). */
+export async function readChampSelect(conn: LcuConnection, queueId: number | null) {
+  const s = await lcuGet<RawChampSelect>(conn, "/lol-champ-select/v1/session").catch(() => null);
+  if (!s) return null;
+  const actions = (s.actions ?? []).flat();
+  const bans = actions.filter((a) => a.type === "ban" && a.completed && a.championId > 0).map((a) => a.championId);
+  const myBanTurn = actions.some((a) => a.type === "ban" && a.actorCellId === s.localPlayerCellId && a.isInProgress && !a.completed);
+  return {
+    queueId,
+    phase: s.timer?.phase ?? "",
+    myCellId: s.localPlayerCellId,
+    myBanTurn,
+    myTeam: s.myTeam.map((m) => ({ cellId: m.cellId, championId: m.championId || 0, intentId: m.championPickIntent || 0, position: m.assignedPosition || "" })),
+    theirTeam: s.theirTeam.map((m) => ({ cellId: m.cellId, championId: m.championId || 0, position: m.assignedPosition || "" })),
+    bans: [...new Set([...(s.bans?.myTeamBans ?? []), ...(s.bans?.theirTeamBans ?? []), ...bans])].filter((id) => id > 0),
+  };
+}

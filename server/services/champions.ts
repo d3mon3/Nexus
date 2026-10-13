@@ -177,3 +177,36 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
     note: DEMO_NOTE,
   };
 }
+
+export interface CounterPick {
+  championId: number;
+  games: number;
+  winRate: number;
+}
+
+/**
+ * Champions in `role` and how they fare against `opponentId` in that lane (from aggregated
+ * Summoner's Rift matches). Sorted best first; only pairs with enough games are listed.
+ */
+export async function getCounters(opponentId: number, role: Role, patchValue?: string | null): Promise<Envelope<{ patch: string; opponentId: number; role: Role; picks: CounterPick[] }>> {
+  const stats = await getChampionStats({ patch: patchValue, role: null, mode: "sr" });
+  const patch = stats.data.patch;
+  const db = stats.source === "aggregate" ? await getDb() : null;
+  if (!db || !stats.data.rows.length) return { data: { patch, opponentId, role, picks: [] }, source: "aggregate", fetchedAt: now(), note: COLLECTING_NOTE };
+  const rows = await db.championAggregate.findMany({ where: { patch, role, ...bandFilter("sr") } });
+  const merged = new Map<number, { games: number; wins: number }>();
+  for (const r of rows) {
+    const v = (r.builds as StoredBuilds).matchups?.[String(opponentId)];
+    if (!v) continue;
+    const e = merged.get(r.championId) ?? { games: 0, wins: 0 };
+    e.games += v.games;
+    e.wins += v.wins;
+    merged.set(r.championId, e);
+  }
+  const minGames = 3;
+  const picks = [...merged.entries()]
+    .filter(([, v]) => v.games >= minGames)
+    .map(([championId, v]) => ({ championId, games: v.games, winRate: v.wins / v.games }))
+    .sort((a, b) => b.winRate - a.winRate || b.games - a.games);
+  return { data: { patch, opponentId, role, picks }, source: "aggregate", fetchedAt: now(), note: picks.length ? `${picks.reduce((s, p) => s + p.games, 0)} lane games against this champion.` : "Not enough games against this champion yet." };
+}

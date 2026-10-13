@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 import { TIER_COLOR, TIER_LABEL } from "@/lib/format";
 import type { Tier } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -13,7 +14,7 @@ export function RankEmblem({ tier, size = 72, className }: { tier: Tier | null; 
   const wings = level >= 3;
   const big = level >= 6;
   return (
-    <svg viewBox="0 0 120 100" width={size} height={(size * 100) / 120} className={cn("shrink-0 drop-shadow-[0_0_14px_rgba(145,97,255,0.45)]", className)} role="img" aria-label={tier ? TIER_LABEL[tier] : "Unranked"}>
+    <svg viewBox="0 0 120 100" width={size} height={(size * 100) / 120} className={cn("shrink-0 drop-shadow-[0_0_14px_rgba(145,97,255,0.45)]", className)} role="img" aria-label={tier ? t(TIER_LABEL[tier]) : t("Unranked")}>
       <defs>
         <linearGradient id={`${id}-a`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#ffffff" stopOpacity="0.95" />

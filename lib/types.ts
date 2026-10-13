@@ -315,6 +315,17 @@ export interface PlayerStats {
   }[];
   /** 0–100 scores for the "Personal Stats" radar. */
   radar: { axis: string; value: number }[];
+  /** "What to improve" findings (server/services/insights.ts). */
+  insights?: PlayerInsight[];
+}
+
+export interface PlayerInsight {
+  id: string;
+  tone: "good" | "bad" | "info";
+  /** English template with {placeholders}; translated on the client. */
+  title: string;
+  detail: string;
+  vars: Record<string, string | number>;
 }
 
 export interface AppStatus {

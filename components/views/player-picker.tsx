@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { Search, Star, UserRound } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -61,7 +63,7 @@ export function PlayerPicker({ player, onChange, label = "Player", className }: 
                 <span className="text-muted">#{player.tagLine}</span> <span className="text-xs text-dim">{regionLabel(player.platform)}</span>
               </>
             ) : (
-              <span className="text-muted">No player selected</span>
+              <span className="text-muted">{t("No player selected")}</span>
             )}
           </p>
         </div>
@@ -73,11 +75,9 @@ export function PlayerPicker({ player, onChange, label = "Player", className }: 
           if (parsed) onChange({ ...parsed, platform: region });
         }}
       >
-        <Input wrapperClassName="w-[220px]" icon={<Search />} value={value} onChange={(e) => setValue(e.target.value)} placeholder="Name#TAG" aria-label={`${label} Riot ID`} aria-invalid={value.length > 0 && !parsed} />
-        <Select className="w-[92px]" label={`${label} region`} value={region} onChange={setRegion} options={REGIONS.map((r) => ({ value: r.platform, label: r.label }))} />
-        <Button type="submit" variant="primary" disabled={!parsed}>
-          Load
-        </Button>
+        <Input wrapperClassName="w-[220px]" icon={<Search />} value={value} onChange={(e) => setValue(e.target.value)} placeholder={t("Name#TAG")} aria-label={t("{0} Riot ID", [label])} aria-invalid={value.length > 0 && !parsed} />
+        <Select className="w-[92px]" label={`${label} region`} value={region} onChange={setRegion} options={REGIONS.map((r) => ({ value: r.platform, label: t(r.label) }))} />
+        <Button type="submit" variant="primary" disabled={!parsed}>{t("Load")}</Button>
         {quick.length > 0 && (
           <div className="flex items-center gap-1.5 pl-1">
             {quick.slice(0, 4).map((p) => (

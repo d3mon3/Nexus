@@ -54,6 +54,8 @@ export const api = {
     const start = (p.page - 1) * p.pageSize;
     return env({ entries: all.slice(start, start + p.pageSize), page: p.page, pageSize: p.pageSize, total: all.length });
   },
+  counters: (opponent: number, role: any) =>
+    wait({ data: { patch: "25.20", opponentId: opponent, role, picks: [{ championId: 157, games: 48, winRate: 0.56 }, { championId: 238, games: 31, winRate: 0.55 }, { championId: 103, games: 52, winRate: 0.53 }, { championId: 1, games: 22, winRate: 0.51 }] }, source: "aggregate", fetchedAt: new Date().toISOString() }),
   championDetail: async (key: string) => {
     const DD = "https://ddragon.leagueoflegends.com/cdn/" + FALLBACK_DDRAGON_VERSION;
     try {

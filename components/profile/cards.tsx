@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { motion } from "framer-motion";
 import { ArrowRight, Clock, Star, Trash2, UserRound } from "lucide-react";
 import Link from "next/link";
@@ -37,16 +39,16 @@ export function RankCard({ profile }: { profile: PlayerProfile }) {
   return (
     <Card className="flex flex-col">
       <CardHeader
-        title="Current Rank"
+        title={t("Current Rank")}
         action={
           <Segmented
             className="[&_button]:py-0.5"
-            label="Ranked queue"
+            label={t("Ranked queue")}
             value={queue}
             onChange={setQueue}
             items={[
-              { value: "RANKED_SOLO_5x5", label: "Solo/Duo" },
-              { value: "RANKED_FLEX_SR", label: "Flex" },
+              { value: "RANKED_SOLO_5x5", label: t("Solo/Duo") },
+              { value: "RANKED_FLEX_SR", label: t("Flex") },
             ]}
           />
         }
@@ -55,17 +57,17 @@ export function RankCard({ profile }: { profile: PlayerProfile }) {
         <RankBlock entry={entry} />
         <div className="hidden h-[92px] w-px bg-line-soft sm:block" />
         <div className="hidden w-[92px] shrink-0 flex-col items-center text-center sm:flex">
-          <p className="text-[12px] text-fg/85">Peak Rank</p>
+          <p className="text-[12px] text-fg/85">{t("Peak Rank")}</p>
           {profile.peak ? (
             <>
               <RankEmblem tier={profile.peak.tier} size={40} />
               <p className="text-[12px] font-semibold leading-tight text-fg">{rankLabel(profile.peak.tier, profile.peak.division)}</p>
-              <p className="text-[11px] leading-tight text-muted">{profile.peak.lp} LP</p>
+              <p className="text-[11px] leading-tight text-muted">{profile.peak.lp}{" " + t("LP")}</p>
               <p className="text-[11px] text-dim">{profile.peak.season}</p>
             </>
           ) : (
-            <Tooltip content="The Riot API does not expose past-season peaks.">
-              <p className="text-[11px] text-dim">Not available</p>
+            <Tooltip content={t("The Riot API does not expose past-season peaks.")}>
+              <p className="text-[11px] text-dim">{t("Not available")}</p>
             </Tooltip>
           )}
         </div>
@@ -80,8 +82,8 @@ function RankBlock({ entry }: { entry: RankedEntry | undefined }) {
       <div className="flex flex-1 items-center gap-3">
         <RankEmblem tier={null} size={84} />
         <div>
-          <p className="text-lg font-semibold text-fg">Unranked</p>
-          <p className="text-xs text-muted">No placement in this queue yet.</p>
+          <p className="text-lg font-semibold text-fg">{t("Unranked")}</p>
+          <p className="text-xs text-muted">{t("No placement in this queue yet.")}</p>
         </div>
       </div>
     );
@@ -95,11 +97,10 @@ function RankBlock({ entry }: { entry: RankedEntry | undefined }) {
         <p className="text-[17px] font-bold tracking-tight text-fg" style={{ textShadow: `0 0 18px ${TIER_COLOR[entry.tier]}55` }}>
           {rankLabel(entry.tier, entry.division)}
         </p>
-        <p className="text-[13px] text-muted tabular">{entry.lp} LP</p>
+        <p className="text-[13px] text-muted tabular">{entry.lp}{" " + t("LP")}</p>
         <Progress className="mt-2" value={apex ? Math.min(1, entry.lp / 1000) : entry.lp / 100} color="#8C6BFF" />
         <p className="mt-2 text-[13px] text-fg/90">
-          <span className={cn("font-semibold", wrColor(winRate(entry)))}>{pct(winRate(entry))}</span> Win Rate
-        </p>
+          <span className={cn("font-semibold", wrColor(winRate(entry)))}>{pct(winRate(entry))}</span>{" " + t("Win Rate")}</p>
         <p className="text-[13px] text-muted tabular">
           {entry.wins}W {entry.losses}L
         </p>
@@ -113,14 +114,14 @@ function RankBlock({ entry }: { entry: RankedEntry | undefined }) {
 export function RecentPerformanceCard({ stats, loading, artKey }: { stats: PlayerStats | undefined; loading: boolean; artKey?: string }) {
   const points = useMemo(() => {
     if (!stats) return [];
-    const usesLp = stats.timeline.some((t) => t.cumulativeLp !== null);
+    const usesLp = stats.timeline.some((tt) => tt.cumulativeLp !== null);
     let net = 0;
-    return stats.timeline.map((t, i) => {
-      net += t.win ? 1 : -1;
-      return { i, value: usesLp ? (t.cumulativeLp ?? 0) : net, win: t.win, date: t.date };
+    return stats.timeline.map((tt, i) => {
+      net += tt.win ? 1 : -1;
+      return { i, value: usesLp ? (tt.cumulativeLp ?? 0) : net, win: tt.win, date: tt.date };
     });
   }, [stats]);
-  const usesLp = stats?.timeline.some((t) => t.cumulativeLp !== null) ?? false;
+  const usesLp = stats?.timeline.some((tt) => tt.cumulativeLp !== null) ?? false;
   const total = points.at(-1)?.value ?? 0;
   return (
     <Card className="flex flex-col overflow-hidden">
@@ -131,12 +132,12 @@ export function RecentPerformanceCard({ stats, loading, artKey }: { stats: Playe
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(12,17,29,0.75),rgba(12,17,29,0.4)_50%,rgba(12,17,29,0.85))]" />
         </div>
       )}
-      <CardHeader title="Recent Performance" className="relative" />
+      <CardHeader title={t("Recent Performance")} className="relative" />
       <CardBody className="relative flex-1 pb-2.5">
         {loading || !stats ? (
           <Skeleton className="h-[120px]" />
         ) : stats.games === 0 ? (
-          <EmptyState title="No recent games" className="py-4" />
+          <EmptyState title={t("No recent games")} className="py-4" />
         ) : (
           <>
             <LpChart data={points} height={74} valueLabel={usesLp ? "LP" : "net wins"} />
@@ -144,10 +145,9 @@ export function RecentPerformanceCard({ stats, loading, artKey }: { stats: Playe
               <div>
                 <p className={cn("text-[19px] font-bold leading-tight tabular", total >= 0 ? "text-win" : "text-loss")}>
                   {total > 0 ? "+" : ""}
-                  {total} {usesLp ? "LP" : ""}
+                  {total} {usesLp ? t("LP") : ""}
                 </p>
-                <p className="text-[12px] text-muted">
-                  Last {stats.games} Games{!usesLp && " · net wins"}
+                <p className="text-[12px] text-muted">{t("Last {0} games", [stats.games])}{!usesLp && t(" · net wins")}
                 </p>
               </div>
               <p className="text-[17px] font-bold tabular">
@@ -178,12 +178,12 @@ export function RoleDistributionCard({ stats, loading }: { stats: PlayerStats | 
   }, [stats]);
   return (
     <Card className="flex flex-col">
-      <CardHeader title="Role Distribution" />
+      <CardHeader title={t("Role Distribution")} />
       <CardBody className="flex flex-1 items-end justify-between gap-2 px-5 pb-3">
         {loading || !stats
           ? Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-[110px] w-6" />)
           : roles.map((r, i) => (
-              <Tooltip key={r.role} content={`${ROLE_LABEL[r.role]}: ${r.games} games · ${pct(r.winRate)} WR`}>
+              <Tooltip key={r.role} content={t("{0}: {1} games · {2} WR", [ROLE_LABEL[r.role], r.games, pct(r.winRate)])}>
                 <div className="flex flex-col items-center gap-1.5" tabIndex={0}>
                   <div className="relative h-[62px] w-[17px] overflow-hidden rounded-[5px] bg-white/[0.06]">
                     <motion.div
@@ -209,9 +209,9 @@ export function RoleDistributionCard({ stats, loading }: { stats: PlayerStats | 
 export function PersonalStatsCard({ stats, loading }: { stats: PlayerStats | undefined; loading: boolean }) {
   return (
     <Card>
-      <CardHeader title="Personal Stats" />
+      <CardHeader title={t("Personal Stats")} />
       <CardBody className="pb-2">
-        {loading || !stats ? <Skeleton className="mx-auto h-[170px] w-[170px] rounded-full" /> : stats.radar.length ? <StatRadar height={158} data={stats.radar} series={[{ key: "value", label: "Score", color: "#9161FF" }]} /> : <EmptyState title="Not enough games" className="py-6" />}
+        {loading || !stats ? <Skeleton className="mx-auto h-[170px] w-[170px] rounded-full" /> : stats.radar.length ? <StatRadar height={158} data={stats.radar} series={[{ key: "value", label: "Score", color: "#9161FF" }]} /> : <EmptyState title={t("Not enough games")} className="py-6" />}
       </CardBody>
     </Card>
   );
@@ -225,7 +225,7 @@ export function MostPlayedCard({ stats, loading, onShowMore }: { stats: PlayerSt
   const maxGames = Math.max(1, ...list.map((c) => c.games));
   return (
     <Card className="flex flex-col">
-      <CardHeader title="Most Played Champions" action={stats && <span className="text-[11px] text-dim">last {stats.games} games</span>} />
+      <CardHeader title={t("Most Played Champions")} action={stats && <span className="text-[11px] text-dim">{t("last") + " "}{stats.games}{" " + t("games")}</span>} />
       <CardBody className="flex flex-1 flex-col gap-1 px-3">
         {loading || !stats
           ? Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-[50px]" />)
@@ -242,7 +242,7 @@ export function MostPlayedCard({ stats, loading, onShowMore }: { stats: PlayerSt
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2">
                       <p className="truncate text-[13.5px] font-semibold text-fg">{info?.name ?? c.championId}</p>
-                      <p className={cn("text-[13px] font-semibold tabular", c.kda >= 3 ? "text-success" : "text-fg/85")}>{formatKda(c.kda)} KDA</p>
+                      <p className={cn("text-[13px] font-semibold tabular", c.kda >= 3 ? "text-success" : "text-fg/85")}>{formatKda(c.kda)}{" " + t("KDA")}</p>
                     </div>
                     <div className="mt-0.5 flex items-center justify-between gap-3">
                       <Progress value={c.games / maxGames} className="h-1 max-w-[150px]" />
@@ -253,15 +253,13 @@ export function MostPlayedCard({ stats, loading, onShowMore }: { stats: PlayerSt
                   </div>
                   <div className="w-[64px] text-right">
                     <p className="text-[14px] font-semibold tabular text-fg">{pct(wr)}</p>
-                    <p className="text-[12px] text-muted tabular">{c.games} Games</p>
+                    <p className="text-[12px] text-muted tabular">{t("{0} games", [c.games])}</p>
                   </div>
                 </Link>
               );
             })}
-        {stats && stats.champions.length === 0 && <EmptyState title="No champions played yet" className="py-4" />}
-        <Button size="sm" variant="secondary" className="mx-auto mt-auto w-[180px]" onClick={onShowMore}>
-          Show More
-        </Button>
+        {stats && stats.champions.length === 0 && <EmptyState title={t("No champions played yet")} className="py-4" />}
+        <Button size="sm" variant="secondary" className="mx-auto mt-auto w-[180px]" onClick={onShowMore}>{t("Show More")}</Button>
       </CardBody>
     </Card>
   );
@@ -275,13 +273,12 @@ export function RecentMatchesCard({ region, puuid, onViewAll }: { region: string
   return (
     <Card className="flex flex-col">
       <CardHeader
-        title="Recent Matches"
+        title={t("Recent Matches")}
         action={
           <div className="flex items-center gap-3">
-            <button onClick={onViewAll} className="flex items-center gap-1 text-xs text-muted hover:text-primary">
-              View all <ArrowRight className="size-3" />
+            <button onClick={onViewAll} className="flex items-center gap-1 text-xs text-muted hover:text-primary">{t("View all") + " "}<ArrowRight className="size-3" />
             </button>
-            <Select size="sm" className="w-[130px]" label="Queue" value={queue} onChange={setQueue} options={QUEUE_FILTERS.map((f) => ({ value: f.value, label: f.label }))} align="right" />
+            <Select size="sm" className="w-[130px]" label={t("Queue")} value={queue} onChange={setQueue} options={QUEUE_FILTERS.map((f) => ({ value: f.value, label: t(f.label) }))} align="right" />
           </div>
         }
       />
@@ -291,7 +288,7 @@ export function RecentMatchesCard({ region, puuid, onViewAll }: { region: string
         ) : q.error ? (
           <ErrorState error={q.error} onRetry={() => q.refetch()} />
         ) : !q.data?.data.matches.length ? (
-          <EmptyState title="No matches in this queue" />
+          <EmptyState title={t("No matches in this queue")} />
         ) : (
           q.data.data.matches.map((m: MatchSummary) => <MatchRow key={m.matchId} match={m} region={region} puuid={puuid} variant="compact" />)
         )}
@@ -306,22 +303,20 @@ export function LiveStatusCard({ live, loading, puuid, href }: { live: LiveGame 
   const me = live?.participants.find((p) => p.puuid === puuid);
   return (
     <Card>
-      <CardHeader title="Live Game" />
+      <CardHeader title={t("Live Game")} />
       <CardBody>
         {loading ? (
           <Skeleton className="h-[110px]" />
         ) : !live || !me ? (
           <div className="flex flex-col items-center gap-2 py-3 text-center">
             <span className="size-2.5 rounded-full bg-dim" />
-            <p className="text-sm text-muted">Not in a game right now</p>
-            <Link href={href} className="text-xs text-primary hover:underline">
-              Open live game page
-            </Link>
+            <p className="text-sm text-muted">{t("Not in a game right now")}</p>
+            <Link href={href} className="text-xs text-primary hover:underline">{t("Open live game page")}</Link>
           </div>
         ) : (
           <>
             <p className="-mt-1 mb-2 flex items-center gap-2 text-[13px] font-medium text-success">
-              <span className="size-2 rounded-full bg-success animate-pulse-glow" /> In Game {duration(live.gameLengthSec)}
+              <span className="size-2 rounded-full bg-success animate-pulse-glow" />{" " + t("In Game") + " "}{duration(live.gameLengthSec)}
             </p>
             <div className="flex items-center gap-3">
               <ChampionIcon id={me.championId} size={52} />
@@ -331,12 +326,12 @@ export function LiveStatusCard({ live, loading, puuid, href }: { live: LiveGame 
                     <p className="text-[15px] font-semibold text-fg tabular">
                       {me.live.kills} / <span className="text-loss">{me.live.deaths}</span> / {me.live.assists}
                     </p>
-                    <p className="text-[12px] text-muted tabular">{me.live.cs} CS</p>
-                    <p className="text-[12px] text-muted tabular">Lvl {me.live.level}</p>
+                    <p className="text-[12px] text-muted tabular">{me.live.cs}{" " + t("CS")}</p>
+                    <p className="text-[12px] text-muted tabular">{t("Lvl") + " "}{me.live.level}</p>
                   </>
                 ) : (
-                  <Tooltip content="Spectator data has no KDA. The desktop app reads it from your own client.">
-                    <p className="text-[12px] text-muted">Live stats unavailable</p>
+                  <Tooltip content={t("Spectator data has no KDA. The desktop app reads it from your own client.")}>
+                    <p className="text-[12px] text-muted">{t("Live stats unavailable")}</p>
                   </Tooltip>
                 )}
               </div>
@@ -348,9 +343,7 @@ export function LiveStatusCard({ live, loading, puuid, href }: { live: LiveGame 
               </div>
             </div>
             <Link href={href} className="mt-3 block">
-              <Button variant="blue" className="w-full">
-                Spectate
-              </Button>
+              <Button variant="blue" className="w-full">{t("Spectate")}</Button>
             </Link>
           </>
         )}
@@ -368,7 +361,7 @@ export function SpellsRunesCard({ match, championId }: { match: MatchSummary | u
   const tree = keystone ? RUNES.filter((r) => r.style === keystone.style && r.row > 0).slice(0, 3) : [];
   return (
     <Card>
-      <CardHeader title="Summoner Spells & Runes" />
+      <CardHeader title={t("Summoner Spells & Runes")} />
       <CardBody>
         {!match ? (
           <Skeleton className="h-12" />
@@ -385,9 +378,7 @@ export function SpellsRunesCard({ match, championId }: { match: MatchSummary | u
           </div>
         )}
         <Link href={key ? `/builds?champion=${key.toLowerCase()}` : "/builds"} className="mt-3 block">
-          <Button size="sm" variant="outline" className="w-full">
-            View Full Runes & Build
-          </Button>
+          <Button size="sm" variant="outline" className="w-full">{t("View Full Runes & Build")}</Button>
         </Link>
       </CardBody>
     </Card>
@@ -400,12 +391,12 @@ export function MasteryCard({ mastery }: { mastery: MasteryEntry[] }) {
   const { champion } = useStatic();
   return (
     <Card>
-      <CardHeader title="Champion Mastery" />
+      <CardHeader title={t("Champion Mastery")} />
       <CardBody className="grid grid-cols-3 gap-2 pb-3 sm:grid-cols-5">
         {mastery.slice(0, 5).map((m, i) => {
           const c = champion(m.championId);
           return (
-            <Tooltip key={m.championId} content={`Mastery level ${m.championLevel} · last played ${timeAgo(m.lastPlayTime)}`}>
+            <Tooltip key={m.championId} content={t("Mastery level {0} · last played {1}", [m.championLevel, timeAgo(m.lastPlayTime)])}>
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -424,7 +415,7 @@ export function MasteryCard({ mastery }: { mastery: MasteryEntry[] }) {
             </Tooltip>
           );
         })}
-        {mastery.length === 0 && <EmptyState title="No mastery yet" className="col-span-full py-4" />}
+        {mastery.length === 0 && <EmptyState title={t("No mastery yet")} className="col-span-full py-4" />}
       </CardBody>
     </Card>
   );
@@ -438,12 +429,12 @@ export function TrendsCard({ stats, loading, height = 92 }: { stats: PlayerStats
   const [metric, setMetric] = useState<TrendMetric>("winrate");
   const data = useMemo(
     () =>
-      (stats?.timeline ?? []).map((t) => ({
-        label: shortDate(t.date),
-        winrate: Math.round(t.rollingWinRate * 100),
-        kda: t.kda,
-        cs: t.csPerMin,
-        damage: t.damagePerMin,
+      (stats?.timeline ?? []).map((tt) => ({
+        label: shortDate(tt.date),
+        winrate: Math.round(tt.rollingWinRate * 100),
+        kda: tt.kda,
+        cs: tt.csPerMin,
+        damage: tt.damagePerMin,
       })),
     [stats],
   );
@@ -451,20 +442,20 @@ export function TrendsCard({ stats, loading, height = 92 }: { stats: PlayerStats
   return (
     <Card>
       <CardHeader
-        title="Trends"
+        title={t("Trends")}
         action={
           <Select
             size="sm"
             className="w-[120px]"
-            label="Trend metric"
+            label={t("Trend metric")}
             value={metric}
             onChange={setMetric}
             align="right"
             options={[
-              { value: "winrate", label: "Win Rate" },
-              { value: "kda", label: "KDA" },
-              { value: "cs", label: "CS / min" },
-              { value: "damage", label: "Damage / min" },
+              { value: "winrate", label: t("Win Rate") },
+              { value: "kda", label: t("KDA") },
+              { value: "cs", label: t("CS / min") },
+              { value: "damage", label: t("Damage / min") },
             ]}
           />
         }
@@ -482,11 +473,9 @@ export function ChampionPoolCard({ mastery, onViewAll }: { mastery: MasteryEntry
   return (
     <Card>
       <CardHeader
-        title="Champion Pool"
+        title={t("Champion Pool")}
         action={
-          <button onClick={onViewAll} className="text-xs font-medium text-primary hover:underline">
-            View All
-          </button>
+          <button onClick={onViewAll} className="text-xs font-medium text-primary hover:underline">{t("View All")}</button>
         }
       />
       <CardBody className="grid grid-cols-8 gap-1.5 pb-3 sm:grid-cols-10">
@@ -506,20 +495,19 @@ export function PlayersCard({ kind }: { kind: "favorites" | "recent" }) {
   return (
     <Card>
       <CardHeader
-        title={kind === "favorites" ? "Favorite Players" : "Recently Viewed"}
+        title={kind === "favorites" ? t("Favorite Players") : t("Recently Viewed")}
         icon={kind === "favorites" ? <Star className="size-4 text-warning" /> : <Clock className="size-4 text-secondary" />}
         action={
           kind === "recent" &&
           list.length > 0 && (
-            <button onClick={() => update({ recent: [] })} className="flex items-center gap-1 text-xs text-muted hover:text-danger" aria-label="Clear recently viewed">
-              <Trash2 className="size-3.5" /> Clear
-            </button>
+            <button onClick={() => update({ recent: [] })} className="flex items-center gap-1 text-xs text-muted hover:text-danger" aria-label={t("Clear recently viewed")}>
+              <Trash2 className="size-3.5" />{" " + t("Clear")}</button>
           )
         }
       />
       <CardBody>
         {list.length === 0 ? (
-          <EmptyState icon={<UserRound />} title={kind === "favorites" ? "No favorites yet" : "Nothing viewed yet"} description={kind === "favorites" ? "Star a profile to pin it here." : "Profiles you open will appear here."} className="py-5" />
+          <EmptyState icon={<UserRound />} title={kind === "favorites" ? t("No favorites yet") : t("Nothing viewed yet")} description={kind === "favorites" ? t("Star a profile to pin it here.") : t("Profiles you open will appear here.")} className="py-5" />
         ) : (
           <ul className="grid gap-1.5 sm:grid-cols-2">
             {list.slice(0, 8).map((p) => (
@@ -536,7 +524,7 @@ export function PlayersCard({ kind }: { kind: "favorites" | "recent" }) {
                   </p>
                 </Link>
                 {kind === "favorites" && (
-                  <button onClick={() => toggleFavorite(p)} aria-label={`Remove ${p.gameName} from favorites`} className="text-warning opacity-70 hover:opacity-100">
+                  <button onClick={() => toggleFavorite(p)} aria-label={t("Remove {0} from favorites", [p.gameName])} className="text-warning opacity-70 hover:opacity-100">
                     <Star className="size-4 fill-warning" />
                   </button>
                 )}

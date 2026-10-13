@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { ExternalLink, Search, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -36,16 +38,16 @@ export function ProPlayersView() {
 
   return (
     <div>
-      <PageHeader title="Pro Players" description="Track professional players' solo-queue accounts." actions={<SourceBadge source={q.data?.source} note={q.data?.note} />} />
+      <PageHeader title={t("Pro Players")} description={t("Track professional players' solo-queue accounts.")} actions={<SourceBadge source={q.data?.source} note={t(q.data?.note)} />} />
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <Segmented
-          label="Role"
+          label={t("Role")}
           value={role}
           onChange={setRole}
-          items={[{ value: "all", label: "All" }, ...ROLES.map((r) => ({ value: r, label: <><RoleIcon role={r} size={13} /> {ROLE_LABEL[r]}</> }))]}
+          items={[{ value: "all", label: t("All") }, ...ROLES.map((r) => ({ value: r, label: <><RoleIcon role={r} size={13} /> {t(ROLE_LABEL[r])}</> }))]}
         />
-        <Select className="w-[210px]" label="League" value={league} onChange={setLeague} options={[{ value: "all", label: "All Leagues" }, ...leagues.map((l) => ({ value: l, label: l }))]} />
-        <Input wrapperClassName="ml-auto w-[240px]" icon={<Search />} placeholder="Search player or team…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search pro players" />
+        <Select className="w-[210px]" label={t("League")} value={league} onChange={setLeague} options={[{ value: "all", label: t("All Leagues") }, ...leagues.map((l) => ({ value: l, label: l }))]} />
+        <Input wrapperClassName="ml-auto w-[240px]" icon={<Search />} placeholder={t("Search player or team…")} value={search} onChange={(e) => setSearch(e.target.value)} aria-label={t("Search pro players")} />
       </div>
       {q.isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -59,7 +61,7 @@ export function ProPlayersView() {
         </Card>
       ) : list.length === 0 ? (
         <Card>
-          <EmptyState icon={<Trophy />} title="No players match" />
+          <EmptyState icon={<Trophy />} title={t("No players match")} />
         </Card>
       ) : (
         <div className="space-y-5">
@@ -88,7 +90,7 @@ export function ProPlayersView() {
                           </div>
                         </div>
                         <p className="text-xs text-dim">
-                          {p.league} · {ROLE_LABEL[p.role]} · {regionLabel(p.platform)}
+                          {p.league} · {t(ROLE_LABEL[p.role])} · {regionLabel(p.platform)}
                         </p>
                         <div className="flex gap-1.5">
                           {p.signatureChampionIds.map((c) => (
@@ -99,8 +101,7 @@ export function ProPlayersView() {
                           {ref ? (
                             <>
                               <Link href={profileHref(p.platform, ref.gameName, ref.tagLine)} className="flex-1">
-                                <Button size="sm" variant="primary" className="w-full">
-                                  Profile <ExternalLink />
+                                <Button size="sm" variant="primary" className="w-full">{t("Profile") + " "}<ExternalLink />
                                 </Button>
                               </Link>
                               <Button size="sm" variant="outline" onClick={() => toggleFavorite(ref)} aria-pressed={isFavorite(ref)} className={cn(isFavorite(ref) && "border-warning/60 text-warning")}>
@@ -108,7 +109,7 @@ export function ProPlayersView() {
                               </Button>
                             </>
                           ) : (
-                            <span className="text-xs text-dim">No solo-queue account listed</span>
+                            <span className="text-xs text-dim">{t("No solo-queue account listed")}</span>
                           )}
                         </div>
                       </Card>

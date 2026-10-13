@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 import { Database, FlaskConical, Monitor, Radio } from "lucide-react";
 import type { DataSource } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -18,7 +19,7 @@ export function SourceBadge({ source, note, className }: { source: DataSource | 
     <Tooltip content={note ?? m.tip}>
       <span tabIndex={0} className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider", m.className, className)}>
         <Icon className="size-3" />
-        {m.label}
+        {t(m.label)}
       </span>
     </Tooltip>
   );

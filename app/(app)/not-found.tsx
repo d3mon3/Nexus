@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -7,13 +8,11 @@ export default function NotFound() {
   return (
     <Card className="mt-6">
       <EmptyState
-        title="Page not found"
-        description="This page doesn't exist in the Nexus."
+        title={t("Page not found")}
+        description={t("This page doesn't exist in the Nexus.")}
         action={
           <Link href="/">
-            <Button variant="primary" size="sm">
-              Back home
-            </Button>
+            <Button variant="primary" size="sm">{t("Back home")}</Button>
           </Link>
         }
       />

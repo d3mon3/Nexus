@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { ArrowLeftRight, Trophy } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 import { compact, formatKda, pct, rankLabel } from "@/lib/format";
@@ -46,21 +48,20 @@ export function CompareView() {
   return (
     <div>
       <PageHeader
-        title="Player Comparison"
-        description="Head-to-head across the last 20 games of each player."
+        title={t("Player Comparison")}
+        description={t("Head-to-head across the last 20 games of each player.")}
         actions={
           <Button variant="outline" size="sm" onClick={swap} disabled={!a || !b}>
-            <ArrowLeftRight /> Swap
-          </Button>
+            <ArrowLeftRight />{" " + t("Swap")}</Button>
         }
       />
       <div className="mb-3 grid gap-3 lg:grid-cols-2">
-        <PlayerPicker player={a} onChange={setA} label="Player A" />
-        <PlayerPicker player={b} onChange={setB} label="Player B" />
+        <PlayerPicker player={a} onChange={setA} label={t("Player A")} />
+        <PlayerPicker player={b} onChange={setB} label={t("Player B")} />
       </div>
       {!b ? (
         <Card>
-          <EmptyState icon={<ArrowLeftRight />} title="Pick a second player" description="Enter a Riot ID for Player B — or pick one of your favorites." />
+          <EmptyState icon={<ArrowLeftRight />} title={t("Pick a second player")} description={t("Enter a Riot ID for Player B — or pick one of your favorites.")} />
         </Card>
       ) : da.profile.error || db.profile.error ? (
         <Card>
@@ -99,7 +100,7 @@ function Comparison({ pa, pb, sa, sb }: { pa: PlayerProfile; pb: PlayerProfile; 
       <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr]">
         <Side p={pa} color={A} winner={winsA > metrics.length / 2} />
         <div className="grid place-items-center">
-          <span className="font-display text-3xl font-bold text-primary text-glow">VS</span>
+          <span className="font-display text-3xl font-bold text-primary text-glow">{t("VS")}</span>
           <p className="text-xs text-muted tabular">
             {winsA} – {metrics.length - winsA}
           </p>
@@ -108,7 +109,7 @@ function Comparison({ pa, pb, sa, sb }: { pa: PlayerProfile; pb: PlayerProfile; 
       </div>
       <div className="grid gap-3 xl:grid-cols-[1.3fr_1fr]">
         <Card>
-          <CardHeader title="Head to head" />
+          <CardHeader title={t("Head to head")} />
           <CardBody className="space-y-3">
             {metrics.map((m) => {
               const total = Math.abs(m.a) + Math.abs(m.b) || 1;
@@ -118,7 +119,7 @@ function Comparison({ pa, pb, sa, sb }: { pa: PlayerProfile; pb: PlayerProfile; 
                 <div key={m.label}>
                   <div className="mb-1 flex items-center justify-between text-sm">
                     <span className={cn("font-semibold tabular", aBetter ? "text-fg" : "text-muted")}>{m.fmt(m.a)}</span>
-                    <span className="text-xs text-dim">{m.label}</span>
+                    <span className="text-xs text-dim">{t(m.label)}</span>
                     <span className={cn("font-semibold tabular", bBetter ? "text-fg" : "text-muted")}>{m.fmt(m.b)}</span>
                   </div>
                   <div className="flex h-2 gap-1">
@@ -135,7 +136,7 @@ function Comparison({ pa, pb, sa, sb }: { pa: PlayerProfile; pb: PlayerProfile; 
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="Performance profile" />
+          <CardHeader title={t("Performance profile")} />
           <CardBody>
             <StatRadar data={radar} height={300} series={[{ key: "a", label: pa.account.gameName, color: A }, { key: "b", label: pb.account.gameName, color: B }]} />
           </CardBody>
@@ -143,15 +144,15 @@ function Comparison({ pa, pb, sa, sb }: { pa: PlayerProfile; pb: PlayerProfile; 
       </div>
       <div className="grid gap-3 xl:grid-cols-[1.3fr_1fr]">
         <Card>
-          <CardHeader title="Rolling win rate" />
+          <CardHeader title={t("Rolling win rate")} />
           <CardBody>
             <TrendChart data={trend} series={[{ key: "a", label: pa.account.gameName, color: A }, { key: "b", label: pb.account.gameName, color: B }]} format={(v) => `${v}%`} domain={[0, 100]} height={220} showGrid />
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="Shared champions" />
+          <CardHeader title={t("Shared champions")} />
           <CardBody className="space-y-2">
-            {common.length === 0 && <EmptyState title="No champions in common" className="py-4" />}
+            {common.length === 0 && <EmptyState title={t("No champions in common")} className="py-4" />}
             {common.map((c) => {
               const other = sb.champions.find((x) => x.championId === c.championId)!;
               return (
@@ -185,10 +186,10 @@ function Side({ p, color, winner, align = "left" }: { p: PlayerProfile; color: s
           <span className="text-muted">#{p.account.tagLine}</span>
         </p>
         <p className="text-sm text-muted">
-          {regionLabel(p.account.platform)} · Level {p.account.summonerLevel}
+          {regionLabel(p.account.platform)}{" " + t("· Level") + " "}{p.account.summonerLevel}
         </p>
         <p className="text-sm font-medium" style={{ color }}>
-          {solo ? `${rankLabel(solo.tier, solo.division)} · ${solo.lp} LP` : "Unranked"}
+          {solo ? t("{0} · {1} LP", [rankLabel(solo.tier, solo.division), solo.lp]) : t("Unranked")}
         </p>
       </div>
       <RankEmblem tier={solo?.tier ?? null} size={60} />

@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { duration } from "@/lib/format";
@@ -37,9 +39,9 @@ export function ScoutOverlayView() {
       <div className="mb-2 flex items-center gap-3 rounded-xl border border-[#a58df8]/30 bg-[#070a13]/92 px-4 py-2">
         <Logo size="sm" />
         <span className="text-sm text-fg/85">
-          {game ? `${game.queueName.replace("Ranked Solo/Duo", "Ranked Solo")} · ${game.mapName} · ${duration(game.gameLengthSec)}` : "Waiting for the game to load…"}
+          {game ? `${game.queueName.replace("Ranked Solo/Duo", "Ranked Solo")} · ${game.mapName} · ${duration(game.gameLengthSec)}` : t("Waiting for the game to load…")}
         </span>
-        <span className="ml-auto text-xs text-muted">Ctrl+Shift+S to hide</span>
+        <span className="ml-auto text-xs text-muted">{t("Ctrl+Shift+S to hide")}</span>
       </div>
       {game && player ? <ScoutBoard game={game} region={player.platform} compactMode /> : null}
     </div>

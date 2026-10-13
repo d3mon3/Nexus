@@ -1,5 +1,6 @@
 import { kda } from "@/lib/format";
 import type { MatchDetail, PlayerStats, Role } from "@/lib/types";
+import { computeInsights } from "./insights";
 
 const clamp = (v: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 
@@ -126,5 +127,6 @@ export function computePlayerStats(matches: MatchDetail[], puuid: string): Playe
           { axis: "Damage", value: Math.round(clamp((damagePerMin / 1100) * 100)) },
         ]
       : [],
+    insights: computeInsights(games, puuid),
   };
 }

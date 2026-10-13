@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { useId } from "react";
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { shortDate } from "@/lib/format";
@@ -54,7 +56,7 @@ export function LpChart({ data, height = 110, valueLabel = "LP" }: { data: LpPoi
             content={({ active, payload }) => {
               const p = payload?.[0]?.payload as LpPoint | undefined;
               if (!active || !p) return null;
-              return <ChartTooltipBox title={p.label ?? shortDate(p.date)} rows={[{ label: p.win ? "Victory" : "Defeat", value: `${p.value > 0 ? "+" : ""}${p.value} ${valueLabel}`, color: p.win ? WIN : LOSS }]} />;
+              return <ChartTooltipBox title={p.label ?? shortDate(p.date)} rows={[{ label: p.win ? t("Victory") : t("Defeat"), value: `${p.value > 0 ? "+" : ""}${p.value} ${t(valueLabel)}`, color: p.win ? WIN : LOSS }]} />;
             }}
           />
           <Area type="monotone" dataKey="value" stroke="none" fill={`url(#area-${id})`} isAnimationActive />

@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { useId, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +29,7 @@ export function Tooltip({ content, children, side = "top", className }: { conten
             side === "top" ? "bottom-full mb-2" : "top-full mt-2",
           )}
         >
-          {content}
+          {typeof content === "string" ? t(content) : content}
         </span>
       )}
     </span>

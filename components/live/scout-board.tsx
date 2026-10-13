@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { compact, pct, rankLabel, ROLE_LABEL, TIER_LABEL, winRate } from "@/lib/format";
 import { useScoutPlayer } from "@/lib/queries";
 import { useSettings } from "@/lib/settings";
@@ -20,10 +22,10 @@ export function ScoutBoard({ game, region, compactMode = false, className }: { g
   const teams = [100, 200] as const;
   return (
     <div className={cn("space-y-3", className)}>
-      {teams.map((t) => (
-        <div key={t} className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+      {teams.map((tt) => (
+        <div key={tt} className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
           {game.participants
-            .filter((p) => p.teamId === t)
+            .filter((p) => p.teamId === tt)
             .map((p) => (
               <ScoutCard key={`${p.puuid}-${p.championId}`} participant={p} region={region} depth={settings.scoutDepth} compactMode={compactMode} />
             ))}
@@ -39,7 +41,7 @@ function ScoutCard({ participant, region, depth, compactMode }: { participant: L
   const blue = participant.teamId === 100;
   // Players with Riot's privacy option (no puuid) are never looked up or de-anonymised.
   const hidden = !participant.puuid;
-  const [name, tag] = hidden ? ["Hidden player", ""] : participant.riotId.split("#");
+  const [name, tag] = hidden ? [t("Hidden player"), ""] : participant.riotId.split("#");
 
   return (
     <div className={cn("overflow-hidden rounded-xl border border-line-soft bg-[#0b0f1a]/95 shadow-[0_12px_30px_-14px_rgba(0,0,0,0.9)] backdrop-blur", compactMode && "text-[0.92em]")}>
@@ -57,15 +59,15 @@ function ScoutCard({ participant, region, depth, compactMode }: { participant: L
             {name}
             {tag && <span className="text-muted">#{tag}</span>}
           </p>
-          <p className="text-[11px] font-medium text-muted">{s ? `Level ${s.summonerLevel}` : " "}</p>
+          <p className="text-[11px] font-medium text-muted">{s ? t("Level {0}", [s.summonerLevel]) : " "}</p>
         </div>
-        {s?.tags.some((t) => t.label === "Few recent games") && <span className="text-[10px] text-dim">new</span>}
+        {s?.tags.some((tt) => tt.label === "Few recent games") && <span className="text-[10px] text-dim">{t("new")}</span>}
       </div>
 
       {hidden ? (
-        <p className="p-3 text-xs leading-relaxed text-muted">This player uses Riot&apos;s privacy option, so their profile isn&apos;t shown.</p>
+        <p className="p-3 text-xs leading-relaxed text-muted">{t("This player uses Riot's privacy option, so their profile isn't shown.")}</p>
       ) : q.error ? (
-        <p className="p-3 text-xs text-loss">{(q.error as Error).message || "Couldn't load this player."}</p>
+        <p className="p-3 text-xs text-loss">{t((q.error as Error).message) || t("Couldn't load this player.")}</p>
       ) : q.isLoading || !s ? (
         <div className="space-y-2 p-3">
           <Skeleton className="h-14" />
@@ -81,15 +83,15 @@ function ScoutCard({ participant, region, depth, compactMode }: { participant: L
           </div>
           {/* rings */}
           <div className="grid grid-cols-3 divide-x divide-line-soft border-b border-line-soft py-2.5">
-            <Ring label="12 Hr" games={s.last12h.games} wins={s.last12h.wins} />
+            <Ring label={t("12 Hr")} games={s.last12h.games} wins={s.last12h.wins} />
             <RoleRing role={s.mainRole} />
-            <Ring label="30 Day" games={s.last30d.games} wins={s.last30d.wins} analysed={s.last30d.analysed} />
+            <Ring label={t("30 Day")} games={s.last30d.games} wins={s.last30d.wins} analysed={s.last30d.analysed} />
           </div>
           {/* tags */}
           <div className="flex min-h-[54px] flex-wrap content-start justify-center gap-1.5 p-2.5">
-            {s.tags.length === 0 && <span className="text-[11px] text-dim">No notable traits</span>}
-            {s.tags.map((t) => (
-              <Tag key={t.label} tag={t} />
+            {s.tags.length === 0 && <span className="text-[11px] text-dim">{t("No notable traits")}</span>}
+            {s.tags.map((tt) => (
+              <Tag key={tt.label} tag={tt} />
             ))}
           </div>
         </>
@@ -118,8 +120,8 @@ function ChampionCell({ s }: { s: ScoutPlayer }) {
             <SpellIcon id={s.spells[0]} size={14} />
             <SpellIcon id={s.spells[1]} size={14} />
           </div>
-          <Tooltip content={s.mastery ? `${s.mastery.points.toLocaleString()} mastery points` : "No mastery data"}>
-            <span className="text-[11px] font-bold text-fg">LVL {s.mastery?.level ?? "–"}</span>
+          <Tooltip content={s.mastery ? t("{0} mastery points", [s.mastery.points.toLocaleString()]) : t("No mastery data")}>
+            <span className="text-[11px] font-bold text-fg">{t("LVL") + " "}{s.mastery?.level ?? "–"}</span>
           </Tooltip>
         </div>
       </div>
@@ -133,7 +135,7 @@ function ChampionCell({ s }: { s: ScoutPlayer }) {
           </p>
         </>
       ) : (
-        <p className="mt-1.5 text-[11px] text-dim">No recent games on this champion</p>
+        <p className="mt-1.5 text-[11px] text-dim">{t("No recent games on this champion")}</p>
       )}
       <p className="text-[11px] text-muted tabular">{s.mastery ? `${compact(s.mastery.points)} pts` : " "}</p>
     </div>
@@ -148,15 +150,15 @@ function RankCell({ s }: { s: ScoutPlayer }) {
       {r ? (
         <>
           <p className="text-[11.5px] font-semibold leading-tight text-fg">
-            {["MASTER", "GRANDMASTER", "CHALLENGER"].includes(r.tier) ? TIER_LABEL[r.tier] : rankLabel(r.tier, r.division)} <span className="font-normal text-muted">{r.lp} LP</span>
+            {["MASTER", "GRANDMASTER", "CHALLENGER"].includes(r.tier) ? t(TIER_LABEL[r.tier]) : rankLabel(r.tier, r.division)} <span className="font-normal text-muted">{r.lp}{" " + t("LP")}</span>
           </p>
           <p className="text-[11px] text-muted tabular">
             {pct(winRate(r))} ({r.wins}/{r.wins + r.losses})
           </p>
-          <p className="text-[11px] text-muted tabular">Rank: {s.ladderRank ? `#${s.ladderRank.toLocaleString("en-US")}` : "-"}</p>
+          <p className="text-[11px] text-muted tabular">{t("Rank:") + " "}{s.ladderRank ? `#${s.ladderRank.toLocaleString("en-US")}` : "-"}</p>
         </>
       ) : (
-        <p className="text-[11px] text-dim">Unranked</p>
+        <p className="text-[11px] text-dim">{t("Unranked")}</p>
       )}
     </div>
   );
@@ -188,7 +190,7 @@ function Ring({ label, games, wins, analysed }: { label: string; games: number; 
   const wr = wins !== null && base > 0 ? wins / base : null;
   const color = ringColor(wr, games);
   return (
-    <Tooltip content={analysed !== undefined && analysed < games ? `Win rate from the ${analysed} most recent of ${games} games` : undefined}>
+    <Tooltip content={analysed !== undefined && analysed < games ? t("Win rate from the {0} most recent of {1} games", [analysed, games]) : undefined}>
       <div className="flex flex-col items-center gap-1" tabIndex={0}>
         <Circle value={wr ?? 0} color={color}>
           <span className="text-[11px] font-bold tabular" style={{ color: games ? color : "#8285a6" }}>
@@ -196,9 +198,9 @@ function Ring({ label, games, wins, analysed }: { label: string; games: number; 
           </span>
           <span className="mt-0.5 text-[8.5px] text-muted">{label}</span>
         </Circle>
-        <p className="text-[11px] font-semibold text-fg tabular">{games} Games</p>
+        <p className="text-[11px] font-semibold text-fg tabular">{t("{0} games", [games])}</p>
         <p className="text-[10.5px] tabular" style={{ color: games ? color : "#8285a6" }}>
-          {analysed !== undefined && analysed < games ? `(${wins ?? 0}/${analysed} Wins)` : `(${wins ?? "?"} Wins)`}
+          {analysed !== undefined && analysed < games ? t("({0}/{1} Wins)", [wins ?? 0, analysed]) : t("({0} Wins)", [wins ?? "?"])}
         </p>
       </div>
     </Tooltip>
@@ -211,8 +213,8 @@ function RoleRing({ role }: { role: Role | null }) {
       <Circle value={role ? 1 : 0} color={role ? "#2fcf98" : "#3a4058"}>
         {role ? <RoleIcon role={role} size={22} className="text-fg" /> : <span className="text-[10px] text-dim">?</span>}
       </Circle>
-      <p className="text-[11px] font-semibold text-fg">Main Role:</p>
-      <p className="text-[10.5px] text-muted">{role ? ROLE_LABEL[role] : "Unknown"}</p>
+      <p className="text-[11px] font-semibold text-fg">{t("Main Role:")}</p>
+      <p className="text-[10.5px] text-muted">{role ? t(ROLE_LABEL[role]) : t("Unknown")}</p>
     </div>
   );
 }
@@ -225,5 +227,5 @@ const TAG_STYLE: Record<ScoutTag["tone"], string> = {
 };
 
 function Tag({ tag }: { tag: ScoutTag }) {
-  return <span className={cn("rounded-[5px] border px-1.5 py-0.5 text-[11px] font-medium leading-tight", TAG_STYLE[tag.tone])}>{tag.label}</span>;
+  return <span className={cn("rounded-[5px] border px-1.5 py-0.5 text-[11px] font-medium leading-tight", TAG_STYLE[tag.tone])}>{t(tag.label)}</span>;
 }

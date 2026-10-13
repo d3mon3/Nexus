@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import { SearchX } from "lucide-react";
 import Link from "next/link";
@@ -29,6 +31,7 @@ import {
 } from "../profile/cards";
 import { ChampionPerformanceTable } from "../profile/champion-table";
 import { ProfileBanner, PROFILE_TABS, type ProfileTab } from "../profile/banner";
+import { InsightsCard } from "../stats/insights-card";
 import { StatsPanel } from "../stats/stats-panel";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
@@ -46,11 +49,11 @@ export function ProfileView({ player, variant }: { player: PlayerRef; variant: "
   const { settings, pushRecent } = useSettings();
   const { champion } = useStatic();
   const tabParam = params?.get("tab");
-  const tab: ProfileTab = PROFILE_TABS.some((t) => t.value === tabParam) ? (tabParam as ProfileTab) : "overview";
-  const setTab = (t: ProfileTab) => {
+  const tab: ProfileTab = PROFILE_TABS.some((tt) => tt.value === tabParam) ? (tabParam as ProfileTab) : "overview";
+  const setTab = (tt: ProfileTab) => {
     const next = new URLSearchParams(params?.toString());
-    if (t === "overview") next.delete("tab");
-    else next.set("tab", t);
+    if (tt === "overview") next.delete("tab");
+    else next.set("tab", tt);
     router.replace(`${pathname}${next.size ? `?${next}` : ""}`, { scroll: false });
   };
 
@@ -75,9 +78,9 @@ export function ProfileView({ player, variant }: { player: PlayerRef; variant: "
     try {
       await api.refresh(puuid, region);
       await qc.invalidateQueries({ predicate: (q) => JSON.stringify(q.queryKey).includes(puuid) || q.queryKey[0] === "profile" });
-      toast.success("Profile refreshed");
+      toast.success(t("Profile refreshed"));
     } catch {
-      toast.error("Refresh failed — try again in a moment.");
+      toast.error(t("Refresh failed — try again in a moment."));
     } finally {
       setRefreshing(false);
     }
@@ -91,13 +94,11 @@ export function ProfileView({ player, variant }: { player: PlayerRef; variant: "
         {notFound ? (
           <EmptyState
             icon={<SearchX />}
-            title="Player not found"
-            description={`No account named ${player.gameName}#${player.tagLine} on this region. Check the tag and region.`}
+            title={t("Player not found")}
+            description={t("No account named {0}#{1} on this region. Check the tag and region.", [player.gameName, player.tagLine])}
             action={
               <Link href="/">
-                <Button variant="outline" size="sm">
-                  Back home
-                </Button>
+                <Button variant="outline" size="sm">{t("Back home")}</Button>
               </Link>
             }
           />
@@ -120,7 +121,7 @@ export function ProfileView({ player, variant }: { player: PlayerRef; variant: "
         profile={data}
         player={player}
         source={profile.data!.source}
-        note={profile.data!.note}
+        note={t(profile.data!.note)}
         tab={tab}
         onTab={setTab}
         inGame={Boolean(live.data?.data)}
@@ -152,6 +153,7 @@ export function ProfileView({ player, variant }: { player: PlayerRef; variant: "
             <TrendsCard stats={statsLong.data?.data} loading={statsLong.isLoading} />
             <ChampionPoolCard mastery={data.mastery} onViewAll={() => setTab("champions")} />
           </div>
+          {statsLong.data?.data && <InsightsCard insights={statsLong.data.data.insights} games={statsLong.data.data.games} />}
           {variant === "dashboard" && (
             <div className="grid gap-3 lg:grid-cols-2">
               <PlayersCard kind="favorites" />
@@ -177,7 +179,7 @@ export function ProfileView({ player, variant }: { player: PlayerRef; variant: "
 
 function ProfileSkeleton() {
   return (
-    <div className="space-y-3" role="status" aria-label="Loading profile">
+    <div className="space-y-3" role="status" aria-label={t("Loading profile")}>
       <Skeleton className="h-[290px] rounded-[14px]" />
       <div className="grid gap-3 xl:grid-cols-[1.42fr_1.55fr_0.92fr_270px]">
         <Skeleton className="h-[170px] rounded-[14px]" />

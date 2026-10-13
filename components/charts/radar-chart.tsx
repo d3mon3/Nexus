@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip } from "recharts";
 import { ChartTooltipBox } from "./chart-tooltip";
 
@@ -9,7 +11,8 @@ export interface RadarSeries {
   color: string;
 }
 
-export function StatRadar({ data, series, height = 190 }: { data: Record<string, number | string>[]; series: RadarSeries[]; height?: number }) {
+export function StatRadar({ data: raw, series, height = 190 }: { data: Record<string, number | string>[]; series: RadarSeries[]; height?: number }) {
+  const data = raw.map((d) => ({ ...d, axis: t(d.axis) }));
   return (
     <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -27,7 +30,7 @@ export function StatRadar({ data, series, height = 190 }: { data: Record<string,
           {series.map((s) => (
             <Radar
               key={s.key}
-              name={s.label}
+              name={t(s.label)}
               dataKey={s.key}
               stroke={s.color}
               strokeWidth={2}

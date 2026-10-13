@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, Fragment, useContext, useEffect, useState, type ReactNode } from "react";
-import { PL } from "./i18n/pl";
 
 /**
  * Tiny i18n: English source strings are the keys, Polish comes from lib/i18n/pl.ts.
@@ -10,49 +9,9 @@ import { PL } from "./i18n/pl";
  * and non-strings pass through unchanged, so wrapping a value is always safe.
  */
 import { DEFAULT_LANG, LANG_COOKIE, type Lang } from "./i18n-shared";
+import { setLang, t } from "./i18n-core";
+export { getLang, setLang, t } from "./i18n-core";
 export { DEFAULT_LANG, LANG_COOKIE, LANGS, type Lang } from "./i18n-shared";
-
-let current: Lang = DEFAULT_LANG;
-export const getLang = () => current;
-export function setLang(l: Lang) {
-  current = l;
-}
-
-type Vars = Record<string, string | number> | (string | number)[];
-
-const interpolate = (s: string, vars?: Vars) => (vars ? s.replace(/\{(\w+)\}/g, (m, k) => String((vars as Record<string, string | number>)[k] ?? m)) : s);
-
-/** Keys with {placeholders} also translate dynamic strings (e.g. notes from the server). */
-let patterns: { re: RegExp; names: string[]; pl: string }[] | null = null;
-function patternTranslate(s: string): string | null {
-  patterns ??= Object.entries(PL)
-    .filter(([k]) => /\{\w+\}/.test(k))
-    .map(([k, pl]) => {
-      const names: string[] = [];
-      const src = k.replace(/[.*+?^$()|[\]\\]/g, "\\$&").replace(/\\?\{(\w+)\\?\}/g, (_, n) => {
-        names.push(n);
-        return "(.+?)";
-      });
-      return { re: new RegExp(`^${src}$`), names, pl };
-    });
-  for (const p of patterns) {
-    const m = p.re.exec(s);
-    if (m) return p.pl.replace(/\{(\w+)\}/g, (_, n) => m[p.names.indexOf(n) + 1] ?? "");
-  }
-  return null;
-}
-
-export function t<T>(key: T, vars?: Vars): T {
-  if (typeof key !== "string") return key;
-  if (current === "en" || !key) return interpolate(key, vars) as T;
-  const direct = PL[key] ?? PL[key.trim()];
-  if (direct != null) return interpolate(direct, vars) as T;
-  if (!vars && /\d/.test(key)) {
-    const p = patternTranslate(key);
-    if (p != null) return p as T;
-  }
-  return interpolate(key, vars) as T;
-}
 
 export const useT = () => t;
 

@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { Filter, RefreshCw, Search, Swords } from "lucide-react";
 import { useMemo, useState } from "react";
 import { QUEUE_FILTERS } from "@/lib/static-data";
@@ -57,31 +59,31 @@ export function MatchList({ region, puuid, onRefresh }: { region: string; puuid:
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Select className="w-[150px]" label="Queue" value={queue} onChange={(v) => reset(() => setQueue(v))} options={QUEUE_FILTERS.map((f) => ({ value: f.value, label: f.label }))} />
-        <Select className="w-[170px]" label="Champion" value={champion} onChange={(v) => reset(() => setChampion(v))} options={championOptions} />
+        <Select className="w-[150px]" label={t("Queue")} value={queue} onChange={(v) => reset(() => setQueue(v))} options={QUEUE_FILTERS.map((f) => ({ value: f.value, label: t(f.label) }))} />
+        <Select className="w-[170px]" label={t("Champion")} value={champion} onChange={(v) => reset(() => setChampion(v))} options={championOptions} />
         <Select
           className="w-[150px]"
-          label="Outcome"
+          label={t("Outcome")}
           value={outcome}
           onChange={(v) => reset(() => setOutcome(v))}
           options={[
-            { value: "all", label: "All Outcomes" },
-            { value: "win", label: "Victories" },
-            { value: "loss", label: "Defeats" },
+            { value: "all", label: t("All Outcomes") },
+            { value: "win", label: t("Victories") },
+            { value: "loss", label: t("Defeats") },
           ]}
         />
         <div className="ml-auto flex items-center gap-2">
-          <SourceBadge source={q.data?.source} note={q.data?.note} />
+          <SourceBadge source={q.data?.source} note={t(q.data?.note)} />
           <Input
             wrapperClassName="w-[220px]"
             icon={<Search />}
-            placeholder="Search champion…"
+            placeholder={t("Search champion…")}
             value={search}
             onChange={(e) => reset(() => setSearch(e.target.value))}
-            aria-label="Search champion in match history"
+            aria-label={t("Search champion in match history")}
           />
           {onRefresh && (
-            <Button size="icon" variant="outline" onClick={onRefresh} aria-label="Refresh matches">
+            <Button size="icon" variant="outline" onClick={onRefresh} aria-label={t("Refresh matches")}>
               <RefreshCw className={cn(q.isFetching && "animate-spin")} />
             </Button>
           )}
@@ -90,7 +92,7 @@ export function MatchList({ region, puuid, onRefresh }: { region: string; puuid:
 
       {search.trim() && !searchedChampion && champion === "all" && (
         <p className="flex items-center gap-2 text-xs text-muted">
-          <Filter className="size-3.5" /> No champion matches “{search}”.
+          <Filter className="size-3.5" />{" " + t("No champion matches “")}{search}”.
         </p>
       )}
 
@@ -103,7 +105,7 @@ export function MatchList({ region, puuid, onRefresh }: { region: string; puuid:
       ) : q.error ? (
         <ErrorState error={q.error} onRetry={() => q.refetch()} />
       ) : !data?.matches.length ? (
-        <EmptyState icon={<Swords />} title="No matches found" description="Try another queue, champion or outcome filter." />
+        <EmptyState icon={<Swords />} title={t("No matches found")} description={t("Try another queue, champion or outcome filter.")} />
       ) : (
         <div className={cn("space-y-2 transition-opacity", q.isFetching && "opacity-60")}>
           {data.matches.map((m) => (

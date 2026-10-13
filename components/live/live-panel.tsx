@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { Activity, Ban, Eye, MonitorPlay, RefreshCw, Swords, Users } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -32,8 +34,8 @@ function useTicker(start: number, initial: number) {
   useEffect(() => {
     setSec(initial);
     const base = Date.now() - initial * 1000;
-    const t = setInterval(() => setSec(Math.round((Date.now() - (start > 0 ? start : base)) / 1000)), 1000);
-    return () => clearInterval(t);
+    const tt = setInterval(() => setSec(Math.round((Date.now() - (start > 0 ? start : base)) / 1000)), 1000);
+    return () => clearInterval(tt);
   }, [start, initial]);
   return sec;
 }
@@ -85,17 +87,16 @@ export function LivePanel({ region, puuid, player }: { region: string; puuid: st
       <Card>
         <EmptyState
           icon={<MonitorPlay />}
-          title={`${player.gameName} is not in a game`}
-          description="The page checks again automatically. Spectator data appears a few moments after the game loads."
+          title={t("{0} is not in a game", [player.gameName])}
+          description={t("The page checks again automatically. Spectator data appears a few moments after the game loads.")}
           action={
             <Button size="sm" variant="outline" onClick={() => q.refetch()}>
-              <RefreshCw className={cn(q.isFetching && "animate-spin")} /> Check now
-            </Button>
+              <RefreshCw className={cn(q.isFetching && "animate-spin")} />{" " + t("Check now")}</Button>
           }
         />
       </Card>
     );
-  return <LiveBoard game={game} source={source} note={local ? "KDA, CS and items read from your League client." : q.data?.note} region={region} onRefresh={() => q.refetch()} refreshing={q.isFetching} trackedPuuid={puuid} events={local?.events ?? null} />;
+  return <LiveBoard game={game} source={source} note={local ? t("KDA, CS and items read from your League client.") : t(q.data?.note)} region={region} onRefresh={() => q.refetch()} refreshing={q.isFetching} trackedPuuid={puuid} events={local?.events ?? null} />;
 }
 
 function LiveBoard({ game, source, note, region, onRefresh, refreshing, trackedPuuid, events }: { game: LiveGame; source: DataSource | undefined; note?: string; region: string; onRefresh: () => void; refreshing: boolean; trackedPuuid: string; events: LiveClientSnapshot["events"] | null }) {
@@ -107,40 +108,35 @@ function LiveBoard({ game, source, note, region, onRefresh, refreshing, trackedP
   const desktop = Boolean(getBridge()?.spectate);
   const spectate = async () => {
     const res = await getBridge()?.spectate?.(trackedPuuid);
-    if (res?.ok) toast.success("Opening spectator in the League client…");
-    else toast.error(res?.error ?? "Spectating failed.");
+    if (res?.ok) toast.success(t("Opening spectator in the League client…"));
+    else toast.error(res?.error ?? t("Spectating failed."));
   };
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-        <h2 className="text-[22px] font-bold tracking-tight">Live Game</h2>
+        <h2 className="text-[22px] font-bold tracking-tight">{t("Live Game")}</h2>
         <span className="flex items-center gap-1.5 text-sm font-semibold text-success">
           <span className="grid size-4 place-items-center rounded-[4px] bg-success/20">
             <span className="size-1.5 rounded-full bg-success animate-pulse-glow" />
-          </span>
-          Live {duration(Math.max(0, sec))}
+          </span>{t("Live") + " "}{duration(Math.max(0, sec))}
         </span>
         <span className="text-sm text-fg/85">
-          {game.queueName.replace("Ranked Solo/Duo", "Ranked Solo")} · {game.mapName}
+          {t(game.queueName.replace("Ranked Solo/Duo", "Ranked Solo"))} · {t(game.mapName)}
         </span>
         <SourceBadge source={source} note={note} />
         <div className="ml-auto flex flex-wrap gap-2">
-          <Tooltip content={desktop ? "Open the spectator in your League client" : "Spectating needs the NEXUS desktop app with League running"} side="bottom">
+          <Tooltip content={desktop ? t("Open the spectator in your League client") : t("Spectating needs the NEXUS desktop app with League running")} side="bottom">
             <Button size="sm" variant="primary" onClick={spectate} disabled={!desktop}>
-              <MonitorPlay /> Spectate
-            </Button>
+              <MonitorPlay />{" " + t("Spectate")}</Button>
           </Tooltip>
           <Button size="sm" variant={view === "live" ? "secondary" : "outline"} onClick={() => setView("live")} aria-pressed={view === "live"}>
-            <Activity /> Live Stats
-          </Button>
+            <Activity />{" " + t("Live Stats")}</Button>
           <Button size="sm" variant={view === "pro" ? "secondary" : "outline"} onClick={() => setView("pro")} aria-pressed={view === "pro"}>
-            <Eye /> Pro View
-          </Button>
+            <Eye />{" " + t("Pro View")}</Button>
           <Button size="sm" variant={view === "scout" ? "secondary" : "outline"} onClick={() => setView("scout")} aria-pressed={view === "scout"}>
-            <Users /> Scouting
-          </Button>
-          <Button size="icon-sm" variant="outline" onClick={onRefresh} aria-label="Refresh live game">
+            <Users />{" " + t("Scouting")}</Button>
+          <Button size="icon-sm" variant="outline" onClick={onRefresh} aria-label={t("Refresh live game")}>
             <RefreshCw className={cn(refreshing && "animate-spin")} />
           </Button>
         </div>
@@ -150,8 +146,8 @@ function LiveBoard({ game, source, note, region, onRefresh, refreshing, trackedP
         <ScoutBoard game={game} region={region} />
       ) : (
       <div className="grid gap-3 xl:grid-cols-[1fr_1fr_270px]">
-        <TeamTable title="Blue Team" color="blue" players={blue} region={region} view={view === "live" ? "live" : "pro"} trackedPuuid={trackedPuuid} />
-        <TeamTable title="Red Team" color="red" players={red} region={region} view={view === "live" ? "live" : "pro"} trackedPuuid={trackedPuuid} />
+        <TeamTable title={t("Blue Team")} color="blue" players={blue} region={region} view={view === "live" ? "live" : "pro"} trackedPuuid={trackedPuuid} />
+        <TeamTable title={t("Red Team")} color="red" players={red} region={region} view={view === "live" ? "live" : "pro"} trackedPuuid={trackedPuuid} />
         <ObjectivesCard events={events} gameSec={sec} />
       </div>
       )}
@@ -164,7 +160,7 @@ function LiveBoard({ game, source, note, region, onRefresh, refreshing, trackedP
       {game.unavailable.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {game.unavailable.map((u) => (
-            <Unavailable key={u} label={u} reason={hasLive ? "not provided for other players" : "not provided by the Spectator API"} />
+            <Unavailable key={u} label={u} reason={hasLive ? t("not provided for other players") : t("not provided by the Spectator API")} />
           ))}
         </div>
       )}
@@ -196,14 +192,14 @@ function TeamTable({ title, color, players, region, view, trackedPuuid }: { titl
         </span>
         {showLive ? (
           <>
-            <span className="text-center">KDA</span>
-            <span className="text-center">CS</span>
-            <span className="text-center">Gold</span>
+            <span className="text-center">{t("KDA")}</span>
+            <span className="text-center">{t("CS")}</span>
+            <span className="text-center">{t("Gold")}</span>
           </>
         ) : (
           <>
-            <span>Rank</span>
-            <span className="text-center">Win rate</span>
+            <span>{t("Rank")}</span>
+            <span className="text-center">{t("Win rate")}</span>
           </>
         )}
         {showLive ? (
@@ -215,9 +211,9 @@ function TeamTable({ title, color, players, region, view, trackedPuuid }: { titl
             onChange={setSortBy}
             align="right"
             options={[
-              { value: "role", label: "Runes" },
-              { value: "kda", label: "By KDA" },
-              { value: "cs", label: "By CS" },
+              { value: "role", label: t("Runes") },
+              { value: "kda", label: t("By KDA") },
+              { value: "cs", label: t("By CS") },
             ]}
           />
         ) : null}
@@ -257,7 +253,7 @@ function TeamTable({ title, color, players, region, view, trackedPuuid }: { titl
                     {p.live?.gold != null ? (
                       compact(p.live.gold)
                     ) : (
-                      <Tooltip content="Gold is only available for your own champion">
+                      <Tooltip content={t("Gold is only available for your own champion")}>
                         <span className="text-dim">—</span>
                       </Tooltip>
                     )}
@@ -274,7 +270,7 @@ function TeamTable({ title, color, players, region, view, trackedPuuid }: { titl
                         </span>
                       </>
                     ) : (
-                      "Unranked"
+                      t("Unranked")
                     )}
                   </span>
                   <span className={cn("text-center text-[12px] tabular", p.ranked ? wrColor(winRate(p.ranked)) : "text-dim")}>{p.ranked ? `${pct(winRate(p.ranked))} (${p.ranked.wins + p.ranked.losses})` : "—"}</span>
@@ -310,29 +306,29 @@ function ObjectivesCard({ events, gameSec }: { events: LiveClientSnapshot["event
   return (
     <Card className="p-3">
       <div className="relative overflow-hidden rounded-xl border border-line-soft">
-        <GameImage src={asset.map(11)} alt="Summoner's Rift minimap" className="aspect-square w-full brightness-[0.62] contrast-125 saturate-[0.65]" />
+        <GameImage src={asset.map(11)} alt={t("Summoner's Rift minimap")} className="aspect-square w-full brightness-[0.62] contrast-125 saturate-[0.65]" />
         <div className="pointer-events-none absolute inset-0 bg-[#1b2260]/45 mix-blend-multiply" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(69,140,255,0.25),transparent_45%),radial-gradient(circle_at_80%_20%,rgba(255,77,120,0.25),transparent_45%)]" />
       </div>
-      <p className="mb-2 mt-3 text-[13.5px] font-semibold">Objective Timers</p>
+      <p className="mb-2 mt-3 text-[13.5px] font-semibold">{t("Objective Timers")}</p>
       {events ? (
         <>
           <div className="grid grid-cols-3 text-center">
             {rows.map((r) => (
               <div key={r.label}>
-                <p className="text-[11px] text-muted">{r.label}</p>
-                <p className={cn("text-[15px] font-bold tabular", r.color)}>{r.value === null ? "—" : r.value < 0 ? "—" : r.value === 0 ? "Up" : duration(r.value)}</p>
+                <p className="text-[11px] text-muted">{t(r.label)}</p>
+                <p className={cn("text-[15px] font-bold tabular", r.color)}>{r.value === null ? "—" : r.value < 0 ? "—" : r.value === 0 ? t("Up") : duration(r.value)}</p>
               </div>
             ))}
           </div>
-          <p className="mt-2 text-[10px] text-dim">Estimated from your client&apos;s event feed.</p>
+          <p className="mt-2 text-[10px] text-dim">{t("Estimated from your client's event feed.")}</p>
         </>
       ) : (
         <div className="grid grid-cols-3 text-center">
           {rows.map((r) => (
-            <Tooltip key={r.label} content="Objective timers are not provided by the Spectator API. The desktop app tracks them from your own client.">
+            <Tooltip key={r.label} content={t("Objective timers are not provided by the Spectator API. The desktop app tracks them from your own client.")}>
               <div tabIndex={0}>
-                <p className="text-[11px] text-muted">{r.label}</p>
+                <p className="text-[11px] text-muted">{t(r.label)}</p>
                 <p className="text-[15px] font-bold text-dim">—</p>
               </div>
             </Tooltip>
@@ -346,15 +342,15 @@ function ObjectivesCard({ events, gameSec }: { events: LiveClientSnapshot["event
 function BansCard({ game }: { game: LiveGame }) {
   return (
     <Card>
-      <CardHeader title="Bans" icon={<Ban className="size-4 text-loss" />} />
+      <CardHeader title={t("Bans")} icon={<Ban className="size-4 text-loss" />} />
       <CardBody className="space-y-2">
-        {([100, 200] as const).map((t) => (
-          <div key={t} className="flex items-center gap-1.5">
-            <span className={cn("w-10 text-xs font-semibold", t === 100 ? "text-secondary" : "text-loss")}>{t === 100 ? "Blue" : "Red"}</span>
-            {game.bans.filter((b) => b.teamId === t).map((b, i) => (
+        {([100, 200] as const).map((tt) => (
+          <div key={tt} className="flex items-center gap-1.5">
+            <span className={cn("w-10 text-xs font-semibold", tt === 100 ? "text-secondary" : "text-loss")}>{tt === 100 ? t("Blue") : t("Red")}</span>
+            {game.bans.filter((b) => b.teamId === tt).map((b, i) => (
               <ChampionIcon key={i} id={b.championId} size={28} className="grayscale" />
             ))}
-            {game.bans.filter((b) => b.teamId === t).length === 0 && <span className="text-xs text-dim">No bans</span>}
+            {game.bans.filter((b) => b.teamId === tt).length === 0 && <span className="text-xs text-dim">{t("No bans")}</span>}
           </div>
         ))}
       </CardBody>
@@ -370,7 +366,7 @@ function MatchupsCard({ game }: { game: LiveGame }) {
   const wrOf = (id: number, role: Role) => stats.data?.data.rows.find((r) => r.championId === id && r.role === role) ?? stats.data?.data.rows.find((r) => r.championId === id);
   return (
     <Card>
-      <CardHeader title="Lane Matchups" icon={<Swords className="size-4 text-primary" />} action={<SourceBadge source={stats.data?.source} note="Champion win rates for the current patch." />} />
+      <CardHeader title={t("Lane Matchups")} icon={<Swords className="size-4 text-primary" />} action={<SourceBadge source={stats.data?.source} note={t("Champion win rates for the current patch.")} />} />
       <CardBody className="grid gap-2 md:grid-cols-5">
         {ROLES.map((role, i) => {
           const a = blue[i];
@@ -382,7 +378,7 @@ function MatchupsCard({ game }: { game: LiveGame }) {
           return (
             <div key={role} className="rounded-xl border border-line-soft bg-white/[0.02] p-3">
               <p className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-dim">
-                <RoleIcon role={role} size={14} /> {role === "UTILITY" ? "Support" : role === "BOTTOM" ? "Bot" : role.toLowerCase()}
+                <RoleIcon role={role} size={14} /> {role === "UTILITY" ? t("Support") : role === "BOTTOM" ? t("Bot") : role.toLowerCase()}
               </p>
               <div className="flex items-center justify-between">
                 <ChampionIcon id={a.championId} size={34} />
@@ -394,7 +390,7 @@ function MatchupsCard({ game }: { game: LiveGame }) {
                 <span>{wb ? pct(wb.winRate, 1) : "—"}</span>
               </div>
               <p className="sr-only">
-                {champion(a.championId)?.name} versus {champion(b.championId)?.name}
+                {champion(a.championId)?.name}{" " + t("versus") + " "}{champion(b.championId)?.name}
               </p>
             </div>
           );

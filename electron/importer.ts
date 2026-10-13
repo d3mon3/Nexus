@@ -5,6 +5,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { roleFromAssigned, toItemSet, toRunePage, toSpells, NEXUS_PREFIX, type ImportPrefs } from "../lib/client-import";
+import type { GameModeId } from "../lib/modes";
 import type { ChampionBuild, Role } from "../lib/types";
 import { lcuRequest, type LcuConnection } from "./lcu";
 
@@ -32,23 +33,27 @@ export interface ImportResult {
 }
 
 /** Fetches the build from the NEXUS server and writes it into the client. */
-export async function importBuild(conn: LcuConnection, baseUrl: string, championId: number, role: Role | null, championName: string, prefs: ImportPrefs): Promise<ImportResult> {
+export async function importBuild(conn: LcuConnection, baseUrl: string, championId: number, role: Role | null, championName: string, prefs: ImportPrefs, mode: GameModeId = "sr"): Promise<ImportResult> {
   const result: ImportResult = { championId, role, runes: "skipped", spells: "skipped", items: "skipped" };
-  const qs = role ? `?role=${role}` : "";
+  const params = new URLSearchParams();
+  if (role && mode === "sr") params.set("role", role);
+  if (mode !== "sr") params.set("mode", mode);
+  const qs = params.size ? `?${params}` : "";
   const res = await fetch(`${baseUrl}/api/champions/${championId}${qs}`);
   if (!res.ok) return { ...result, runes: "failed", spells: "failed", items: "failed", message: `No build for this champion (${res.status}).` };
   const body = (await res.json()) as { data: ChampionBuild | null; note?: string };
   const build = body.data;
   if (!build) return { ...result, message: body.note ?? "Build data for this champion is still being collected." };
 
-  if (prefs.runes) result.runes = await importRunes(conn, build, championName).catch(() => "failed" as const);
+  if (mode === "arena") prefs = { ...prefs, runes: false, spells: false }; // Arena has no rune pages or spell picks
+  if (prefs.runes) result.runes = await importRunes(conn, build, championName, mode).catch(() => "failed" as const);
   if (prefs.spells) result.spells = await importSpells(conn, build, prefs.flashKey).catch(() => "failed" as const);
-  if (prefs.items) result.items = await importItems(conn, build, championName).catch(() => "failed" as const);
+  if (prefs.items) result.items = await importItems(conn, build, championName, mode).catch(() => "failed" as const);
   return result;
 }
 
-async function importRunes(conn: LcuConnection, build: ChampionBuild, championName: string) {
-  const page = toRunePage(build, championName);
+async function importRunes(conn: LcuConnection, build: ChampionBuild, championName: string, mode: GameModeId) {
+  const page = toRunePage(build, championName, mode);
   if (!page) return "skipped" as const;
   const pages = (await lcuRequest<PerkPage[]>(conn, "GET", "/lol-perks/v1/pages")).body ?? [];
   // Replace our previous page; otherwise free a slot by overwriting the current editable page.
@@ -71,7 +76,7 @@ async function importSpells(conn: LcuConnection, build: ChampionBuild, flashKey:
   return r.status < 300 ? ("ok" as const) : ("failed" as const);
 }
 
-async function importItems(conn: LcuConnection, build: ChampionBuild, championName: string) {
+async function importItems(conn: LcuConnection, build: ChampionBuild, championName: string, mode: GameModeId) {
   const me = (await lcuRequest<{ summonerId: number; accountId: number }>(conn, "GET", "/lol-summoner/v1/current-summoner")).body;
   if (!me) return "failed" as const;
   const route = `/lol-item-sets/v1/item-sets/${me.summonerId}/sets`;
@@ -79,7 +84,7 @@ async function importItems(conn: LcuConnection, build: ChampionBuild, championNa
   const keep = (current?.itemSets ?? []).filter((s) => !(s.title.startsWith(NEXUS_PREFIX) && s.associatedChampions.includes(build.championId)));
   const r = await lcuRequest(conn, "PUT", route, {
     accountId: me.accountId,
-    itemSets: [...keep, toItemSet(build, championName, randomUUID())],
+    itemSets: [...keep, toItemSet(build, championName, randomUUID(), mode)],
     timestamp: Date.now(),
   });
   return r.status < 300 ? ("ok" as const) : ("failed" as const);

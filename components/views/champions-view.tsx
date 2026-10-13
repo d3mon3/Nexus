@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Search, Star, X } from "lucide-react";
 import Link from "next/link";
@@ -32,7 +34,7 @@ import { Tabs } from "../ui/tabs";
 type Sort = "popularity" | "winrate" | "banrate" | "tier" | "name";
 
 export function rankOptions() {
-  return [{ value: "all", label: "All Ranks" }, ...TIERS.slice(3).map((t) => ({ value: t.toLowerCase(), label: `${TIER_LABEL[t]}+` }))];
+  return [{ value: "all", label: "All Ranks" }, ...TIERS.slice(3).map((tt) => ({ value: tt.toLowerCase(), label: `${t(TIER_LABEL[tt])}+` }))];
 }
 
 export function ChampionsView() {
@@ -93,30 +95,30 @@ export function ChampionsView() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_430px]">
         <div className="min-w-0 space-y-3">
           <div className="flex items-center gap-3">
-            <h1 className="text-[22px] font-bold tracking-tight">Champions</h1>
-            <SourceBadge source={q.data?.source} note={q.data?.note} />
-            {q.data && <span className="text-xs text-dim">Patch {q.data.data.patch}</span>}
+            <h1 className="text-[22px] font-bold tracking-tight">{t("Champions")}</h1>
+            <SourceBadge source={q.data?.source} note={t(q.data?.note)} />
+            {q.data && <span className="text-xs text-dim">{t("Patch") + " "}{q.data.data.patch}</span>}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Select size="sm" className="w-[128px]" label="Role" value={role} onChange={setRole} options={[{ value: "all", label: "All Roles" }, ...ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r], icon: <RoleIcon role={r} size={14} /> }))]} />
-            <Select size="sm" className="w-[128px]" label="Rank" value={rank} onChange={setRank} options={rankOptions()} />
-            <Select size="sm" className="w-[128px]" label="Region" value={region} onChange={setRegion} options={[{ value: "all", label: "All Regions" }, ...REGIONS.map((r) => ({ value: r.platform, label: r.label }))]} />
+            <Select size="sm" className="w-[128px]" label={t("Role")} value={role} onChange={setRole} options={[{ value: "all", label: t("All Roles") }, ...ROLES.map((r) => ({ value: r, label: t(ROLE_LABEL[r]), icon: <RoleIcon role={r} size={14} /> }))]} />
+            <Select size="sm" className="w-[128px]" label={t("Rank")} value={rank} onChange={setRank} options={rankOptions()} />
+            <Select size="sm" className="w-[128px]" label={t("Region")} value={region} onChange={setRegion} options={[{ value: "all", label: t("All Regions") }, ...REGIONS.map((r) => ({ value: r.platform, label: t(r.label) }))]} />
             <Select
               size="sm"
               className="w-[150px]"
-              label="Sort"
+              label={t("Sort")}
               value={sort}
               onChange={setSort}
               options={[
-                { value: "popularity", label: "Sort by Popularity" },
-                { value: "winrate", label: "Sort by Win Rate" },
-                { value: "banrate", label: "Sort by Ban Rate" },
-                { value: "tier", label: "Sort by Tier" },
-                { value: "name", label: "Sort by Name" },
+                { value: "popularity", label: t("Sort by Popularity") },
+                { value: "winrate", label: t("Sort by Win Rate") },
+                { value: "banrate", label: t("Sort by Ban Rate") },
+                { value: "tier", label: t("Sort by Tier") },
+                { value: "name", label: t("Sort by Name") },
               ]}
             />
-            {q.data && <Select size="sm" className="w-[118px]" label="Patch" value={q.data.data.patch} onChange={setPatch} options={q.data.data.patches.map((p) => ({ value: p, label: `Patch ${p}` }))} />}
-            <Input wrapperClassName="h-8 w-full flex-1 sm:min-w-[160px]" className="text-xs" icon={<Search />} placeholder="Search champion…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search champion" />
+            {q.data && <Select size="sm" className="w-[118px]" label={t("Patch")} value={q.data.data.patch} onChange={setPatch} options={q.data.data.patches.map((p) => ({ value: p, label: t("Patch {0}", [p]) }))} />}
+            <Input wrapperClassName="h-8 w-full flex-1 sm:min-w-[160px]" className="text-xs" icon={<Search />} placeholder={t("Search champion…")} value={search} onChange={(e) => setSearch(e.target.value)} aria-label={t("Search champion")} />
           </div>
 
           {q.isLoading ? (
@@ -131,7 +133,7 @@ export function ChampionsView() {
             </Card>
           ) : rows.length === 0 ? (
             <Card>
-              <EmptyState title="No champions match" description="Clear the search or pick another role." />
+              <EmptyState title={t("No champions match")} description={t("Clear the search or pick another role.")} />
             </Card>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -157,11 +159,11 @@ export function ChampionsView() {
                     <p className="text-[13px] font-semibold text-fg">{c.name}</p>
                     {s ? (
                       <>
-                        <p className={cn("text-[12px] font-semibold tabular", s.winRate >= 0.5 ? "text-success" : "text-loss")}>{pct(s.winRate)} WR</p>
-                        <p className="text-[12px] text-fg/80 tabular">{formatKda(s.kda)} KDA</p>
+                        <p className={cn("text-[12px] font-semibold tabular", s.winRate >= 0.5 ? "text-success" : "text-loss")}>{pct(s.winRate)}{" " + t("WR")}</p>
+                        <p className="text-[12px] text-fg/80 tabular">{formatKda(s.kda)}{" " + t("KDA")}</p>
                       </>
                     ) : (
-                      <p className="text-[11px] text-dim">No data</p>
+                      <p className="text-[11px] text-dim">{t("No data")}</p>
                     )}
                   </div>
                 </motion.button>
@@ -170,8 +172,7 @@ export function ChampionsView() {
           )}
           {rows.length > limit && (
             <div className="flex justify-center">
-              <Button variant="secondary" onClick={() => setLimit((l) => l + 40)}>
-                Show more champions ({rows.length - limit})
+              <Button variant="secondary" onClick={() => setLimit((l) => l + 40)}>{t("Show more champions (")}{rows.length - limit})
               </Button>
             </div>
           )}
@@ -215,10 +216,10 @@ function ChampionSidePanel({ championId, stat, favorite, onFavorite, onClose, na
           </div>
           <div className="absolute inset-0 bg-[linear-gradient(90deg,#0d1324_30%,rgba(13,19,36,0.35))]" />
           <div className="absolute right-2 top-2 flex gap-1">
-            <button onClick={onFavorite} aria-pressed={favorite} aria-label={favorite ? `Unfavorite ${name}` : `Favorite ${name}`} className="grid size-8 place-items-center rounded-lg bg-black/40 text-white hover:text-warning">
+            <button onClick={onFavorite} aria-pressed={favorite} aria-label={favorite ? t("Unfavorite {0}", [name]) : t("Favorite {0}", [name])} className="grid size-8 place-items-center rounded-lg bg-black/40 text-white hover:text-warning">
               <Star className={cn("size-4", favorite && "fill-warning text-warning")} />
             </button>
-            <button onClick={onClose} aria-label="Close panel" className="grid size-8 place-items-center rounded-lg bg-black/40 text-white hover:text-primary xl:hidden">
+            <button onClick={onClose} aria-label={t("Close panel")} className="grid size-8 place-items-center rounded-lg bg-black/40 text-white hover:text-primary xl:hidden">
               <X className="size-4" />
             </button>
           </div>
@@ -228,7 +229,7 @@ function ChampionSidePanel({ championId, stat, favorite, onFavorite, onClose, na
             </span>
             <div>
               <h2 className="text-[26px] font-bold leading-tight text-white">{c.name}</h2>
-              <p className="text-[15px] capitalize text-white/75">{c.title}</p>
+              <p className="text-[15px] capitalize text-white/75">{t(c.title)}</p>
             </div>
           </div>
         </div>
@@ -237,13 +238,13 @@ function ChampionSidePanel({ championId, stat, favorite, onFavorite, onClose, na
             size="sm"
             value={tab}
             onChange={setTab}
-            label="Champion details"
+            label={t("Champion details")}
             items={[
-              { value: "overview", label: "Overview" },
-              { value: "builds", label: "Builds" },
-              { value: "runes", label: "Runes" },
-              { value: "counters", label: "Counters" },
-              { value: "matchups", label: "Matchups" },
+              { value: "overview", label: t("Overview") },
+              { value: "builds", label: t("Builds") },
+              { value: "runes", label: t("Runes") },
+              { value: "counters", label: t("Counters") },
+              { value: "matchups", label: t("Matchups") },
             ]}
           />
         </div>
@@ -253,20 +254,20 @@ function ChampionSidePanel({ championId, stat, favorite, onFavorite, onClose, na
         <Card className="grid grid-cols-[auto_1fr_1fr_1.2fr] items-center gap-2 p-3 text-center">
           <div className="grid place-items-center gap-0.5 rounded-lg border border-[#ff4d78]/30 bg-[#ff4d78]/8 px-3 py-1.5">
             <TierBadge tier={stat.tier} className="border-0 bg-transparent" />
-            <span className="text-[10px] text-muted">Tier</span>
+            <span className="text-[10px] text-muted">{t("Tier")}</span>
           </div>
           <div>
             <p className={cn("text-[17px] font-bold tabular", wrColor(stat.winRate))}>{pct(stat.winRate)}</p>
-            <p className="text-[11px] text-muted">Win Rate</p>
+            <p className="text-[11px] text-muted">{t("Win Rate")}</p>
           </div>
           <div>
             <p className="text-[17px] font-bold tabular text-success">{formatKda(stat.kda)}</p>
-            <p className="text-[11px] text-muted">KDA</p>
+            <p className="text-[11px] text-muted">{t("KDA")}</p>
           </div>
           <div>
-            <p className="text-[11px] text-muted">Top Role</p>
+            <p className="text-[11px] text-muted">{t("Top Role")}</p>
             <p className="text-[13px] font-semibold text-secondary">
-              {ROLE_LABEL[stat.role]} ({pct(b?.summary.pickRate ?? stat.pickRate)})
+              {t(ROLE_LABEL[stat.role])} ({pct(b?.summary.pickRate ?? stat.pickRate)})
             </p>
           </div>
         </Card>
@@ -278,7 +279,7 @@ function ChampionSidePanel({ championId, stat, favorite, onFavorite, onClose, na
         <>
           {(tab === "overview" || tab === "builds") && (
             <Card className="p-3.5">
-              <p className="mb-2 text-[13.5px] font-semibold">{tab === "builds" ? "Most Popular Build" : "Recommended Build"}</p>
+              <p className="mb-2 text-[13.5px] font-semibold">{tab === "builds" ? t("Most Popular Build") : t("Recommended Build")}</p>
               <div className="flex items-center gap-2">
                 <div className="flex flex-wrap gap-1">
                   {b.popular.items.map((id, i) => (
@@ -286,13 +287,13 @@ function ChampionSidePanel({ championId, stat, favorite, onFavorite, onClose, na
                   ))}
                 </div>
                 <div className="ml-auto text-right">
-                  <p className={cn("text-xs font-semibold tabular", wrColor(b.popular.winRate))}>{pct(b.popular.winRate)} WR</p>
+                  <p className={cn("text-xs font-semibold tabular", wrColor(b.popular.winRate))}>{pct(b.popular.winRate)}{" " + t("WR")}</p>
                   <p className="text-[11px] text-muted tabular">{wl(b.popular.games, b.popular.winRate)}</p>
                 </div>
               </div>
               {tab === "builds" && (
                 <>
-                  <p className="mb-2 mt-4 text-[13.5px] font-semibold">Highest Win Rate</p>
+                  <p className="mb-2 mt-4 text-[13.5px] font-semibold">{t("Highest Win Rate")}</p>
                   <div className="flex items-center gap-2">
                     <div className="flex flex-wrap gap-1">
                       {b.highestWinRate.items.map((id, i) => (
@@ -300,7 +301,7 @@ function ChampionSidePanel({ championId, stat, favorite, onFavorite, onClose, na
                       ))}
                     </div>
                     <div className="ml-auto text-right">
-                      <p className={cn("text-xs font-semibold tabular", wrColor(b.highestWinRate.winRate))}>{pct(b.highestWinRate.winRate)} WR</p>
+                      <p className={cn("text-xs font-semibold tabular", wrColor(b.highestWinRate.winRate))}>{pct(b.highestWinRate.winRate)}{" " + t("WR")}</p>
                       <p className="text-[11px] text-muted tabular">{wl(b.highestWinRate.games, b.highestWinRate.winRate)}</p>
                     </div>
                   </div>
@@ -310,11 +311,11 @@ function ChampionSidePanel({ championId, stat, favorite, onFavorite, onClose, na
           )}
           {tab === "overview" && (
             <Card className="p-3.5">
-              <p className="mb-2 text-[13.5px] font-semibold">Skill Order</p>
+              <p className="mb-2 text-[13.5px] font-semibold">{t("Skill Order")}</p>
               <div className="flex items-center justify-between gap-3">
                 <SkillPriorityIcons championId={championId} priority={b.skillOrder.priority} size={34} />
                 <div className="text-center">
-                  <p className="text-[12px] text-muted">Victory Rate</p>
+                  <p className="text-[12px] text-muted">{t("Victory Rate")}</p>
                   <p className="text-lg font-bold tabular text-success">{pct(b.skillOrder.winRate)}</p>
                 </div>
               </div>
@@ -323,18 +324,17 @@ function ChampionSidePanel({ championId, stat, favorite, onFavorite, onClose, na
           {(tab === "overview" || tab === "runes") && b.runes[0] && (
             <Card className="p-3.5">
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-[13.5px] font-semibold">Runes</p>
+                <p className="text-[13.5px] font-semibold">{t("Runes")}</p>
                 <p className="text-[11px] text-muted tabular">
-                  {pct(b.runes[0].winRate)} WR · {b.runes[0].games.toLocaleString()} games
-                </p>
+                  {pct(b.runes[0].winRate)}{" " + t("WR ·") + " "}{b.runes[0].games.toLocaleString()}{" " + t("games")}</p>
               </div>
               <RuneTree page={b.runes[0]} compact />
             </Card>
           )}
           {(tab === "counters" || tab === "matchups") && (
             <Card className="space-y-1.5 p-3.5">
-              <p className="text-[13.5px] font-semibold">{tab === "counters" ? "Counters" : "Favourable matchups"}</p>
-              <p className="text-xs text-muted">{tab === "counters" ? `Champions ${c.name} struggles against` : `Champions ${c.name} beats most often`}</p>
+              <p className="text-[13.5px] font-semibold">{tab === "counters" ? t("Counters") : t("Favourable matchups")}</p>
+              <p className="text-xs text-muted">{tab === "counters" ? t("Champions {0} struggles against", [c.name]) : t("Champions {0} beats most often", [c.name])}</p>
               {(tab === "counters" ? b.counters : b.favorable).map((m) => (
                 <div key={m.opponentId} className="flex items-center gap-2">
                   <ChampionIcon id={m.opponentId} size={28} />
@@ -347,8 +347,7 @@ function ChampionSidePanel({ championId, stat, favorite, onFavorite, onClose, na
         </>
       )}
       <Link href={`/champions/${c.key.toLowerCase()}`} className="block">
-        <Button variant="primary" className="w-full">
-          Full champion page <ArrowRight />
+        <Button variant="primary" className="w-full">{t("Full champion page") + " "}<ArrowRight />
         </Button>
       </Link>
     </div>

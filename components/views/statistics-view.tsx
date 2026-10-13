@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { useProfile } from "@/lib/queries";
 import { StatsPanel } from "../stats/stats-panel";
 import { Card } from "../ui/card";
@@ -14,11 +16,11 @@ export function StatisticsView() {
   const puuid = profile.data?.data.account.puuid;
   return (
     <div>
-      <PageHeader title="Statistics" description="Trends, champion performance and per-game analytics computed from recent matches." />
+      <PageHeader title={t("Statistics")} description={t("Trends, champion performance and per-game analytics computed from recent matches.")} />
       <PlayerPicker player={player} onChange={setPlayer} className="mb-3" />
       {!player ? (
         <Card>
-          <EmptyState title="Choose a player" />
+          <EmptyState title={t("Choose a player")} />
         </Card>
       ) : profile.isLoading ? (
         <Skeleton className="h-[480px] rounded-[14px]" />

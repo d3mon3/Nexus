@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { parseRiotId, profileHref, resolveRegion } from "@/lib/regions";
@@ -15,7 +17,7 @@ export function PlayerProfilePage({ region, riotId }: { region: string; riotId: 
   if (!r || !id)
     return (
       <Card>
-        <EmptyState title="Invalid profile address" description="Profiles look like /profile/euw/Name-TAG." />
+        <EmptyState title={t("Invalid profile address")} description={t("Profiles look like /profile/euw/Name-TAG.")} />
       </Card>
     );
   return <ProfileView key={`${r.platform}:${id.gameName}#${id.tagLine}`} player={{ ...id, platform: r.platform }} variant="profile" />;

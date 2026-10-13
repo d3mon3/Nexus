@@ -1,5 +1,7 @@
 "use client";
 
+
+import { t } from "@/lib/i18n";
 import { ClipboardPaste, Search, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -28,37 +30,35 @@ export function MultiSearchView() {
   const run = () => setPlayers(preview.map((p) => ({ ...p, platform: region })));
   return (
     <div>
-      <PageHeader title="Multi Search" description="Paste your champion-select lobby to scout up to 10 players at once." />
+      <PageHeader title={t("Multi Search")} description={t("Paste your champion-select lobby to scout up to 10 players at once.")} />
       <Card className="mb-3 p-4">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={4}
-          placeholder={"d3monek #EUW joined the lobby\nKaizen#PRO joined the lobby\nRavenna#PRO"}
+          placeholder={t("d3monek #EUW joined the lobby\nKaizen#PRO joined the lobby\nRavenna#PRO")}
           className="w-full resize-y rounded-lg border border-line bg-surface-2/80 p-3 text-sm text-fg outline-none placeholder:text-dim focus:border-primary/70"
-          aria-label="Lobby text or Riot IDs"
+          aria-label={t("Lobby text or Riot IDs")}
         />
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Select className="w-[100px]" label="Region" value={region} onChange={setRegion} options={REGIONS.map((r) => ({ value: r.platform, label: r.label }))} />
+          <Select className="w-[100px]" label={t("Region")} value={region} onChange={setRegion} options={REGIONS.map((r) => ({ value: r.platform, label: t(r.label) }))} />
           <Button variant="outline" size="sm" onClick={() => navigator.clipboard?.readText().then(setText).catch(() => undefined)}>
-            <ClipboardPaste /> Paste
-          </Button>
-          <span className="text-xs text-muted">{preview.length} player{preview.length === 1 ? "" : "s"} detected</span>
+            <ClipboardPaste />{" " + t("Paste")}</Button>
+          <span className="text-xs text-muted">{preview.length}{" " + t("player")}{preview.length === 1 ? "" : "s"}{" " + t("detected")}</span>
           <div className="ml-auto flex gap-2">
             {players.length > 0 && (
               <Button variant="ghost" size="sm" onClick={() => (setPlayers([]), setText(""))}>
-                <X /> Clear
-              </Button>
+                <X />{" " + t("Clear")}</Button>
             )}
             <Button variant="primary" onClick={run} disabled={!preview.length}>
-              <Search /> Search {preview.length || ""}
+              <Search />{" " + t("Search") + " "}{preview.length || ""}
             </Button>
           </div>
         </div>
       </Card>
       {players.length === 0 ? (
         <Card>
-          <EmptyState icon={<Users />} title="No players yet" description="Copy the lobby chat from the League client (or type Riot IDs one per line) and press Search." />
+          <EmptyState icon={<Users />} title={t("No players yet")} description={t("Copy the lobby chat from the League client (or type Riot IDs one per line) and press Search.")} />
         </Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -85,7 +85,7 @@ function ScoutCard({ player }: { player: PlayerRef }) {
           {player.gameName}
           <span className="text-muted">#{player.tagLine}</span>
         </p>
-        <p className="mt-2 text-sm text-loss">{profile.error instanceof Error ? profile.error.message : "Not found"}</p>
+        <p className="mt-2 text-sm text-loss">{profile.error instanceof Error ? t(profile.error.message) : t("Not found")}</p>
       </Card>
     );
   const acc = profile.data!.data.account;
@@ -96,17 +96,17 @@ function ScoutCard({ player }: { player: PlayerRef }) {
         <div className="min-w-0">
           <p className="truncate font-semibold">{acc.gameName}</p>
           <p className="text-xs text-muted">
-            #{acc.tagLine} · Lvl {acc.summonerLevel}
+            #{acc.tagLine}{" " + t("· Lvl") + " "}{acc.summonerLevel}
           </p>
         </div>
       </Link>
       <div className="flex items-center gap-3 rounded-lg border border-line-soft bg-white/[0.02] p-2">
         <RankEmblem tier={solo?.tier ?? null} size={44} />
         <div>
-          <p className="text-sm font-semibold">{solo ? rankLabel(solo.tier, solo.division) : "Unranked"}</p>
+          <p className="text-sm font-semibold">{solo ? rankLabel(solo.tier, solo.division) : t("Unranked")}</p>
           {solo && (
             <p className="text-xs text-muted tabular">
-              {solo.lp} LP · <span className={wrColor(winRate(solo))}>{pct(winRate(solo))}</span> ({solo.wins + solo.losses})
+              {solo.lp}{" " + t("LP ·") + " "}<span className={wrColor(winRate(solo))}>{pct(winRate(solo))}</span> ({solo.wins + solo.losses})
             </p>
           )}
         </div>
@@ -116,26 +116,26 @@ function ScoutCard({ player }: { player: PlayerRef }) {
       ) : (
         <>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted">Last {s.games}</span>
+            <span className="text-muted">{t("Last") + " "}{s.games}</span>
             <span className={cn("font-semibold", wrColor(s.winRate))}>
               {s.wins}W {s.losses}L · {formatKda(s.kda)}
             </span>
           </div>
-          <div className="flex gap-[3px]" aria-label="Recent results">
-            {s.timeline.slice(-10).map((t) => (
-              <span key={t.matchId} className={cn("h-5 flex-1 rounded-sm", t.win ? "bg-win/80" : "bg-loss/70")} title={t.win ? "Win" : "Loss"} />
+          <div className="flex gap-[3px]" aria-label={t("Recent results")}>
+            {s.timeline.slice(-10).map((tt) => (
+              <span key={tt.matchId} className={cn("h-5 flex-1 rounded-sm", tt.win ? "bg-win/80" : "bg-loss/70")} title={tt.win ? t("Win") : t("Loss")} />
             ))}
           </div>
           {s.roles[0] && (
             <p className="flex items-center gap-1.5 text-xs text-muted">
-              <RoleIcon role={s.roles[0].role} size={14} className="text-primary" /> Mostly {ROLE_LABEL[s.roles[0].role]} ({s.roles[0].games}/{s.games})
+              <RoleIcon role={s.roles[0].role} size={14} className="text-primary" />{" " + t("Mostly") + " "}{t(ROLE_LABEL[s.roles[0].role])} ({s.roles[0].games}/{s.games})
             </p>
           )}
           <div className="space-y-1.5">
             {s.champions.slice(0, 3).map((c) => (
               <div key={c.championId} className="flex items-center gap-2 text-xs">
                 <ChampionIcon id={c.championId} size={26} />
-                <span className="flex-1 tabular text-muted">{c.games} games</span>
+                <span className="flex-1 tabular text-muted">{c.games}{" " + t("games")}</span>
                 <span className={cn("font-semibold tabular", wrColor(c.wins / c.games))}>{pct(c.wins / c.games)}</span>
               </div>
             ))}

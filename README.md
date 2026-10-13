@@ -90,6 +90,12 @@ Instalator zbudowany z `NEXUS_SERVER_URL` łączy się z Twoim serwerem. Adres m
 
 ## Funkcje w grze (tylko aplikacja na komputer)
 
+- **Auto-akceptacja kolejki:** gdy mecz zostanie znaleziony, NEXUS klika „Akceptuj” po wybranym opóźnieniu (0–8 s). Ustawienia → Asystent klienta LoL.
+- **Asystent wyboru bohatera:** gdy zaczyna się champ select, NEXUS pokazuje kontry na przeciwnika z Twojej linii (z prawdziwych meczów), Twój win rate na tych bohaterach i propozycje banów.
+- **Podsumowanie po meczu:** po każdej grze strona `/post-game` pokazuje zmianę LP, ocenę linii i porównanie z przeciwnikiem oraz z Twoją średnią.
+- **Status na Discordzie:** bohater, tryb i czas gry na Twoim profilu Discord. Wymaga Discord Application ID przy budowaniu (pole `discord_client_id` w Actions albo zmienna repo `NEXUS_DISCORD_CLIENT_ID`; utworzysz je na https://discord.com/developers/applications → New Application „NEXUS”).
+- **Buildy na wszystkie tryby:** Rankingowe/normalne, ARAM, ARAM: Chaos, Arena i URF — osobne statystyki i auto-import dopasowany do kolejki.
+
 - **Auto-import w champ selecie:** gdy zablokujesz bohatera, NEXUS tworzy stronę run „NEXUS …”, ustawia czary (Flash na D albo F, do wyboru) i dodaje zestaw przedmiotów do sklepu. Każdą z tych rzeczy można osobno wyłączyć w Ustawieniach → Auto import. Na stronach buildów jest też przycisk „Import to client”.
 - **Tabela scoutingu (jak Porofessor):** pokazuje się na ekranie ładowania i jest też w Live Game → Scouting. Zawiera rangę, mastery, KDA i WR na bohaterze, kółka 12h / główna rola / 30 dni oraz tagi wyliczone z ostatnich meczów (np. „Good CSer”, „OTP”, „Waking up”, „Loss streak”).
 - **Widgety w grze:** build z następnym itemem, Twoje statystyki, timery obiektów, przeciwnik z linii i czary wrogów. Każdy włączasz osobno w Ustawieniach → In-game widgets.
@@ -101,6 +107,14 @@ Z kluczem deweloperskim Riot (100 zapytań na 2 minuty) tabela scoutingu wczytuj
 ## Budowanie .exe bez komputera (GitHub Actions)
 
 Opisane wyżej w punkcie 4. Zakładka **Actions → Build desktop app → Run workflow**, pole `server_url`. Instalator trafia do Releases (i na stronę `/download`) oraz do **Artifacts**.
+
+## Język
+
+Interfejs jest po polsku i po angielsku (Ustawienia → Wygląd → Język). Tłumaczenia są w `lib/i18n/pl.ts` — klucze to angielskie teksty z kodu; brakujące teksty zostają po angielsku.
+
+## „Co poprawić”
+
+Na profilu i w Statystykach NEXUS wypisuje wnioski z ostatnich meczów: farma, wizja, śmierci i obrażenia na tle przeciwnika z linii, pory dnia z najlepszym win rate, gra po porażce, długość gier i najlepsi/najsłabsi bohaterowie. Wszystko jest liczone z Twoich meczów, nic nie jest zgadywane.
 
 ## Uczciwość danych
 
