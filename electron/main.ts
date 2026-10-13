@@ -99,12 +99,13 @@ async function checkForUpdate(manual = false) {
     const latest = info.release;
     if (!latest || latest.tag === BUILD_TAG) return;
     updatePrompted = true;
+    const pl = prefs.language === "pl";
     const { response } = await dialog.showMessageBox({
       type: "info",
-      title: "NEXUS update",
-      message: `A new version of NEXUS is available (${latest.name}).`,
-      detail: "Download and install it now? NEXUS will close while the installer runs.",
-      buttons: ["Update now", "Later"],
+      title: pl ? "Aktualizacja NEXUS" : "NEXUS update",
+      message: pl ? `Dostępna jest nowa wersja NEXUS (${latest.name}).` : `A new version of NEXUS is available (${latest.name}).`,
+      detail: pl ? "Pobrać i zainstalować teraz? NEXUS zamknie się na czas instalacji." : "Download and install it now? NEXUS will close while the installer runs.",
+      buttons: pl ? ["Aktualizuj teraz", "Później"] : ["Update now", "Later"],
       defaultId: 0,
       cancelId: 1,
     });
@@ -117,7 +118,7 @@ async function checkForUpdate(manual = false) {
     app.quit();
   } catch (err) {
     console.error("[nexus] update check failed", err);
-    if (manual) dialog.showMessageBox({ type: "error", title: "NEXUS update", message: "Couldn't download the update. Try again later or get it from the Download page." });
+    if (manual) dialog.showMessageBox({ type: "error", title: "NEXUS", message: prefs.language === "pl" ? "Nie udało się pobrać aktualizacji. Spróbuj później albo pobierz ją ze strony." : "Couldn't download the update. Try again later or get it from the Download page." });
   }
 }
 
