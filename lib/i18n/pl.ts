@@ -504,6 +504,8 @@ export const PL: Record<string, string> = {
   "Player Comparison": "Porównanie graczy",
   "Player not found": "Nie znaleziono gracza",
   "Player not found on this region.": "Nie znaleziono gracza w tym regionie.",
+  "Riot didn't accept this request — refresh the page and search the player again.": "Riot nie przyjął tego zapytania — odśwież stronę i wyszukaj gracza jeszcze raz.",
+  "Bad request to Riot API.": "Riot nie przyjął zapytania.",
   "Player not found.": "Nie znaleziono gracza.",
   "Post-game summary": "Podsumowanie po meczu",
   "PostgreSQL connected": "Połączono z PostgreSQL",

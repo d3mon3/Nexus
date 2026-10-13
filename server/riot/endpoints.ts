@@ -3,6 +3,7 @@ import { z } from "zod";
 import { platformHost, regionalHost, type Platform, type RegionInfo } from "@/lib/regions";
 import { cached, TTL } from "../cache";
 import { env, markKeyRejected } from "../env";
+import { healForeignPuuid } from "../puuid-reset";
 import { riotRequest, RiotApiError } from "./client";
 import {
   accountSchema,
@@ -29,6 +30,9 @@ async function req<T>(url: string, schema: z.ZodType<T>, allowNotFound = false):
     return await riotRequest(url, schema, { apiKey, allowNotFound });
   } catch (err) {
     if (err instanceof RiotApiError && (err.status === 401 || err.status === 403)) markKeyRejected(apiKey);
+    // A PUUID from another Riot project (after switching keys): drop stale data so the next load works.
+    const foreign = err instanceof RiotApiError && err.status === 400 ? /\/by-puuid\/([^/?]+)/.exec(url)?.[1] : undefined;
+    if (foreign) await healForeignPuuid(decodeURIComponent(foreign)).catch(() => false);
     throw err;
   }
 }

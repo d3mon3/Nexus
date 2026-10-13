@@ -38,6 +38,10 @@ class LruCache {
     }
   }
 
+  clear() {
+    this.map.clear();
+  }
+
   delete(prefix: string) {
     for (const key of this.map.keys()) if (key.startsWith(prefix)) this.map.delete(key);
   }
@@ -103,4 +107,9 @@ export async function invalidate(prefix: string) {
   memory.delete(prefix);
   const db = await getDb();
   if (db) await db.cacheEntry.deleteMany({ where: { key: { startsWith: prefix } } }).catch(() => undefined);
+}
+
+/** Empties the in-process cache (used when the Riot API project changes). */
+export function clearMemoryCache() {
+  memory.clear();
 }

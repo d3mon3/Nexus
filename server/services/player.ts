@@ -9,6 +9,7 @@ import { RiotApiError } from "../riot/client";
 import { mapLeagueEntries, mapMatch, mapSpectator } from "../riot/mappers";
 import { ladderPosition, lpChangesFor, recordSnapshot } from "./lp";
 import { computePlayerStats } from "./stats";
+import { healForeignPuuid } from "../puuid-reset";
 
 export class ServiceError extends Error {
   constructor(
@@ -42,6 +43,25 @@ export async function getProfile(regionValue: string, riotIdValue: string): Prom
   }
 
   try {
+    return await loadProfile(region, id);
+  } catch (err) {
+    // 400 on a PUUID endpoint after switching Riot keys: the cached PUUID is from the old project.
+    if (err instanceof RiotApiError && err.status === 400) {
+      const stale = await riot.accountByRiotId(region, id.gameName, id.tagLine).catch(() => null);
+      if (stale && (await healForeignPuuid(stale.puuid))) {
+        try {
+          return await loadProfile(region, id);
+        } catch (retryErr) {
+          throw toServiceError(retryErr, "Player not found on this region.");
+        }
+      }
+    }
+    throw toServiceError(err, "Player not found on this region.");
+  }
+}
+
+async function loadProfile(region: RegionInfo, id: { gameName: string; tagLine: string }): Promise<Envelope<PlayerProfile>> {
+  {
     const account = await riot.accountByRiotId(region, id.gameName, id.tagLine);
     const [summoner, entries, mastery, recentSolo] = await Promise.all([
       riot.summonerByPuuid(region.platform, account.puuid),
@@ -70,8 +90,6 @@ export async function getProfile(regionValue: string, riotIdValue: string): Prom
       source: "riot",
       fetchedAt: now(),
     };
-  } catch (err) {
-    throw toServiceError(err, "Player not found on this region.");
   }
 }
 
@@ -228,6 +246,7 @@ export function toServiceError(err: unknown, notFoundMessage: string): ServiceEr
     if (err.status === 429) return new ServiceError(429, err.message);
     if (err.status === 401 || err.status === 403)
       return new ServiceError(503, "The server's Riot API key is invalid or expired. The admin can paste a new one at /admin.");
+    if (err.status === 400) return new ServiceError(400, "Riot didn't accept this request — refresh the page and search the player again.");
     return new ServiceError(502, err.message);
   }
   console.error("[nexus] unexpected error", err);

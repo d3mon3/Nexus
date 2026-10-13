@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { requireAdmin, RIOT_KEY_RE, testKey } from "@/server/admin";
 import { saveKey } from "@/server/env";
+import { resetIfProjectChanged } from "@/server/puuid-reset";
 import { handle } from "@/server/http";
 import { ServiceError } from "@/server/services/player";
 
@@ -16,6 +17,12 @@ export function POST(req: Request) {
     const check = await testKey(parsed.data.key);
     if (!check.ok) throw new ServiceError(400, check.message);
     saveKey(parsed.data.key);
-    return { ok: true, message: "Klucz zapisany. NEXUS używa go od razu — bez restartu." };
+    const reset = await resetIfProjectChanged(parsed.data.key).catch(() => false);
+    return {
+      ok: true,
+      message: reset
+        ? "Klucz zapisany. To klucz z innej aplikacji Riot, więc zapisane dane graczy zostały wyczyszczone i pobiorą się od nowa (statystyki postaci zostają)."
+        : "Klucz zapisany. NEXUS używa go od razu — bez restartu.",
+    };
   });
 }
