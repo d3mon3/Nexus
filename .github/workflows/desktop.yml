@@ -31,7 +31,7 @@ jobs:
       - name: Check server address
         shell: bash
         env:
-          URL: ${{ inputs.server_url || vars.NEXUS_SERVER_URL }}
+          URL: ${{ inputs.server_url || vars.NEXUS_SERVER_URL || 'https://83-168-107-64.sslip.io' }}
         run: |
           if [[ "$URL" != https://* ]]; then
             echo "::error::Wpisz adres serwera w polu server_url (np. https://1-2-3-4.sslip.io) albo ustaw zmienną repo NEXUS_SERVER_URL."
@@ -43,9 +43,9 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false" # unsigned build
           # The installer connects to this server (it holds the Riot key). Never put the key itself here.
-          NEXUS_SERVER_URL: ${{ inputs.server_url || vars.NEXUS_SERVER_URL }}
+          NEXUS_SERVER_URL: ${{ inputs.server_url || vars.NEXUS_SERVER_URL || 'https://83-168-107-64.sslip.io' }}
           # Must match the release tag below so installed apps can tell when a newer one exists.
-          NEXUS_DISCORD_CLIENT_ID: ${{ inputs.discord_client_id || vars.NEXUS_DISCORD_CLIENT_ID }}
+          NEXUS_DISCORD_CLIENT_ID: ${{ inputs.discord_client_id || vars.NEXUS_DISCORD_CLIENT_ID || '1559514217609035906' }}
           NEXUS_BUILD_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('build-{0}', github.run_number) }}
       - uses: actions/upload-artifact@v4
         with:
