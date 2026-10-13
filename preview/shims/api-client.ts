@@ -16,6 +16,11 @@ const env = <T,>(data: T, note = "Demo mode — add RIOT_API_KEY to load real Ri
 const plat = (r: string) => resolveRegion(r)?.platform ?? "euw1";
 
 export const api = {
+  download: () =>
+    wait({
+      configured: true,
+      release: { repo: "login/nexus", tag: "build-12", name: "NEXUS build 12", publishedAt: "2026-10-13T06:10:00Z", fileName: "NEXUS-Setup-0.1.0.exe", url: "#", size: 98_400_000, pageUrl: "#" },
+    }),
   status: () => wait({ mode: "demo" as const, ddragonVersion: FALLBACK_DDRAGON_VERSION, database: false, aggregateDataset: null }),
   staticData: () => wait({ version: FALLBACK_DDRAGON_VERSION, champions: [...FALLBACK_CHAMPIONS].sort((a, b) => a.name.localeCompare(b.name)), runeIcons: Object.fromEntries(RUNES.map((r) => [r.id, r.icon])), source: "embedded" as const }),
   profile: (region: string, riotId: string) => {

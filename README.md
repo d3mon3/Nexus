@@ -27,12 +27,14 @@ Skrypt sam instaluje Dockera, bazę PostgreSQL, certyfikat HTTPS i nocne zbieran
 ### 3. Wklej klucz
 Otwórz na telefonie `https://TWÓJ-ADRES/admin`, wpisz hasło admina i wklej klucz. Serwer sprawdza go w Riot i używa od razu. Po kilku minutach startuje pierwsze zbieranie statystyk (Tier List / Champions / Builds); potem odświeżają się co noc o 4:00.
 
-### 4. Zbuduj .exe
+### 4. Zbuduj .exe — pojawi się na stronie do pobrania
 1. Na GitHubie: **Actions → Build desktop app → Run workflow**.
-2. W polu **server_url** wpisz adres serwera (np. `https://5-75-1-2.sslip.io`) i kliknij **Run workflow**. (Możesz też raz ustawić zmienną repo `NEXUS_SERVER_URL` w Settings → Secrets and variables → Actions → Variables.)
-3. Po ok. 10 minutach pobierz `NEXUS-windows` z sekcji **Artifacts** i wyślij plik `.exe` znajomym.
+2. W polu **server_url** wpisz adres serwera (np. `https://5-75-1-2.sslip.io`) i kliknij **Run workflow**. (Możesz też raz ustawić zmienną repo `NEXUS_SERVER_URL` w Settings → Secrets and variables → Actions → Variables — wtedy pole można zostawić puste.)
+3. Po ok. 15 minutach GitHub opublikuje wydanie (Release), a strona **`https://TWÓJ-ADRES/download`** sama pokaże przycisk **Download for Windows** z najnowszą wersją. Ten link wysyłasz znajomym. W menu strony jest też przycisk **Download app**.
 
-Windows pokaże „System Windows ochronił ten komputer”, bo instalator nie jest podpisany — **Więcej informacji → Uruchom mimo to**.
+Każde kolejne „Run workflow” to nowa wersja — strona pobierania przełącza się na nią automatycznie (do 5 minut). Krótki link prosto do pliku: `https://TWÓJ-ADRES/api/download/latest`.
+
+Windows pokaże „System Windows ochronił ten komputer”, bo instalator nie jest podpisany — **Więcej informacji → Uruchom mimo to** (to samo jest opisane na stronie pobierania).
 
 ### Codziennie / gdy coś nie działa
 - Na górze aplikacji jest czerwony znaczek **KEY EXPIRED** albo **NO API KEY** → wklej nowy klucz w `/admin`.
@@ -98,7 +100,7 @@ Z kluczem deweloperskim Riot (100 zapytań na 2 minuty) tabela scoutingu wczytuj
 
 ## Budowanie .exe bez komputera (GitHub Actions)
 
-Opisane wyżej w punkcie 4. Zakładka **Actions → Build desktop app → Run workflow**, pole `server_url`, instalator w **Artifacts**.
+Opisane wyżej w punkcie 4. Zakładka **Actions → Build desktop app → Run workflow**, pole `server_url`. Instalator trafia do Releases (i na stronę `/download`) oraz do **Artifacts**.
 
 ## Uczciwość danych
 

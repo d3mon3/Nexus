@@ -4,6 +4,7 @@ import { ChampionDetailView } from "@/components/views/champion-detail-view";
 import { ChampionsView } from "@/components/views/champions-view";
 import { CompareView } from "@/components/views/compare-view";
 import { DashboardView } from "@/components/views/dashboard-view";
+import { DownloadView } from "@/components/views/download-view";
 import { LeaderboardsView } from "@/components/views/leaderboards-view";
 import { LiveView } from "@/components/views/live-view";
 import { MatchesView } from "@/components/views/matches-view";
@@ -30,4 +31,5 @@ export const routes: { pattern: RegExp; render: (p: string[]) => ReactNode }[] =
   { pattern: /^\/multi-search$/, render: () => <MultiSearchView /> },
   { pattern: /^\/pro-players$/, render: () => <ProPlayersView /> },
   { pattern: /^\/settings$/, render: () => <SettingsView /> },
+  { pattern: /^\/download$/, render: () => <DownloadView /> },
 ];

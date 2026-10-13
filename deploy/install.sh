@@ -60,6 +60,12 @@ AGGREGATE_MATCHES=10
 ENV
   chmod 600 .env
 fi
+# The /download page offers the newest .exe from this repo's GitHub Releases.
+if ! grep -q '^NEXUS_RELEASE_REPO=' .env; then
+  ORIGIN="$(git config --get remote.origin.url || true)"
+  RELEASE_REPO="$(printf '%s' "$ORIGIN" | sed -nE 's#.*github\.com[:/]([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$#\1/\2#p' | sed -E 's/\.git$//')"
+  echo "NEXUS_RELEASE_REPO=${RELEASE_REPO}" >> .env
+fi
 # shellcheck disable=SC1091
 set -a && . ./.env && set +a
 
@@ -83,11 +89,12 @@ cat <<DONE
 
   Adres serwera:   https://${DOMAIN}
   Panel admina:    https://${DOMAIN}/admin
+  Pobieranie .exe: https://${DOMAIN}/download
   Hasło admina:    ${ADMIN_PASSWORD}
 
   1. Otwórz panel admina na telefonie i wklej klucz Riot.
   2. Ten adres wpisz w GitHub → Actions → Build desktop app
-     (pole „server_url”), żeby zbudować .exe dla znajomych.
+     (pole „server_url”). Po ~15 min .exe pojawi się na stronie /download.
 
   Hasło jest też w pliku ${DIR}/.env
   Aktualizacja później: sudo bash ${DIR}/deploy/install.sh

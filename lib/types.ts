@@ -354,3 +354,8 @@ export interface ScoutPlayer {
   tags: ScoutTag[];
   analysed: number;
 }
+
+export interface DesktopReleaseInfo {
+  configured: boolean;
+  release: { repo: string; tag: string; name: string; publishedAt: string; fileName: string; url: string; size: number; pageUrl: string } | null;
+}

@@ -22,6 +22,7 @@ export const qk = {
 };
 
 export const useStatus = () => useQuery({ queryKey: qk.status, queryFn: api.status, staleTime: 60_000 });
+export const useDesktopRelease = () => useQuery({ queryKey: ["download"], queryFn: api.download, staleTime: 5 * 60_000 });
 
 export const riotIdOf = (p: Pick<PlayerRef, "gameName" | "tagLine">) => `${p.gameName}#${p.tagLine}`;
 

@@ -84,7 +84,8 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "build/icon.png"
+      "icon": "build/icon.png",
+      "artifactName": "NEXUS-Setup-${version}.${ext}"
     },
     "mac": {
       "target": "dmg",

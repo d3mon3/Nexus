@@ -3,13 +3,16 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Download } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { useIsDesktop } from "@/lib/desktop";
 import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
 import { isActive, NAV } from "./nav";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname() ?? "/";
+  const desktop = useIsDesktop();
   return (
     <nav aria-label="Main" className="flex flex-col gap-1">
       {NAV.map((item) => {
@@ -38,6 +41,20 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           </Link>
         );
       })}
+      {!desktop && (
+        <Link
+          href="/download"
+          onClick={onNavigate}
+          aria-current={pathname === "/download" ? "page" : undefined}
+          className={cn(
+            "mt-3 flex h-[40px] items-center gap-3 rounded-lg border px-3 text-[13.5px] font-semibold transition-colors",
+            pathname === "/download" ? "border-primary/70 bg-primary-soft text-fg" : "border-primary/35 bg-primary-soft/50 text-primary hover:border-primary/70 hover:text-fg",
+          )}
+        >
+          <Download className="size-[18px]" strokeWidth={1.9} />
+          Download app
+        </Link>
+      )}
     </nav>
   );
 }

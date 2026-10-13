@@ -41,7 +41,7 @@ export function Topbar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 flex h-[68px] items-center gap-3 border-b border-line-soft/60 bg-bg/70 px-4 backdrop-blur-xl lg:px-6">
+    <header className="sticky top-0 z-40 flex h-[68px] items-center gap-2 border-b border-line-soft/60 bg-bg/70 px-3 backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-6">
       <button className="grid size-10 place-items-center rounded-lg text-muted hover:text-fg lg:hidden" onClick={() => setDrawer(true)} aria-label="Open menu">
         <Menu className="size-5" />
       </button>
@@ -49,14 +49,14 @@ export function Topbar() {
         <Logo size="sm" />
       </Link>
 
-      <div className="flex flex-1 justify-center">
+      <div className="flex min-w-0 flex-1 justify-end sm:justify-center">
         <button
           onClick={() => setPaletteOpen(true)}
-          className="group flex h-11 w-full max-w-[580px] items-center gap-3 rounded-xl border border-line bg-surface-2/70 px-4 text-left text-sm text-dim transition-all hover:border-primary/50 hover:shadow-[0_0_24px_-10px_var(--primary-glow)]"
+          className="group flex h-11 w-11 shrink-0 items-center justify-center gap-3 rounded-xl sm:w-full sm:max-w-[580px] sm:justify-start border border-line bg-surface-2/70 text-left text-sm text-dim transition-all sm:px-4 hover:border-primary/50 hover:shadow-[0_0_24px_-10px_var(--primary-glow)]"
           aria-label="Search a player, champion or match (Ctrl+K)"
         >
           <Search className="size-[18px] text-muted transition-colors group-hover:text-primary" />
-          <span className="flex-1 truncate">Search a player, champion or match…</span>
+          <span className="hidden flex-1 truncate sm:inline">Search a player, champion or match…</span>
           <kbd className="hidden rounded-md border border-line bg-surface-hover/60 px-1.5 py-0.5 text-[11px] text-muted sm:inline">Ctrl K</kbd>
         </button>
       </div>
@@ -84,14 +84,16 @@ export function Topbar() {
           </Tooltip>
         )}
         <Select
-          className="w-[92px]"
+          className="hidden w-[92px] sm:block"
           label="Region"
           value={settings.region}
           onChange={(v) => update({ region: v as Platform })}
           options={REGIONS.map((r) => ({ value: r.platform, label: r.label }))}
           align="right"
         />
-        <ThemeToggle />
+        <span className="hidden sm:contents">
+          <ThemeToggle />
+        </span>
         <Notifications demo={status.data?.mode === "demo"} clientPhase={client?.connected ? client.phase : null} />
         <AvatarMenu />
       </div>

@@ -1,4 +1,5 @@
 import type {
+  DesktopReleaseInfo,
   AppStatus,
   ChampionBuild,
   ChampionInfo,
@@ -81,6 +82,7 @@ export interface ChampionDetail {
 
 export const api = {
   status: () => getJson<AppStatus>("/api/status"),
+  download: () => getJson<DesktopReleaseInfo>("/api/download"),
   staticData: () => getJson<StaticBundle>("/api/static"),
   profile: (region: string, riotId: string) => getJson<Envelope<PlayerProfile>>("/api/player", { region, riotId }),
   matches: (p: { region: string; puuid: string; start: number; count: number; queue?: string; champion?: number | null; result?: string | null }) =>
