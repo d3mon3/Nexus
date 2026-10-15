@@ -6,6 +6,7 @@ import { roleFromAssigned } from "@/lib/client-import";
 import { getBridge, useChampSelect, useClientState } from "@/lib/desktop";
 import { useSettings } from "@/lib/settings";
 import { compWarnings } from "@/lib/team-comp";
+import { BUILD_STYLE_LABEL, type BuildStyle } from "@/lib/item-kinds";
 import type { GameModeId } from "@/lib/modes";
 import { pct, ROLE_LABEL } from "@/lib/format";
 import { t } from "@/lib/i18n";
@@ -101,9 +102,10 @@ export function ChampSelectAssistant({ forceShow = false }: { forceShow?: boolea
 function ImportPanel({ championId, role, mode, myStats }: { championId: number; role: Role | null; mode: GameModeId; myStats: { games: number; wins: number; kills: number; deaths: number; assists: number } | null }) {
   const { champion } = useStatic();
   const { settings, update } = useSettings();
-  const q = useChampionBuild(championId, mode === "sr" ? role : null, undefined, mode);
-  const build = q.data?.data ?? null;
   const prefs = settings.importPrefs;
+  const chosenVariant = prefs.variantChoice?.[String(championId)] ?? null;
+  const q = useChampionBuild(championId, mode === "sr" ? role : null, undefined, mode, chosenVariant);
+  const build = q.data?.data ?? null;
   const chosen = prefs.runeChoice?.[String(championId)] ?? 0;
   const disabled = (prefs.disabledChampions ?? []).includes(championId);
   const [status, setStatus] = useState<string | null>(null);
@@ -111,6 +113,13 @@ function ImportPanel({ championId, role, mode, myStats }: { championId: number; 
 
   const setPrefs = (patch: Partial<typeof prefs>) => update((s) => ({ importPrefs: { ...s.importPrefs, ...patch } }));
   const choose = (i: number) => setPrefs({ runeChoice: { ...(prefs.runeChoice ?? {}), [String(championId)]: i } });
+  const chooseVariant = (id: string | null) => {
+    const next = { ...(prefs.variantChoice ?? {}) };
+    if (id) next[String(championId)] = id;
+    else delete next[String(championId)];
+    // A different style has different rune pages: start from its most played one.
+    setPrefs({ variantChoice: next, runeChoice: { ...(prefs.runeChoice ?? {}), [String(championId)]: 0 } });
+  };
   const toggleAuto = (on: boolean) => {
     const list = new Set(prefs.disabledChampions ?? []);
     if (on) list.delete(championId);
@@ -120,7 +129,7 @@ function ImportPanel({ championId, role, mode, myStats }: { championId: number; 
   const importNow = async () => {
     if (!bridge?.importBuild) return;
     setStatus(t("Importing…"));
-    const r = await bridge.importBuild(championId, role, mode, chosen).catch(() => ({ ok: false, text: t("Import failed.") }));
+    const r = await bridge.importBuild(championId, role, mode, chosen, build?.variant ?? undefined).catch(() => ({ ok: false, text: t("Import failed.") }));
     setStatus(r.text);
   };
 
@@ -149,6 +158,25 @@ function ImportPanel({ championId, role, mode, myStats }: { championId: number; 
       ) : !build ? (
         <p className="mt-2 text-xs text-muted">{t("Build data for this champion is still being collected.")}</p>
       ) : (
+        <>
+        {(build.variants?.length ?? 0) > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-[11px] font-semibold uppercase tracking-wider text-dim">{t("Build style")}</span>
+            {[null, ...(build.variants ?? []).map((v) => v.id)].map((id) => {
+              const v = build.variants?.find((x) => x.id === id);
+              return (
+                <button
+                  key={id ?? "all"}
+                  onClick={() => chooseVariant(id)}
+                  className={cn("rounded-full border px-2.5 py-1 text-xs transition", (build.variant ?? null) === id ? "border-primary bg-primary-soft text-fg" : "border-line-soft text-muted hover:border-line")}
+                >
+                  {id ? t(BUILD_STYLE_LABEL[id as BuildStyle] ?? id) : t("All")}
+                  {v && <span className="ml-1.5 text-[10.5px] text-dim tabular">{pct(v.winRate)}</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
         <div className="mt-3 grid gap-3 md:grid-cols-[1.4fr_1fr]">
           <div>
             <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-dim">{t("Rune page — tap to choose")}</p>
@@ -179,6 +207,7 @@ function ImportPanel({ championId, role, mode, myStats }: { championId: number; 
             </div>
           </div>
         </div>
+        </>
       )}
       {status && <p className="mt-2 text-xs text-muted">{status}</p>}
     </div>

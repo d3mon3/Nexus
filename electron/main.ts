@@ -417,10 +417,10 @@ function describeImport(r: ImportResult, name: string): string {
   return `${name}: imported ${parts.join(", ")}${failed.length ? ` (failed: ${failed.join(", ")})` : ""}.`;
 }
 
-async function runImport(championId: number, role: Role | null, manual: boolean, mode: GameModeId = "sr", runeIndex?: number): Promise<ImportResult> {
+async function runImport(championId: number, role: Role | null, manual: boolean, mode: GameModeId = "sr", runeIndex?: number, variant?: string): Promise<ImportResult> {
   if (!conn) throw new Error("League client is not running.");
   const name = await championName(championId);
-  const result = await importBuild(conn, baseUrl, championId, mode === "sr" ? role : null, name, prefs.import, mode, runeIndex);
+  const result = await importBuild(conn, baseUrl, championId, mode === "sr" ? role : null, name, prefs.import, mode, runeIndex, variant);
   const text = describeImport(result, mode === "sr" ? name : `${name} (${modeInfo(mode).label})`);
   mainWindow?.webContents.send("nexus:import", { ...result, text });
   if (!manual) new Notification({ title: "NEXUS", body: text, silent: true }).show();
@@ -630,11 +630,12 @@ ipcMain.handle("nexus:get-champ-select", async () => {
   return readChampSelect(conn, flow.queueId).catch(() => null);
 });
 ipcMain.handle("nexus:get-last-game", () => lastGame);
-ipcMain.handle("nexus:import-build", async (_e, championId: number, role: Role | null, modeArg?: string, runeIndex?: number) => {
+ipcMain.handle("nexus:import-build", async (_e, championId: number, role: Role | null, modeArg?: string, runeIndex?: number, variant?: string) => {
   try {
     conn = conn ?? (await findConnection());
     const idx = Number.isInteger(runeIndex) ? Math.max(0, Math.min(4, Number(runeIndex))) : undefined;
-    const r = await runImport(Number(championId), role ?? null, true, isGameModeId(modeArg) ? modeArg : "sr", idx);
+    const style = typeof variant === "string" && /^[a-z]{2,12}$/.test(variant) ? variant : undefined;
+    const r = await runImport(Number(championId), role ?? null, true, isGameModeId(modeArg) ? modeArg : "sr", idx, style);
     return { ok: r.runes === "ok" || r.spells === "ok" || r.items === "ok", text: describeImport(r, await championName(Number(championId))) };
   } catch (err) {
     return { ok: false, text: err instanceof Error ? err.message : String(err) };

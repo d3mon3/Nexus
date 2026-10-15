@@ -8,6 +8,7 @@ import { getBridge } from "@/lib/desktop";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { formatKda, pct, ROLE_LABEL, wrColor } from "@/lib/format";
+import { BUILD_STYLE_LABEL, type BuildStyle } from "@/lib/item-kinds";
 import type { GameModeId } from "@/lib/modes";
 import { useChampionBuild, useChampionDetail } from "@/lib/queries";
 import { useStatic } from "@/lib/static-context";
@@ -63,7 +64,9 @@ export function BuildPanel({
   const c = champion(championId);
   const [localRole, setLocalRole] = useState<Role | null>(roleProp ?? null);
   const role = roleProp ?? localRole;
-  const q = useChampionBuild(championId, mode === "sr" ? role : null, patch, mode);
+  const [variantState, setVariant] = useState<{ champ: number; id: string | null }>({ champ: championId, id: null });
+  const variant = variantState.champ === championId ? variantState.id : null;
+  const q = useChampionBuild(championId, mode === "sr" ? role : null, patch, mode, variant);
   const [localTab, setLocalTab] = useState<BuildTab>("builds");
   const tab = tabProp ?? localTab;
   const b = q.data?.data;
@@ -82,7 +85,9 @@ export function BuildPanel({
       </Card>
     );
 
-  const roles = c?.roles ?? [b.role];
+  // Every lane is selectable (off-meta picks like Samira top), the usual ones first.
+  const usual = c?.roles ?? [b.role];
+  const roles: Role[] = [...usual, ...(["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"] as Role[]).filter((r) => !usual.includes(r))];
   const changeRole = (r: Role) => (onRoleChange ? onRoleChange(r) : setLocalRole(r));
 
   const header = showHeader && (
@@ -104,6 +109,21 @@ export function BuildPanel({
           <span className="text-success">{formatKda(b.summary.kda)}</span>
         </Stat>
       </div>
+      {(b.variants?.length ?? 0) > 0 && (
+        <div className="flex w-full flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-[11px] font-semibold uppercase tracking-wider text-dim">{t("Build style")}</span>
+          {[{ id: null as string | null, games: 0, winRate: 0 }, ...(b.variants ?? [])].map((v) => (
+            <button
+              key={v.id ?? "all"}
+              onClick={() => setVariant({ champ: championId, id: v.id })}
+              className={cn("rounded-full border px-2.5 py-1 text-xs transition", (b.variant ?? null) === v.id ? "border-primary bg-primary-soft text-fg" : "border-line-soft text-muted hover:border-line hover:text-fg")}
+            >
+              {v.id ? t(BUILD_STYLE_LABEL[v.id as BuildStyle] ?? v.id) : t("All")}
+              {v.id && <span className="ml-1.5 text-[10.5px] text-dim tabular">{pct(v.winRate)} · {v.games.toLocaleString()}</span>}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex w-full flex-wrap items-center gap-2 text-xs text-muted">
         <SourceBadge source={q.data?.source} note={t(q.data?.note)} />
         <span className="tabular">{t("Pick") + " "}{pct(b.summary.pickRate, 1)}{" " + t("· Ban") + " "}{pct(b.summary.banRate, 1)} · {b.summary.games.toLocaleString()}{" " + t("games · patch") + " "}{b.patch}
@@ -119,7 +139,7 @@ export function BuildPanel({
               options={roles.map((r) => ({ value: r, label: t(ROLE_LABEL[r]), icon: <RoleIcon role={r} size={14} /> }))}
             />
           )}
-          <ImportButton championId={championId} role={b.role} mode={mode} />
+          <ImportButton championId={championId} role={b.role} mode={mode} variant={b.variant ?? null} />
           <Link href={`/champions/${c?.key.toLowerCase()}`} className="text-primary hover:underline">{t("Champion page")}</Link>
         </div>
       </div>
@@ -394,7 +414,7 @@ function MatchupList({ title, icon, list }: { title: string; icon: ReactNode; li
 }
 
 /** Desktop only: writes this build (runes, spells, item set) into the League client now. */
-export function ImportButton({ championId, role, mode = "sr" }: { championId: number; role: Role; mode?: GameModeId }) {
+export function ImportButton({ championId, role, mode = "sr", variant = null }: { championId: number; role: Role; mode?: GameModeId; variant?: string | null }) {
   const [busy, setBusy] = useState(false);
   const bridge = typeof window !== "undefined" ? getBridge() : null;
   if (!bridge?.importBuild) return null;
@@ -405,7 +425,7 @@ export function ImportButton({ championId, role, mode = "sr" }: { championId: nu
       disabled={busy}
       onClick={async () => {
         setBusy(true);
-        const r = await bridge.importBuild!(championId, mode === "sr" ? role : null, mode);
+        const r = await bridge.importBuild!(championId, mode === "sr" ? role : null, mode, undefined, variant ?? undefined);
         setBusy(false);
         (r.ok ? toast.success : toast.error)(r.ok ? t("Imported to League client") : t("Import failed"), { description: t(r.text) });
       }}

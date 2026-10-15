@@ -33,12 +33,22 @@ async function latestRuns() {
   return runs.length ? { db, runs } : null;
 }
 
+/** SR bands stored by the aggregator, lowest first (Master+ is one band). */
+const SR_BANDS = ["iron", "bronze", "silver", "gold", "platinum", "emerald", "diamond", "master"];
+/** "gold" in the rank filter means Gold and above. */
+function bandsFrom(rank: string): string[] {
+  const r = ["grandmaster", "challenger"].includes(rank) ? "master" : rank;
+  const i = SR_BANDS.indexOf(r);
+  return i < 0 ? [rank] : SR_BANDS.slice(i);
+}
 /** rankBand filter for a mode: SR uses rank bands, other modes store their id as the band. */
 function bandFilter(mode: GameModeId, rank?: string | null) {
   if (mode !== "sr") return { rankBand: mode };
-  return rank ? { rankBand: rank } : { rankBand: { notIn: NON_SR_MODES } };
+  return rank ? { rankBand: { in: bandsFrom(rank) } } : { rankBand: { notIn: NON_SR_MODES } };
 }
-const bandMatches = (band: string, mode: GameModeId, rank?: string | null) => (mode !== "sr" ? band === mode : rank ? band === rank : !NON_SR_MODES.includes(band));
+const bandMatches = (band: string, mode: GameModeId, rank?: string | null) => (mode !== "sr" ? band === mode : rank ? bandsFrom(rank).includes(band) : !NON_SR_MODES.includes(band));
+/** Build-variant rows are stored with role "TOP~ap"; they never count in champion stats. */
+const BASE_ROLE = { role: { not: { contains: "~" } } };
 
 export async function getChampionStats(opts: { patch?: string | null; role?: Role | null; rank?: string | null; region?: string | null; mode?: GameModeId | null }): Promise<Envelope<ChampionStatsPayload>> {
   const mode: GameModeId = opts.mode ?? "sr";
@@ -53,7 +63,7 @@ export async function getChampionStats(opts: { patch?: string | null; role?: Rol
       const rows = await agg.db.championAggregate.findMany({
         where: {
           patch,
-          ...(opts.role && mode === "sr" ? { role: opts.role } : {}),
+          ...(opts.role && mode === "sr" ? { role: opts.role } : BASE_ROLE),
           ...(opts.region ? { platform: opts.region } : {}),
           ...bandFilter(mode, opts.rank),
         },
@@ -115,16 +125,17 @@ const top = (c: Counter | undefined, n: number) =>
     .sort((a, b) => b[1].games - a[1].games)
     .slice(0, n);
 
-export async function getChampionBuild(championId: number, role: Role | null, patchValue?: string | null, modeValue?: GameModeId | null): Promise<Envelope<ChampionBuild | null>> {
+export async function getChampionBuild(championId: number, role: Role | null, patchValue?: string | null, modeValue?: GameModeId | null, variantValue?: string | null): Promise<Envelope<ChampionBuild | null>> {
   const mode: GameModeId = modeValue ?? "sr";
   const stats = await getChampionStats({ patch: patchValue, role: null, mode });
   if (stats.source === "aggregate" && stats.data.rows.length) {
     const db = (await getDb())!;
-    const find = (patch: string) => db.championAggregate.findMany({ where: { patch, championId, ...bandFilter(mode), ...(role && mode === "sr" ? { role } : {}) } });
+    // Rows "TOP" (all games) and "TOP~ap", "TOP~onhit" … (build variants).
+    const find = (patch: string) => db.championAggregate.findMany({ where: { patch, championId, ...bandFilter(mode), ...(role && mode === "sr" ? { role: { startsWith: role } } : {}) } });
     let rows = await find(stats.data.patch);
     // Early in a new patch the sample is small: add the previous patch until there are enough games.
     let patchLabel = stats.data.patch;
-    if (!patchValue && rows.reduce((s, r) => s + r.games, 0) < 400) {
+    if (!patchValue && rows.filter((r) => !r.role.includes("~")).reduce((s, r) => s + r.games, 0) < 400) {
       const ordered = [...stats.data.patches].sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
       const prev = ordered[ordered.indexOf(stats.data.patch) + 1];
       if (prev) {
@@ -139,10 +150,28 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
     const known = Object.keys(kinds).length > 0;
     // Finished items only (no boots, components or starters) when Data Dragon is available.
     const keepCore = (id: number) => (known ? kinds[id] === "core" || kinds[id] === undefined : !BOOT_IDS.has(id));
-    if (rows.length) {
-      const mainRole = (role ?? rows.sort((a, b) => b.games - a.games)[0].role) as Role;
+    const baseRows = rows.filter((r) => !r.role.includes("~"));
+    if (baseRows.length) {
+      const mainRole = (role ?? [...baseRows].sort((a, b) => b.games - a.games)[0].role) as Role;
       const summary = stats.data.rows.find((r) => r.championId === championId && r.role === mainRole);
-      const forRole = rows.filter((r) => r.role === mainRole);
+      const baseForRole = baseRows.filter((r) => r.role === mainRole);
+      const baseGames = baseForRole.reduce((s, r) => s + r.games, 0);
+      // Variants worth showing: at least 15 games and 5% of the champion's games in this role.
+      const byVariant = new Map<string, { games: number; wins: number }>();
+      for (const r of rows)
+        if (r.role.startsWith(`${mainRole}~`)) {
+          const id = r.role.split("~")[1];
+          const v = byVariant.get(id) ?? { games: 0, wins: 0 };
+          v.games += r.games;
+          v.wins += r.wins;
+          byVariant.set(id, v);
+        }
+      const variants = [...byVariant.entries()]
+        .filter(([, v]) => v.games >= Math.max(15, baseGames * 0.05))
+        .sort((a, b) => b[1].games - a[1].games)
+        .map(([id, v]) => ({ id, games: v.games, winRate: v.wins / v.games }));
+      const variant = variantValue && variants.some((v) => v.id === variantValue) ? variantValue : null;
+      const forRole = variant ? rows.filter((r) => r.role === `${mainRole}~${variant}`) : baseForRole;
       const merged: StoredBuilds = {};
       for (const r of forRole) {
         const b = r.builds as StoredBuilds;
@@ -156,7 +185,7 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
         }
       }
       const roleGames = forRole.reduce((s, r) => s + r.games, 0);
-      const games = patchLabel !== stats.data.patch ? roleGames : (summary?.games ?? roleGames);
+      const games = variant || patchLabel !== stats.data.patch ? roleGames : (summary?.games ?? roleGames);
       const toPath = ([key, v]: [string, { games: number; wins: number }]): BuildPath => ({
         items: key.split("-").map(Number),
         games: v.games,
@@ -178,7 +207,11 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
         mode,
         role: mainRole,
         patch: stats.data.patch,
-        summary: summary ?? { championId, role: mainRole, tier: "C", winRate: 0, pickRate: 0, banRate: 0, games, kda: 0 },
+        summary: (() => {
+          const base = summary ?? { championId, role: mainRole, tier: "C" as const, winRate: 0, pickRate: 0, banRate: 0, games, kda: 0 };
+          const v = variant ? variants.find((x) => x.id === variant) : null;
+          return v ? { ...base, games: v.games, winRate: v.winRate } : base;
+        })(),
         starting: top(merged.starting, 2).map(toPath),
         popular,
         highestWinRate: highest,
@@ -194,6 +227,8 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
         skillOrder: { priority, sequence: skillSequence(priority), winRate: skill ? skill[1].wins / skill[1].games : 0 },
         counters: [...matchups].sort((a, b) => a.winRate - b.winRate).slice(0, 5),
         favorable: [...matchups].sort((a, b) => b.winRate - a.winRate).slice(0, 5),
+        variants: variants.length >= 2 || (variants.length === 1 && variants[0].games < baseGames * 0.85) ? variants : [],
+        variant,
       };
       return { data: build, source: "aggregate", fetchedAt: now(), note: `${games.toLocaleString()} games on patch ${patchLabel}.` };
     }

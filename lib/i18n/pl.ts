@@ -834,6 +834,14 @@ export const PL: Record<string, string> = {
   "NEXUS starts hidden in the tray and opens by itself when champion select begins.": "NEXUS startuje ukryty w zasobniku i sam się otwiera, gdy zaczyna się wybór postaci.",
   "Keep running in the tray": "Działaj w zasobniku",
   "Closing the window keeps NEXUS in the tray (next to the clock). Quit from the tray menu.": "Zamknięcie okna zostawia NEXUSa w zasobniku (obok zegara). Całkiem wyłączysz go z menu ikony.",
+  "Build style": "Styl buildu",
+  "On-hit / attack speed": "On-hit / szybkość ataku",
+  "Crit": "Krytyki",
+  "Lethality": "Destrukcja",
+  "Bruiser": "Bruiser",
+  "Tank": "Tank",
+  "AP": "AP",
+  "AD": "AD",
 };
 
 export const PL_PLURAL: Record<string, { n: string | number; forms: [string, string, string] }> = {

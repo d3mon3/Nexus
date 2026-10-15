@@ -33,3 +33,33 @@ export function classifyAll(data: Record<string, DdItem>): Record<number, ItemKi
   }
   return out;
 }
+
+/** Build style of one player from their finished items (first three count most). */
+export type BuildStyle = "ap" | "crit" | "onhit" | "lethality" | "bruiser" | "tank" | "ad";
+
+export const BUILD_STYLE_LABEL: Record<BuildStyle, string> = {
+  ap: "AP",
+  crit: "Crit",
+  onhit: "On-hit / attack speed",
+  lethality: "Lethality",
+  bruiser: "Bruiser",
+  tank: "Tank",
+  ad: "AD",
+};
+
+export function buildStyle(core: number[], tagsOf: (id: number) => string[] | undefined): BuildStyle | null {
+  const items = core.slice(0, 3).map((id) => tagsOf(id) ?? []);
+  if (items.length < 2) return null;
+  const n = items.length;
+  const count = (f: (t: string[]) => boolean) => items.filter(f).length;
+  const has = (t: string[], ...xs: string[]) => xs.some((x) => t.includes(x));
+  const ap = count((t) => has(t, "SpellDamage"));
+  const dmg = count((t) => has(t, "Damage", "CriticalStrike", "AttackSpeed", "ArmorPenetration", "OnHit"));
+  if (ap >= Math.ceil(n / 2) && ap > dmg - ap) return "ap";
+  if (count((t) => has(t, "CriticalStrike")) >= 2) return "crit";
+  if (count((t) => has(t, "OnHit") || (has(t, "AttackSpeed") && !has(t, "CriticalStrike"))) >= 2) return "onhit";
+  if (count((t) => has(t, "ArmorPenetration")) >= 2) return "lethality";
+  if (count((t) => has(t, "Health", "Armor", "SpellBlock") && !has(t, "Damage", "SpellDamage", "CriticalStrike", "AttackSpeed")) >= 2) return "tank";
+  if (count((t) => has(t, "Damage") && has(t, "Health", "Armor", "SpellBlock")) >= 2) return "bruiser";
+  return dmg >= 2 ? "ad" : null;
+}

@@ -18,6 +18,8 @@ export interface ImportPrefs {
   disabledChampions?: number[];
   /** Remembered rune page choice per champion (index into build.runes). */
   runeChoice?: Record<string, number>;
+  /** Remembered build style per champion (AP / onhit …), used by auto-import too. */
+  variantChoice?: Record<string, string>;
 }
 
 export const DEFAULT_IMPORT_PREFS: ImportPrefs = { runes: true, spells: true, items: true, flashKey: "F" };

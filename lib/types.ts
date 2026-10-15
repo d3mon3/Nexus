@@ -252,6 +252,10 @@ export interface ChampionBuild {
   skillOrder: { priority: ("Q" | "W" | "E")[]; sequence: ("Q" | "W" | "E" | "R")[]; winRate: number };
   counters: Matchup[]; // hardest matchups
   favorable: Matchup[]; // easiest matchups
+  /** Build styles played often enough to show (AP / AD / on-hit …), most played first. */
+  variants?: { id: string; games: number; winRate: number }[];
+  /** The style this build is for; null = all games together. */
+  variant?: string | null;
 }
 
 export interface LeaderboardEntry {

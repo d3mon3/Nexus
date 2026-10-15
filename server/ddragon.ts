@@ -3,6 +3,11 @@ import { z } from "zod";
 import { DDRAGON, FALLBACK_CHAMPIONS, FALLBACK_DDRAGON_VERSION, RUNES } from "@/lib/static-data";
 import type { ChampionInfo, Role } from "@/lib/types";
 import { classifyAll, type ItemKind } from "@/lib/item-kinds";
+
+export interface ItemCatalog {
+  kinds: Record<number, ItemKind>;
+  tags: Record<number, string[]>;
+}
 import { cached, TTL } from "./cache";
 
 /**
@@ -107,17 +112,24 @@ const itemsSchema = z.object({
   ),
 });
 
-/** id → item class for the latest patch (boots / finished item / starter / component …). Empty map if Data Dragon is unreachable. */
-export function getItemKinds(): Promise<Record<number, ItemKind>> {
-  return cached("ddragon:item-kinds", TTL.ddragon, async () => {
+/** Item classes and stat tags for the latest patch. Empty if Data Dragon is unreachable. */
+export function getItemCatalog(): Promise<ItemCatalog> {
+  return cached("ddragon:item-catalog", TTL.ddragon, async () => {
     try {
       const versions = await getJson(`${DDRAGON}/api/versions.json`, versionsSchema);
       const items = await getJson(`${DDRAGON}/cdn/${versions[0] ?? FALLBACK_DDRAGON_VERSION}/data/en_US/item.json`, itemsSchema);
-      return classifyAll(items.data);
+      const tags: Record<number, string[]> = {};
+      for (const [id, it] of Object.entries(items.data)) tags[Number(id)] = it.tags ?? [];
+      return { kinds: classifyAll(items.data), tags };
     } catch {
-      return {};
+      return { kinds: {}, tags: {} };
     }
   });
+}
+
+/** id → item class (boots / finished item / starter / component …). */
+export async function getItemKinds(): Promise<Record<number, ItemKind>> {
+  return (await getItemCatalog()).kinds;
 }
 
 export function embeddedBundle(): StaticBundle {

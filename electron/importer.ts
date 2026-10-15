@@ -33,11 +33,13 @@ export interface ImportResult {
 }
 
 /** Fetches the build from the NEXUS server and writes it into the client. */
-export async function importBuild(conn: LcuConnection, baseUrl: string, championId: number, role: Role | null, championName: string, prefs: ImportPrefs, mode: GameModeId = "sr", runeIndex?: number): Promise<ImportResult> {
+export async function importBuild(conn: LcuConnection, baseUrl: string, championId: number, role: Role | null, championName: string, prefs: ImportPrefs, mode: GameModeId = "sr", runeIndex?: number, variant?: string): Promise<ImportResult> {
   const result: ImportResult = { championId, role, runes: "skipped", spells: "skipped", items: "skipped" };
   const params = new URLSearchParams();
   if (role && mode === "sr") params.set("role", role);
   if (mode !== "sr") params.set("mode", mode);
+  const style = variant ?? prefs.variantChoice?.[String(championId)];
+  if (style && /^[a-z]{2,12}$/.test(style)) params.set("variant", style);
   const qs = params.size ? `?${params}` : "";
   const res = await fetch(`${baseUrl}/api/champions/${championId}${qs}`);
   if (!res.ok) return { ...result, runes: "failed", spells: "failed", items: "failed", message: `No build for this champion (${res.status}).` };

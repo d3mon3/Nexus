@@ -20,7 +20,7 @@ contextBridge.exposeInMainWorld("nexus", {
   toggleOverlay: (show: boolean) => ipcRenderer.invoke("nexus:toggle-overlay", show),
   spectate: (puuid: string) => ipcRenderer.invoke("nexus:spectate", puuid),
   setPrefs: (prefs: unknown) => ipcRenderer.invoke("nexus:set-prefs", prefs),
-  importBuild: (championId: number, role: string | null, mode?: string, runeIndex?: number) => ipcRenderer.invoke("nexus:import-build", championId, role, mode, runeIndex),
+  importBuild: (championId: number, role: string | null, mode?: string, runeIndex?: number, variant?: string) => ipcRenderer.invoke("nexus:import-build", championId, role, mode, runeIndex, variant),
   getChampSelect: () => ipcRenderer.invoke("nexus:get-champ-select"),
   setWidgetSize: (w: number, h: number) => ipcRenderer.invoke("nexus:widget-size", w, h),
   onWidgetMoved: (cb: (m: unknown) => void) => {

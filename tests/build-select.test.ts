@@ -60,3 +60,18 @@ test("item classes: finished items, boots, starters and components", async () =>
   assert.equal(k[2003], "consumable");
   assert.equal(k[3133], "component");
 });
+
+test("build style from the first finished items", async () => {
+  const { buildStyle } = await import("../lib/item-kinds");
+  const tags: Record<number, string[]> = {
+    1: ["SpellDamage", "Mana"], 2: ["SpellDamage"], 3: ["Damage", "CriticalStrike", "AttackSpeed"], 4: ["CriticalStrike", "AttackSpeed"],
+    5: ["AttackSpeed", "OnHit"], 6: ["OnHit", "Damage", "AttackSpeed"], 7: ["Health", "Armor"], 8: ["Health", "SpellBlock"], 9: ["Damage", "Health"], 10: ["Damage", "Health", "AbilityHaste"],
+  };
+  const of = (id: number) => tags[id];
+  assert.equal(buildStyle([1, 2, 3], of), "ap");
+  assert.equal(buildStyle([3, 4, 1], of), "crit");
+  assert.equal(buildStyle([5, 6, 7], of), "onhit");
+  assert.equal(buildStyle([7, 8, 9], of), "tank");
+  assert.equal(buildStyle([9, 10, 7], of), "bruiser");
+  assert.equal(buildStyle([1], of), null);
+});

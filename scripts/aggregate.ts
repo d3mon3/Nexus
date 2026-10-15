@@ -14,8 +14,8 @@ import { resolveRegion } from "../lib/regions";
 import { ITEMS } from "../lib/static-data";
 import type { Role } from "../lib/types";
 import { env } from "../server/env";
-import { getItemKinds } from "../server/ddragon";
-import type { ItemKind } from "../lib/item-kinds";
+import { getItemCatalog } from "../server/ddragon";
+import { buildStyle, type ItemKind } from "../lib/item-kinds";
 import * as riot from "../server/riot/endpoints";
 import { patchFromVersion } from "../server/riot/mappers";
 import type { RiotMatch, RiotTimeline } from "../server/riot/schemas";
@@ -34,6 +34,7 @@ type Counter = Record<string, { games: number; wins: number }>;
 
 /** Item classes from Data Dragon (set in main). Empty → fall back to the static lists below. */
 let KINDS: Record<number, ItemKind> = {};
+let TAGS: Record<number, string[]> = {};
 const isBoots = (i: number) => (KINDS[i] ? KINDS[i] === "boots" : BOOTS.has(i));
 const isCore = (i: number) => (KINDS[i] ? KINDS[i] === "core" : !BOOTS.has(i) && !STARTERS.has(i) && Boolean(ITEMS[i]));
 const isConsumable = (i: number) => (KINDS[i] ? KINDS[i] === "consumable" : CONSUMABLE.has(i));
@@ -116,13 +117,6 @@ function countMatch(ctx: Ctx, m: RiotMatch, tl: RiotTimeline | null, sr: boolean
   for (const p of m.info.participants) {
     if (sr && !ROLES.has(p.teamPosition)) continue;
     const role = sr ? (p.teamPosition as Role) : "ANY";
-    const key = `${patch}|${p.championId}|${role}`;
-    const b = buckets.get(key) ?? buckets.set(key, emptyBucket()).get(key)!;
-    b.games++;
-    if (p.win) b.wins++;
-    b.kills += p.kills;
-    b.deaths += p.deaths;
-    b.assists += p.assists;
 
     const pid = pidOf.get(p.puuid);
     const bought = (pid ? orders.items.get(pid) : undefined) ?? [];
@@ -132,25 +126,39 @@ function countMatch(ctx: Ctx, m: RiotMatch, tl: RiotTimeline | null, sr: boolean
     for (const i of finalItems) if (!order.includes(i)) order.push(i);
     const boots = order.find(isBoots);
     const core = order.filter(isCore).slice(0, 6);
-    if (core.length >= (sr ? 2 : 1)) bump(b.builds.core, core.join("-"), p.win);
-    if (boots) bump(b.builds.boots, String(boots), p.win);
-    for (const it of finalItems) if (isCore(it)) bump(b.builds.items, String(it), p.win);
     const start = ((pid ? orders.starts.get(pid) : undefined) ?? []).filter((i) => !isCore(i));
-    if (start.length) bump(b.builds.starting, [...start].sort((x, y) => x - y).slice(0, 4).join("-"), p.win);
-
     const styles = p.perks?.styles ?? [];
-    if (styles.length >= 2 && styles[0].selections.length >= 4) {
-      const perks = [...styles[0].selections, ...styles[1].selections].map((s) => s.perk);
-      const sp = p.perks?.statPerks;
-      const shards = sp?.offense && sp?.flex && sp?.defense ? [sp.offense, sp.flex, sp.defense].join("-") : "";
-      bump(b.builds.runes, `${styles[0].style}-${styles[1].style}|${perks.join("-")}|${shards}`, p.win);
-    }
-    bump(b.builds.spells, [p.summoner1Id, p.summoner2Id].sort((x, y) => x - y).join("-"), p.win);
     const prio = pid ? skillPriority(orders.skills.get(pid) ?? []) : null;
-    if (prio) bump(b.builds.skills, prio, p.win);
-    if (sr) {
-      const opponent = m.info.participants.find((o) => o.teamId !== p.teamId && o.teamPosition === p.teamPosition);
+    const opponent = sr ? m.info.participants.find((o) => o.teamId !== p.teamId && o.teamPosition === p.teamPosition) : undefined;
+
+    const record = (b: Bucket) => {
+      b.games++;
+      if (p.win) b.wins++;
+      b.kills += p.kills;
+      b.deaths += p.deaths;
+      b.assists += p.assists;
+      if (core.length >= (sr ? 2 : 1)) bump(b.builds.core, core.join("-"), p.win);
+      if (boots) bump(b.builds.boots, String(boots), p.win);
+      for (const it of finalItems) if (isCore(it)) bump(b.builds.items, String(it), p.win);
+      if (start.length) bump(b.builds.starting, [...start].sort((x, y) => x - y).slice(0, 4).join("-"), p.win);
+      if (styles.length >= 2 && styles[0].selections.length >= 4) {
+        const perks = [...styles[0].selections, ...styles[1].selections].map((s) => s.perk);
+        const sp = p.perks?.statPerks;
+        const shards = sp?.offense && sp?.flex && sp?.defense ? [sp.offense, sp.flex, sp.defense].join("-") : "";
+        bump(b.builds.runes, `${styles[0].style}-${styles[1].style}|${perks.join("-")}|${shards}`, p.win);
+      }
+      bump(b.builds.spells, [p.summoner1Id, p.summoner2Id].sort((x, y) => x - y).join("-"), p.win);
+      if (prio) bump(b.builds.skills, prio, p.win);
       if (opponent) bump(b.builds.matchups, String(opponent.championId), p.win);
+    };
+
+    const key = `${patch}|${p.championId}|${role}`;
+    record(buckets.get(key) ?? buckets.set(key, emptyBucket()).get(key)!);
+    // Build variant (AP / AD / on-hit / tank …) stored as its own row "ROLE~style".
+    const style = Object.keys(TAGS).length ? buildStyle(core, (id) => TAGS[id]) : null;
+    if (style) {
+      const vkey = `${patch}|${p.championId}|${role}~${style}`;
+      record(buckets.get(vkey) ?? buckets.set(vkey, emptyBucket()).get(vkey)!);
     }
   }
   ctx.matchCount.set(patch, (ctx.matchCount.get(patch) ?? 0) + 1);
@@ -190,7 +198,9 @@ async function main() {
   const modeTarget = Number(arg("mode-matches", "60"));
   const modes = arg("modes", "sr,aram,aram-mayhem,arena,urf").split(",").map((m) => m.trim()).filter(Boolean);
   const db = new PrismaClient();
-  KINDS = await getItemKinds().catch(() => ({}));
+  const catalog = await getItemCatalog().catch(() => ({ kinds: {}, tags: {} }));
+  KINDS = catalog.kinds;
+  TAGS = catalog.tags;
   console.log(`[items] ${Object.keys(KINDS).length} items classified from Data Dragon`);
 
   const ladders = await Promise.all((["challenger", "grandmaster", "master"] as const).map((t) => riot.apexLeague(region.platform, t)));
@@ -203,30 +213,46 @@ async function main() {
 
   const already = async (id: string) => Boolean(await db.aggregatedMatch.findUnique({ where: { matchId: id } }));
 
-  /* Summoner's Rift ranked: top of the apex ladder. */
+  /* Summoner's Rift ranked: players from every rank (Iron … Challenger), each rank stored as its own band. */
   if (modes.includes("sr")) {
-    const ctx = newCtx();
-    const puuids = ladder.slice(0, playerCount);
-    console.log(`[sr] scanning ${puuids.length} apex players on ${region.label}…`);
-    let added = 0;
-    for (const [pi, puuid] of puuids.entries()) {
-      const ids = await riot.matchIds(region, puuid, { count: perPlayer, queue: 420 }).catch(() => [] as string[]);
-      for (const id of ids) {
-        if (await already(id)) continue;
-        const m = await riot.match(region, id).catch(() => null);
-        if (!m || m.info.queueId !== 420 || m.info.gameDuration < 600) continue;
-        const tl = await riot.matchTimeline(region, id).catch(() => null);
-        const patch = countMatch(ctx, m, tl, true);
-        await db.aggregatedMatch.create({ data: { matchId: id, patch } });
-        added++;
+    const bands: { band: string; tier: string | null }[] = [
+      ...["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND"].map((tier) => ({ band: tier.toLowerCase(), tier })),
+      { band: "master", tier: null },
+    ];
+    const perBand = Math.max(3, Math.ceil(playerCount / bands.length));
+    const divisions = ["I", "II", "III", "IV"];
+    for (const { band, tier } of bands) {
+      let puuids: string[];
+      if (tier) {
+        const division = divisions[Math.floor(Math.random() * divisions.length)];
+        const page = 1 + Math.floor(Math.random() * 3);
+        const entries = await riot.leagueEntriesByTier(region.platform, tier, division, page).catch(() => []);
+        puuids = entries
+          .map((e) => e.puuid)
+          .filter((x): x is string => Boolean(x))
+          .map((x) => ({ x, r: Math.random() }))
+          .sort((a, b) => a.r - b.r)
+          .map((e) => e.x)
+          .slice(0, perBand);
+      } else puuids = ladder.slice(0, perBand);
+      const ctx = newCtx();
+      let added = 0;
+      console.log(`[sr:${band}] scanning ${puuids.length} players on ${region.label}…`);
+      for (const puuid of puuids) {
+        const ids = await riot.matchIds(region, puuid, { count: perPlayer, queue: 420 }).catch(() => [] as string[]);
+        for (const id of ids) {
+          if (await already(id)) continue;
+          const m = await riot.match(region, id).catch(() => null);
+          if (!m || m.info.queueId !== 420 || m.info.gameDuration < 600) continue;
+          const tl = await riot.matchTimeline(region, id).catch(() => null);
+          const patch = countMatch(ctx, m, tl, true);
+          await db.aggregatedMatch.create({ data: { matchId: id, patch } });
+          added++;
+        }
       }
-      console.log(`  ${pi + 1}/${puuids.length} players · ${added} new matches`);
-      if ((pi + 1) % 15 === 0 && ctx.matchCount.size) {
-        await persist(db, ctx, region.platform, "master");
-        Object.assign(ctx, newCtx());
-      }
+      if (ctx.matchCount.size) await persist(db, ctx, region.platform, band);
+      console.log(`  ${band}: ${added} new matches`);
     }
-    if (ctx.matchCount.size) await persist(db, ctx, region.platform, "master");
   }
 
   /* Other modes: start from ladder players and follow the people met in each match
