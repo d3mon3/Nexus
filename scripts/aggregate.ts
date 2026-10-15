@@ -14,6 +14,8 @@ import { resolveRegion } from "../lib/regions";
 import { ITEMS } from "../lib/static-data";
 import type { Role } from "../lib/types";
 import { env } from "../server/env";
+import { getItemKinds } from "../server/ddragon";
+import type { ItemKind } from "../lib/item-kinds";
 import * as riot from "../server/riot/endpoints";
 import { patchFromVersion } from "../server/riot/mappers";
 import type { RiotMatch, RiotTimeline } from "../server/riot/schemas";
@@ -29,6 +31,12 @@ const CONSUMABLE = new Set([2003, 2031, 2055, 3340, 3363, 3364]);
 const ROLES = new Set(["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]);
 
 type Counter = Record<string, { games: number; wins: number }>;
+
+/** Item classes from Data Dragon (set in main). Empty → fall back to the static lists below. */
+let KINDS: Record<number, ItemKind> = {};
+const isBoots = (i: number) => (KINDS[i] ? KINDS[i] === "boots" : BOOTS.has(i));
+const isCore = (i: number) => (KINDS[i] ? KINDS[i] === "core" : !BOOTS.has(i) && !STARTERS.has(i) && Boolean(ITEMS[i]));
+const isConsumable = (i: number) => (KINDS[i] ? KINDS[i] === "consumable" : CONSUMABLE.has(i));
 interface Bucket {
   games: number;
   wins: number;
@@ -52,15 +60,23 @@ function emptyBucket(): Bucket {
 /** Item purchase order and skill level-up order per participant, from the timeline. */
 function timelineOrders(tl: RiotTimeline | null) {
   const items = new Map<number, number[]>();
+  const starts = new Map<number, number[]>();
   const skills = new Map<number, number[]>();
   for (const f of tl?.info.frames ?? [])
     for (const e of f.events) {
       if (!e.participantId) continue;
-      if (e.type === "ITEM_PURCHASED" && e.itemId) (items.get(e.participantId) ?? items.set(e.participantId, []).get(e.participantId)!).push(e.itemId);
-      if (e.type === "ITEM_UNDO" && e.itemId) items.get(e.participantId)?.pop();
+      if (e.type === "ITEM_PURCHASED" && e.itemId) {
+        (items.get(e.participantId) ?? items.set(e.participantId, []).get(e.participantId)!).push(e.itemId);
+        // Starting items: everything bought in the first minute (before leaving the fountain).
+        if (e.timestamp <= 60_000) (starts.get(e.participantId) ?? starts.set(e.participantId, []).get(e.participantId)!).push(e.itemId);
+      }
+      if (e.type === "ITEM_UNDO" && e.itemId) {
+        items.get(e.participantId)?.pop();
+        if (e.timestamp <= 60_000) starts.get(e.participantId)?.pop();
+      }
       if (e.type === "SKILL_LEVEL_UP" && e.skillSlot) (skills.get(e.participantId) ?? skills.set(e.participantId, []).get(e.participantId)!).push(e.skillSlot);
     }
-  return { items, skills };
+  return { items, starts, skills };
 }
 
 function skillPriority(levels: number[]): string | null {
@@ -110,15 +126,17 @@ function countMatch(ctx: Ctx, m: RiotMatch, tl: RiotTimeline | null, sr: boolean
 
     const pid = pidOf.get(p.puuid);
     const bought = (pid ? orders.items.get(pid) : undefined) ?? [];
-    const finalItems = [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5].filter((i) => i > 0 && !CONSUMABLE.has(i));
+    const finalItems = [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5].filter((i) => i > 0 && !isConsumable(i));
+    // Purchase order of the items still held at the end (components that were built into something are gone).
     const order = bought.length ? bought.filter((i, idx) => finalItems.includes(i) && bought.indexOf(i) === idx) : finalItems;
-    const boots = order.find((i) => BOOTS.has(i));
-    const core = order.filter((i) => !BOOTS.has(i) && !STARTERS.has(i) && ITEMS[i]).slice(0, 5);
-    if (core.length >= (sr ? 3 : 2)) bump(b.builds.core, [boots ?? 0, ...core].filter(Boolean).join("-"), p.win);
+    for (const i of finalItems) if (!order.includes(i)) order.push(i);
+    const boots = order.find(isBoots);
+    const core = order.filter(isCore).slice(0, 6);
+    if (core.length >= (sr ? 2 : 1)) bump(b.builds.core, core.join("-"), p.win);
     if (boots) bump(b.builds.boots, String(boots), p.win);
-    for (const it of finalItems) if (!BOOTS.has(it)) bump(b.builds.items, String(it), p.win);
-    const start = bought.slice(0, 4).filter((i) => STARTERS.has(i) || i === 1036 || !sr);
-    if (start.length) bump(b.builds.starting, start.slice(0, 3).join("-"), p.win);
+    for (const it of finalItems) if (isCore(it)) bump(b.builds.items, String(it), p.win);
+    const start = ((pid ? orders.starts.get(pid) : undefined) ?? []).filter((i) => !isCore(i));
+    if (start.length) bump(b.builds.starting, [...start].sort((x, y) => x - y).slice(0, 4).join("-"), p.win);
 
     const styles = p.perks?.styles ?? [];
     if (styles.length >= 2 && styles[0].selections.length >= 4) {
@@ -172,6 +190,8 @@ async function main() {
   const modeTarget = Number(arg("mode-matches", "60"));
   const modes = arg("modes", "sr,aram,aram-mayhem,arena,urf").split(",").map((m) => m.trim()).filter(Boolean);
   const db = new PrismaClient();
+  KINDS = await getItemKinds().catch(() => ({}));
+  console.log(`[items] ${Object.keys(KINDS).length} items classified from Data Dragon`);
 
   const ladders = await Promise.all((["challenger", "grandmaster", "master"] as const).map((t) => riot.apexLeague(region.platform, t)));
   // A fresh random sample every run, so repeated runs cover more players instead of the same top 40.

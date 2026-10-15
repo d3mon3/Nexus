@@ -35,3 +35,28 @@ test("rune page takes the most common rune per row within the top keystone", () 
   assert.equal(page.games, 9);
   assert.equal(second.perks[0], 8112);
 });
+
+test("item classes: finished items, boots, starters and components", async () => {
+  const { classifyAll } = await import("../lib/item-kinds");
+  const k = classifyAll({
+    "1036": { gold: { total: 350 }, into: ["3031"] },
+    "1055": { gold: { total: 450 } },
+    "3031": { gold: { total: 3450 }, into: ["7017"] },
+    "7017": { gold: { total: 3450, purchasable: false }, from: ["3031"] },
+    "3004": { gold: { total: 2900 }, into: ["3042"], from: ["3070"] },
+    "3042": { gold: { total: 2900, purchasable: false } },
+    "3006": { gold: { total: 1100 }, tags: ["Boots"], from: ["1001"] },
+    "1001": { gold: { total: 300 }, tags: ["Boots"], into: ["3006"] },
+    "2003": { gold: { total: 50 }, tags: ["Consumable"], consumed: true },
+    "3133": { gold: { total: 1100 }, into: ["3071"], from: ["1036"] },
+    "3071": { gold: { total: 3000 } },
+  });
+  assert.equal(k[1036], "starter");
+  assert.equal(k[1055], "starter");
+  assert.equal(k[3031], "core");
+  assert.equal(k[3004], "core");
+  assert.equal(k[3006], "boots");
+  assert.equal(k[1001], "component");
+  assert.equal(k[2003], "consumable");
+  assert.equal(k[3133], "component");
+});

@@ -1,12 +1,12 @@
 import "server-only";
 import type { BuildPath, ChampionBuild, ChampionStat, Envelope, Matchup, Role, RunePage } from "@/lib/types";
 import { getDb } from "../db";
-import { getStaticBundle } from "../ddragon";
+import { getItemKinds, getStaticBundle } from "../ddragon";
 import { demoChampionBuild, demoChampionStats, demoPatches, gradeStats } from "../demo";
 import { skillSequence } from "../demo/archetypes";
 import { env } from "../env";
 import { NON_SR_MODES, type GameModeId } from "@/lib/modes";
-import { bestWinRatePath, lateItems, popularPath, runePages } from "./build-select";
+import { BOOT_IDS, bestWinRatePath, lateItems, popularPath, runePages } from "./build-select";
 
 const now = () => new Date().toISOString();
 const COLLECTING_NOTE = "Statistics are being collected from real ranked games. The first results appear after the server's first aggregation run (it starts automatically).";
@@ -120,7 +120,25 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
   const stats = await getChampionStats({ patch: patchValue, role: null, mode });
   if (stats.source === "aggregate" && stats.data.rows.length) {
     const db = (await getDb())!;
-    const rows = await db.championAggregate.findMany({ where: { patch: stats.data.patch, championId, ...bandFilter(mode), ...(role && mode === "sr" ? { role } : {}) } });
+    const find = (patch: string) => db.championAggregate.findMany({ where: { patch, championId, ...bandFilter(mode), ...(role && mode === "sr" ? { role } : {}) } });
+    let rows = await find(stats.data.patch);
+    // Early in a new patch the sample is small: add the previous patch until there are enough games.
+    let patchLabel = stats.data.patch;
+    if (!patchValue && rows.reduce((s, r) => s + r.games, 0) < 400) {
+      const ordered = [...stats.data.patches].sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+      const prev = ordered[ordered.indexOf(stats.data.patch) + 1];
+      if (prev) {
+        const older = await find(prev);
+        if (older.length) {
+          rows = [...rows, ...older];
+          patchLabel = `${stats.data.patch} + ${prev}`;
+        }
+      }
+    }
+    const kinds = await getItemKinds().catch(() => ({}) as Record<number, string>);
+    const known = Object.keys(kinds).length > 0;
+    // Finished items only (no boots, components or starters) when Data Dragon is available.
+    const keepCore = (id: number) => (known ? kinds[id] === "core" || kinds[id] === undefined : !BOOT_IDS.has(id));
     if (rows.length) {
       const mainRole = (role ?? rows.sort((a, b) => b.games - a.games)[0].role) as Role;
       const summary = stats.data.rows.find((r) => r.championId === championId && r.role === mainRole);
@@ -137,7 +155,8 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
           }
         }
       }
-      const games = summary?.games ?? forRole.reduce((s, r) => s + r.games, 0);
+      const roleGames = forRole.reduce((s, r) => s + r.games, 0);
+      const games = patchLabel !== stats.data.patch ? roleGames : (summary?.games ?? roleGames);
       const toPath = ([key, v]: [string, { games: number; wins: number }]): BuildPath => ({
         items: key.split("-").map(Number),
         games: v.games,
@@ -145,9 +164,9 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
         pickRate: v.games / games,
       });
       const coreLength = mode === "sr" ? 3 : 2;
-      const popular = popularPath(merged.core, games, coreLength);
-      const highest = bestWinRatePath(merged.core, games, popular);
-      const late = lateItems(merged.core, popular.items, games);
+      const popular = popularPath(merged.core, games, coreLength, keepCore);
+      const highest = bestWinRatePath(merged.core, games, popular, keepCore);
+      const late = lateItems(merged.core, popular.items, games, keepCore);
       const runes: RunePage[] = runePages(merged.runes, 3);
       const skill = top(merged.skills, 1)[0];
       const priority = (skill?.[0].split("-") ?? ["Q", "E", "W"]) as ("Q" | "W" | "E")[];
@@ -168,7 +187,7 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
           ? late
           : top(merged.items, 20)
               .map(([id, v]) => ({ itemId: Number(id), winRate: v.wins / v.games, pickRate: v.games / games }))
-              .filter((x) => !popular.items.includes(x.itemId))
+              .filter((x) => !popular.items.includes(x.itemId) && keepCore(x.itemId))
         ).slice(0, 12),
         runes,
         spells: top(merged.spells, 2).map(([key, v]) => ({ ids: key.split("-").map(Number) as [number, number], games: v.games, winRate: v.wins / v.games })),
@@ -176,7 +195,7 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
         counters: [...matchups].sort((a, b) => a.winRate - b.winRate).slice(0, 5),
         favorable: [...matchups].sort((a, b) => b.winRate - a.winRate).slice(0, 5),
       };
-      return { data: build, source: "aggregate", fetchedAt: now(), note: `${games.toLocaleString()} games on patch ${stats.data.patch}.` };
+      return { data: build, source: "aggregate", fetchedAt: now(), note: `${games.toLocaleString()} games on patch ${patchLabel}.` };
     }
   }
   if (env.demoDisabled || mode !== "sr") return { data: null, source: "aggregate", fetchedAt: now(), note: COLLECTING_NOTE };

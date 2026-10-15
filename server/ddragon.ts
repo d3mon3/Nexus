@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { DDRAGON, FALLBACK_CHAMPIONS, FALLBACK_DDRAGON_VERSION, RUNES } from "@/lib/static-data";
 import type { ChampionInfo, Role } from "@/lib/types";
+import { classifyAll, type ItemKind } from "@/lib/item-kinds";
 import { cached, TTL } from "./cache";
 
 /**
@@ -88,6 +89,33 @@ export function getStaticBundle(): Promise<StaticBundle> {
     } catch (err) {
       console.warn("[nexus] Data Dragon unreachable, using embedded data:", String(err));
       return embeddedBundle();
+    }
+  });
+}
+
+const itemsSchema = z.object({
+  data: z.record(
+    z
+      .object({
+        gold: z.object({ total: z.number(), purchasable: z.boolean().optional() }),
+        tags: z.array(z.string()).optional(),
+        into: z.array(z.string()).optional(),
+        from: z.array(z.string()).optional(),
+        consumed: z.boolean().optional(),
+      })
+      .passthrough(),
+  ),
+});
+
+/** id → item class for the latest patch (boots / finished item / starter / component …). Empty map if Data Dragon is unreachable. */
+export function getItemKinds(): Promise<Record<number, ItemKind>> {
+  return cached("ddragon:item-kinds", TTL.ddragon, async () => {
+    try {
+      const versions = await getJson(`${DDRAGON}/api/versions.json`, versionsSchema);
+      const items = await getJson(`${DDRAGON}/cdn/${versions[0] ?? FALLBACK_DDRAGON_VERSION}/data/en_US/item.json`, itemsSchema);
+      return classifyAll(items.data);
+    } catch {
+      return {};
     }
   });
 }

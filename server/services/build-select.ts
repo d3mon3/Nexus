@@ -32,18 +32,22 @@ function add<K>(m: Map<K, { games: number; wins: number }>, k: K, e: { games: nu
   m.set(k, cur);
 }
 
-/** Item paths without boots (boots are shown separately). */
-function corePaths(core: Counter | undefined): Entry[] {
+/** Which ids count as core (finished) items; the default only drops boots. */
+export type KeepItem = (id: number) => boolean;
+const notBoots: KeepItem = (id) => !BOOT_IDS.has(id);
+
+/** Item paths of finished items only (boots and components are shown elsewhere). */
+function corePaths(core: Counter | undefined, keep: KeepItem = notBoots): Entry[] {
   return Object.entries(core ?? {}).map(([key, v]) => ({
-    parts: key.split("-").map(Number).filter((id) => id > 0 && !BOOT_IDS.has(id)),
+    parts: key.split("-").map(Number).filter((id) => id > 0 && keep(id)),
     games: v.games,
     wins: v.wins,
   }));
 }
 
 /** Greedy most-common path of `length` items. */
-export function popularPath(core: Counter | undefined, totalGames: number, length = 3): BuildPath {
-  let pool = corePaths(core).filter((e) => e.parts.length >= Math.min(length, 2));
+export function popularPath(core: Counter | undefined, totalGames: number, length = 3, keep?: KeepItem): BuildPath {
+  let pool = corePaths(core, keep).filter((e) => e.parts.length >= Math.min(length, 2));
   const items: number[] = [];
   for (let i = 0; i < length; i++) {
     const counts = new Map<number, { games: number; wins: number }>();
@@ -59,26 +63,26 @@ export function popularPath(core: Counter | undefined, totalGames: number, lengt
 }
 
 /** Exact first-N paths (order kept), most common first. */
-export function pathOptions(core: Counter | undefined, totalGames: number, length = 3): BuildPath[] {
+export function pathOptions(core: Counter | undefined, totalGames: number, length = 3, keep?: KeepItem): BuildPath[] {
   const m = new Map<string, { games: number; wins: number }>();
-  for (const e of corePaths(core)) if (e.parts.length >= length) add(m, e.parts.slice(0, length).join("-"), e);
+  for (const e of corePaths(core, keep)) if (e.parts.length >= length) add(m, e.parts.slice(0, length).join("-"), e);
   return [...m.entries()]
     .sort((a, b) => b[1].games - a[1].games)
     .map(([k, v]) => ({ items: k.split("-").map(Number), games: v.games, winRate: wr(v.wins, v.games), pickRate: totalGames ? v.games / totalGames : 0 }));
 }
 
 /** Highest win rate path among those played often enough, shrunk towards 50% for small samples. */
-export function bestWinRatePath(core: Counter | undefined, totalGames: number, fallback: BuildPath): BuildPath {
+export function bestWinRatePath(core: Counter | undefined, totalGames: number, fallback: BuildPath, keep?: KeepItem): BuildPath {
   const min = Math.max(8, Math.round(totalGames * 0.03));
   const score = (p: BuildPath) => (p.winRate * p.games + 0.5 * 20) / (p.games + 20);
-  const qualified = pathOptions(core, totalGames).filter((p) => p.games >= min);
+  const qualified = pathOptions(core, totalGames, fallback.items.length || 3, keep).filter((p) => p.games >= min);
   return qualified.sort((a, b) => score(b) - score(a))[0] ?? fallback;
 }
 
 /** Items players buy after the core (4th–6th), most common first. */
-export function lateItems(core: Counter | undefined, exclude: number[], totalGames: number) {
+export function lateItems(core: Counter | undefined, exclude: number[], totalGames: number, keep?: KeepItem) {
   const m = new Map<number, { games: number; wins: number }>();
-  for (const e of corePaths(core)) for (const id of e.parts.slice(3)) if (!exclude.includes(id)) add(m, id, e);
+  for (const e of corePaths(core, keep)) for (const id of e.parts.slice(3)) if (!exclude.includes(id)) add(m, id, e);
   return [...m.entries()]
     .sort((a, b) => b[1].games - a[1].games)
     .map(([itemId, v]) => ({ itemId, winRate: wr(v.wins, v.games), pickRate: totalGames ? v.games / totalGames : 0 }));
