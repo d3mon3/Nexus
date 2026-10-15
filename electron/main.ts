@@ -2,8 +2,8 @@
  * NEXUS desktop shell. Boots the bundled Next.js server (standalone output) on a free
  * loopback port, opens the app window and watches the League client:
  *  - champ select → auto-imports runes, summoner spells and an item set,
- *  - loading screen → shows the scouting board (Ctrl+Shift+S),
- *  - in game → transparent widget overlay (Ctrl+Shift+N, Ctrl+Shift+E to move widgets).
+ *  - loading screen → shows the scouting board (Alt+Z by default),
+ *  - in game → transparent widget overlay (Alt+X, Alt+V to move widgets and the board).
  */
 import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, screen, shell, Tray } from "electron";
 import { fork, spawn, type ChildProcess } from "node:child_process";
@@ -51,6 +51,8 @@ interface DesktopPrefs {
   openAtLogin: boolean;
   /** The window's X button hides NEXUS to the tray instead of quitting. */
   closeToTray: boolean;
+  /** Alt + letter hotkeys. */
+  hotkeys: { widgets: string; scout: string; edit: string };
 }
 let prefs: DesktopPrefs = {
   import: { ...DEFAULT_IMPORT_PREFS, enabled: true, onHover: false },
@@ -67,6 +69,7 @@ let prefs: DesktopPrefs = {
   autoBorderless: true,
   openAtLogin: true,
   closeToTray: true,
+  hotkeys: { widgets: "X", scout: "Z", edit: "V" },
 };
 
 /* Tray, start with Windows, single instance ---------------------------------- */
@@ -98,7 +101,9 @@ function buildTrayMenu() {
   tray.setContextMenu(
     Menu.buildFromTemplate([
       { label: pl ? "Otwórz NEXUS" : "Open NEXUS", click: openMain },
-      { label: pl ? "Pokaż / ukryj widgety (Ctrl+Shift+N)" : "Show / hide widgets (Ctrl+Shift+N)", click: () => toggleOverlay() },
+      { label: `${pl ? "Pokaż / ukryj widgety" : "Show / hide widgets"} (Alt+${prefs.hotkeys.widgets})`, click: () => toggleOverlay() },
+      { label: `${pl ? "Tabela graczy" : "Scouting board"} (Alt+${prefs.hotkeys.scout})`, click: () => runHotkey("scout") },
+      { label: `${pl ? "Przesuń widgety i tabelę" : "Move widgets and board"} (Alt+${prefs.hotkeys.edit})`, click: () => runHotkey("edit") },
       { label: pl ? "Ustawienia" : "Settings", click: () => (showMain("/settings"), openMain()) },
       { type: "separator" },
       { label: pl ? "Zamknij NEXUS" : "Quit NEXUS", click: () => ((quitting = true), app.quit()) },
@@ -348,27 +353,115 @@ function applyForeground(name: string) {
   if (!name && !editMode) return;
   // Widgets only over the game itself; alt-tab to Discord / desktop / browser hides them.
   const visible = editMode || isGameProcess(name);
-  for (const w of [...widgetWins.values(), ...(scoutWin ? [scoutWin] : [])]) {
+  // A board moved to another monitor stays there while you play.
+  const scoutHere = scoutWin && scoutOnGameDisplay() ? [scoutWin] : [];
+  for (const w of [...widgetWins.values(), ...scoutHere]) {
     if (visible && !w.isVisible()) w.showInactive();
     else if (!visible && w.isVisible()) w.hide();
   }
 }
-const foreground = new ForegroundWatcher(applyForeground);
+const foreground = new ForegroundWatcher(applyForeground, (letter) => {
+  const action = (Object.entries(prefs.hotkeys) as [keyof DesktopPrefs["hotkeys"], string][]).find(([, l]) => l.toUpperCase() === letter)?.[0];
+  if (action) runHotkey(action);
+});
+
+/* Hotkeys: Alt + letter. Registered globally (outside the game) and read by the foreground
+ * watcher while League is in front (the game blocks normal global hotkeys). */
+const lastHotkey = new Map<string, number>();
+function runHotkey(action: keyof DesktopPrefs["hotkeys"]) {
+  const now = Date.now();
+  if (now - (lastHotkey.get(action) ?? 0) < 400) return; // both paths may fire for one press
+  lastHotkey.set(action, now);
+  if (action === "widgets") toggleOverlay();
+  else if (action === "scout") {
+    scoutShownAt = 0; // manual toggle: don't auto-hide
+    toggleScout();
+  } else setEditMode(!editMode);
+}
+
+let registeredKeys = "";
+function registerHotkeys() {
+  const keys = prefs.hotkeys;
+  const sig = `${keys.widgets}${keys.scout}${keys.edit}`;
+  if (sig === registeredKeys) return;
+  registeredKeys = sig;
+  globalShortcut.unregisterAll();
+  for (const [action, letter] of Object.entries(keys) as [keyof DesktopPrefs["hotkeys"], string][]) {
+    if (!/^[A-Z]$/i.test(letter)) continue;
+    try {
+      if (!globalShortcut.register(`Alt+${letter.toUpperCase()}`, () => runHotkey(action))) console.warn(`[nexus] Alt+${letter} is used by another app`);
+    } catch {
+      /* invalid accelerator */
+    }
+  }
+  foreground.setKeys(Object.values(keys));
+}
 
 /** Edit mode makes the widget windows draggable (Ctrl+Shift+E). */
 function setEditMode(on: boolean) {
   if (on && !overlayShown()) toggleOverlay(true);
+  if (!on && editMode) saveScoutBounds();
   editMode = on;
   for (const w of widgetWins.values()) {
     w.setIgnoreMouseEvents(!on);
     w.setFocusable(on);
     w.webContents.send("nexus:overlay-edit", on);
   }
+  // The scouting board can be moved too (e.g. to a second monitor).
+  if (on && !scoutWin) {
+    toggleScout(true);
+    scoutForEdit = true;
+  } else if (!on && scoutForEdit) {
+    scoutForEdit = false;
+    if (clientState.phase !== "InProgress") toggleScout(false);
+  }
+  applyScoutMode();
 }
 
 /** Porofessor-style scouting board, centred on screen. */
+/* Scouting board: movable (edit mode) and remembered, e.g. on a second monitor. */
+const scoutBoundsFile = () => path.join(app.getPath("userData"), "scout-bounds.json");
+let scoutForEdit = false;
+
+function loadScoutBounds(): Electron.Rectangle | null {
+  try {
+    const b = JSON.parse(fs.readFileSync(scoutBoundsFile(), "utf8")) as Electron.Rectangle;
+    if (![b.x, b.y, b.width, b.height].every(Number.isFinite) || b.width < 400 || b.height < 250) return null;
+    // Only if that spot is still on a connected monitor.
+    const onScreen = screen.getAllDisplays().some((d) => b.x < d.bounds.x + d.bounds.width - 50 && b.x + b.width > d.bounds.x + 50 && b.y < d.bounds.y + d.bounds.height - 50 && b.y + b.height > d.bounds.y + 50);
+    return onScreen ? b : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveScoutBounds() {
+  if (!scoutWin) return;
+  try {
+    fs.writeFileSync(scoutBoundsFile(), JSON.stringify(scoutWin.getBounds()));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** True when the board is on the monitor the game runs on (then it's a click-through overlay). */
+function scoutOnGameDisplay(): boolean {
+  if (!scoutWin) return true;
+  const game = overlayDisplay ?? screen.getPrimaryDisplay();
+  return screen.getDisplayMatching(scoutWin.getBounds()).id === game.id;
+}
+
+function applyScoutMode() {
+  if (!scoutWin) return;
+  const interactive = editMode || !scoutOnGameDisplay();
+  scoutWin.setIgnoreMouseEvents(!interactive, interactive ? undefined : { forward: true });
+  scoutWin.setFocusable(editMode);
+  scoutWin.webContents.send("nexus:overlay-edit", editMode);
+}
+
 function toggleScout(show = !scoutWin) {
   if (!show) {
+    if (editMode) saveScoutBounds();
     scoutWin?.close();
     scoutWin = null;
     return;
@@ -377,11 +470,12 @@ function toggleScout(show = !scoutWin) {
   const { workArea } = screen.getPrimaryDisplay();
   const width = Math.min(1500, workArea.width - 40);
   const height = Math.min(760, workArea.height - 40);
+  const saved = loadScoutBounds();
   scoutWin = new BrowserWindow({
-    width,
-    height,
-    x: workArea.x + Math.round((workArea.width - width) / 2),
-    y: workArea.y + Math.round((workArea.height - height) / 2),
+    width: saved?.width ?? width,
+    height: saved?.height ?? height,
+    x: saved?.x ?? workArea.x + Math.round((workArea.width - width) / 2),
+    y: saved?.y ?? workArea.y + Math.round((workArea.height - height) / 2),
     frame: false,
     transparent: true,
     resizable: false,
@@ -389,11 +483,30 @@ function toggleScout(show = !scoutWin) {
     skipTaskbar: true,
     focusable: false,
     hasShadow: false,
+    minWidth: 600,
+    minHeight: 300,
     webPreferences: overlayWebPrefs(),
   });
   scoutWin.setAlwaysOnTop(true, "screen-saver");
-  scoutWin.setIgnoreMouseEvents(true, { forward: true });
   scoutWin.loadURL(`${baseUrl}/overlay/scout`);
+  scoutWin.webContents.once("did-finish-load", applyScoutMode);
+  applyScoutMode();
+  let lastDisplay = screen.getDisplayMatching(scoutWin.getBounds()).id;
+  scoutWin.on("moved", () => {
+    if (!scoutWin) return;
+    // Dropped on another monitor: fill that monitor (transparent windows can't be resized by hand).
+    const d = screen.getDisplayMatching(scoutWin.getBounds());
+    if (d.id !== lastDisplay) {
+      lastDisplay = d.id;
+      const wa = d.workArea;
+      const onGame = d.id === (overlayDisplay ?? screen.getPrimaryDisplay()).id;
+      const w = onGame ? Math.min(1500, wa.width - 40) : wa.width;
+      const h = onGame ? Math.min(760, wa.height - 40) : wa.height;
+      scoutWin.setBounds({ x: wa.x + Math.round((wa.width - w) / 2), y: wa.y + Math.round((wa.height - h) / 2), width: w, height: h });
+    }
+    saveScoutBounds();
+    applyScoutMode();
+  });
   scoutWin.on("closed", () => (scoutWin = null));
 }
 
@@ -564,7 +677,7 @@ async function pollClient() {
       if (prefs.widgetsEnabled) toggleOverlay(true);
     }
     // Hide the auto-shown board once the game has actually started (loading finished).
-    if (scoutWin && scoutShownAt && next.phase === "InProgress") {
+    if (scoutWin && scoutShownAt && next.phase === "InProgress" && scoutOnGameDisplay()) {
       const live = await getLiveClientSnapshot();
       if (live && live.gameTime > 15) {
         toggleScout(false);
@@ -617,11 +730,19 @@ ipcMain.handle("nexus:set-auto-detect", (_e, enabled: boolean) => {
 });
 ipcMain.handle("nexus:set-prefs", (_e, next: Partial<DesktopPrefs>) => {
   const discordWas = prefs.discord;
+  const prevHotkeys = prefs.hotkeys;
   prefs = { ...prefs, ...next, import: { ...prefs.import, ...(next?.import ?? {}) } };
   prefs.autoAcceptDelay = Math.min(10, Math.max(0, Number(prefs.autoAcceptDelay) || 0));
   if (!prefs.widgetsEnabled) toggleOverlay(false);
   else if (overlayShown()) toggleOverlay(true); // add/remove widgets switched in Settings
   if (discordWas !== prefs.discord) void updatePresence(clientState.phase).catch(() => undefined);
+  const hk = (next as Partial<DesktopPrefs> | undefined)?.hotkeys;
+  prefs.hotkeys = {
+    widgets: /^[A-Z]$/i.test(hk?.widgets ?? "") ? hk!.widgets.toUpperCase() : prevHotkeys.widgets,
+    scout: /^[A-Z]$/i.test(hk?.scout ?? "") ? hk!.scout.toUpperCase() : prevHotkeys.scout,
+    edit: /^[A-Z]$/i.test(hk?.edit ?? "") ? hk!.edit.toUpperCase() : prevHotkeys.edit,
+  };
+  registerHotkeys();
   applyLoginItem();
   buildTrayMenu();
 });
@@ -676,12 +797,7 @@ app.whenReady().then(async () => {
   setTimeout(() => void checkForUpdate(), 8000);
   setInterval(() => void checkForUpdate(), 6 * 3600e3);
   // Overlays only draw over League in Borderless / Windowed display mode.
-  globalShortcut.register("CommandOrControl+Shift+N", () => toggleOverlay());
-  globalShortcut.register("CommandOrControl+Shift+E", () => setEditMode(!editMode));
-  globalShortcut.register("CommandOrControl+Shift+S", () => {
-    scoutShownAt = 0; // manual toggle: don't auto-hide
-    toggleScout();
-  });
+  registerHotkeys();
   setInterval(pollClient, 2000);
   pollClient();
   app.on("activate", () => BrowserWindow.getAllWindows().length === 0 && createWindow());

@@ -53,6 +53,8 @@ export interface Settings {
   startWithWindows: boolean;
   /** Desktop: closing the window keeps NEXUS running in the tray. */
   closeToTray: boolean;
+  /** Desktop hotkeys: Alt + letter. */
+  hotkeys: { widgets: string; scout: string; edit: string };
 }
 
 export type WidgetId = "build" | "stats" | "timers" | "lane" | "enemySpells" | "enemyItems";
@@ -112,6 +114,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoBorderless: true,
   startWithWindows: true,
   closeToTray: true,
+  hotkeys: { widgets: "X", scout: "Z", edit: "V" },
 };
 
 let cache: Settings | null = null;
@@ -128,6 +131,7 @@ function read(): Settings {
       ...saved,
       importPrefs: { ...DEFAULT_SETTINGS.importPrefs, ...(saved.importPrefs ?? {}) },
       widgets: { ...DEFAULT_SETTINGS.widgets, ...(saved.widgets ?? {}) },
+      hotkeys: { ...DEFAULT_SETTINGS.hotkeys, ...(saved.hotkeys ?? {}) },
     };
   } catch {
     cache = DEFAULT_SETTINGS;

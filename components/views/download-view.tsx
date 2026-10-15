@@ -20,9 +20,9 @@ const FEATURES: { icon: ReactNode; title: string; text: string }[] = [
 ];
 
 const HOTKEYS: [string, string][] = [
-  ["Ctrl + Shift + N", "show / hide widgets"],
-  ["Ctrl + Shift + S", "show / hide scouting table"],
-  ["Ctrl + Shift + E", "move widgets"],
+  ["Alt + X", "show / hide widgets"],
+  ["Alt + Z", "show / hide scouting table"],
+  ["Alt + V", "move widgets and the scouting table (also to a second monitor)"],
 ];
 
 const mb = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(0)} MB`;

@@ -842,6 +842,15 @@ export const PL: Record<string, string> = {
   "Tank": "Tank",
   "AP": "AP",
   "AD": "AD",
+  "Small windows over League while you play. Alt+{0} shows or hides them, Alt+{1} lets you drag them and the scouting board (also to a second monitor).": "Małe okna nad LoL-em podczas gry. Alt+{0} pokazuje lub ukrywa je, Alt+{1} pozwala przesuwać je i tabelę graczy (także na drugi monitor).",
+  "Show / hide widgets": "Pokaż / ukryj widgety",
+  "Show / hide scouting board": "Pokaż / ukryj tabelę graczy",
+  "Move widgets and the scouting board": "Przesuwanie widgetów i tabeli graczy",
+  "Drag to move · Alt+{0} to lock": "Przeciągnij, aby przesunąć · Alt+{0}, aby zablokować",
+  "Press Alt+{0} again to lock. Turn widgets on or off in NEXUS → Settings.": "Naciśnij ponownie Alt+{0}, aby zablokować. Widgety włączysz lub wyłączysz w NEXUS → Ustawienia.",
+  "Drag this bar to move the board — drop it on a second monitor and it fills that screen. Alt+{0} to lock.": "Przeciągnij ten pasek, aby przesunąć tabelę — upuść ją na drugim monitorze, a wypełni cały ekran. Alt+{0}, aby zablokować.",
+  "Alt+{0} to hide · Alt+{1} to move": "Alt+{0} — ukryj · Alt+{1} — przesuń",
+  "move widgets and the scouting table (also to a second monitor)": "przesuń widgety i tabelę graczy (także na drugi monitor)",
 };
 
 export const PL_PLURAL: Record<string, { n: string | number; forms: [string, string, string] }> = {

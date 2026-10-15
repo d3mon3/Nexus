@@ -35,7 +35,7 @@ function useSnapshot(): Snap | null {
 
 /**
  * Transparent full-screen overlay. Each widget can be switched on/off in Settings and,
- * in edit mode (Ctrl+Shift+E), dragged anywhere — positions are saved as screen fractions.
+ * in edit mode (Alt+V by default), dragged anywhere — positions are saved as screen fractions.
  */
 export function OverlayView() {
   const params = useSearchParams();
@@ -86,7 +86,7 @@ function SingleWidget({ id }: { id: WidgetId }) {
         <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#b8a4fb]">{t(WIDGET_META[id].name)}</span>
         {edit ? <Move className="size-3.5 text-primary" /> : <Logo size="sm" className="h-[12px] opacity-70" />}
       </div>
-      {edit && <p className="mb-1.5 text-[10px] text-primary">{t("Drag to move · Ctrl+Shift+E to lock")}</p>}
+      {edit && <p className="mb-1.5 text-[10px] text-primary">{t("Drag to move · Alt+{0} to lock", [settings.hotkeys.edit])}</p>}
       {!snap || !me ? <p className="text-xs text-muted">{t("Waiting for game data…")}</p> : <WidgetBody id={id} snap={snap} me={me} />}
     </div>
   );
@@ -113,7 +113,7 @@ function FullOverlay() {
       {edit && (
         <div className="absolute left-1/2 top-6 -translate-x-1/2 rounded-xl border border-primary/60 bg-[#0b0f1a]/95 px-4 py-2 text-center text-sm text-fg shadow-[0_0_30px_-8px_var(--primary-glow)]">
           <p className="font-semibold">{t("Edit layout — drag widgets to move them")}</p>
-          <p className="text-xs text-muted">{t("Press Ctrl+Shift+E again to lock. Turn widgets on or off in NEXUS → Settings.")}</p>
+          <p className="text-xs text-muted">{t("Press Alt+{0} again to lock. Turn widgets on or off in NEXUS → Settings.", [settings.hotkeys.edit])}</p>
           <button className="mt-1 text-xs text-primary hover:underline" onClick={() => (getBridge()?.setOverlayEdit ? getBridge()!.setOverlayEdit!(false) : setEdit(false))}>{t("Done")}</button>
         </div>
       )}

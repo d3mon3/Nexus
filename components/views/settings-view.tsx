@@ -36,6 +36,24 @@ function Section({ id, icon, title, description, children }: { id?: string; icon
   );
 }
 
+/** Letters League already uses with Alt (self-cast, level-up, items…) are left out. */
+const HOTKEY_LETTERS = "ABCGHIJKLMNOTUVXYZ".split("");
+
+function HotkeyRow({ label, value, onChange, taken }: { label: string; value: string; onChange: (v: string) => void; taken: string[] }) {
+  return (
+    <Row label={label}>
+      <Select
+        size="sm"
+        className="w-[120px]"
+        label={label}
+        value={value}
+        onChange={onChange}
+        options={HOTKEY_LETTERS.filter((l) => l === value || !taken.includes(l)).map((l) => ({ value: l, label: `Alt + ${l}` }))}
+      />
+    </Row>
+  );
+}
+
 function Row({ label, hint, children, htmlFor }: { label: string; hint?: string; children: ReactNode; htmlFor?: string }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -204,7 +222,10 @@ export function SettingsView() {
           </Row>
         </Section>
 
-        <Section id="overlay" icon={<LayoutDashboard />} title={t("In-game widgets")} description={t("Small windows over League while you play. Ctrl+Shift+N shows or hides them, Ctrl+Shift+E lets you drag them.")}>
+        <Section id="overlay" icon={<LayoutDashboard />} title={t("In-game widgets")} description={t("Small windows over League while you play. Alt+{0} shows or hides them, Alt+{1} lets you drag them and the scouting board (also to a second monitor).", [settings.hotkeys.widgets, settings.hotkeys.edit])}>
+          <HotkeyRow label={t("Show / hide widgets")} value={settings.hotkeys.widgets} onChange={(v) => update((s) => ({ hotkeys: { ...s.hotkeys, widgets: v } }))} taken={[settings.hotkeys.scout, settings.hotkeys.edit]} />
+          <HotkeyRow label={t("Show / hide scouting board")} value={settings.hotkeys.scout} onChange={(v) => update((s) => ({ hotkeys: { ...s.hotkeys, scout: v } }))} taken={[settings.hotkeys.widgets, settings.hotkeys.edit]} />
+          <HotkeyRow label={t("Move widgets and the scouting board")} value={settings.hotkeys.edit} onChange={(v) => update((s) => ({ hotkeys: { ...s.hotkeys, edit: v } }))} taken={[settings.hotkeys.widgets, settings.hotkeys.scout]} />
           {(Object.keys(WIDGET_META) as WidgetId[]).map((id) => (
             <Row key={id} label={t(WIDGET_META[id].name)} hint={t(WIDGET_META[id].description)} htmlFor={`w-${id}`}>
               <Switch id={`w-${id}`} label={t(WIDGET_META[id].name)} checked={settings.widgets[id].enabled} onChange={(v) => updateWidget(id, { enabled: v })} />
@@ -318,9 +339,9 @@ export function SettingsView() {
             ["↑ ↓ Enter", "Navigate search results, dropdowns"],
             ["← →", "Switch tabs"],
             ["Esc", "Close menus and dialogs"],
-            ["Ctrl + Shift + N", "Show / hide in-game widgets (desktop)"],
-            ["Ctrl + Shift + E", "Move widgets (desktop)"],
-            ["Ctrl + Shift + S", "Show / hide scouting board (desktop)"],
+            [`Alt + ${settings.hotkeys.widgets}`, "Show / hide in-game widgets (desktop)"],
+            [`Alt + ${settings.hotkeys.edit}`, "Move widgets (desktop)"],
+            [`Alt + ${settings.hotkeys.scout}`, "Show / hide scouting board (desktop)"],
           ].map(([k, d]) => (
             <Row key={k} label={d}>
               <kbd className="rounded-md border border-line bg-surface-hover/60 px-2 py-0.5 text-xs text-muted">{k}</kbd>

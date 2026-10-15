@@ -39,8 +39,9 @@ function DesktopSync() {
       autoBorderless: settings.autoBorderless,
       openAtLogin: settings.startWithWindows,
       closeToTray: settings.closeToTray,
+      hotkeys: settings.hotkeys,
     });
-  }, [settings.importPrefs, settings.scoutAutoShow, anyWidget, settings.autoAccept, settings.autoAcceptDelay, settings.champSelectAssist, settings.postGameSummary, settings.discordPresence, lang, settings.widgets, settings.minimizeInGame, settings.autoBorderless, settings.startWithWindows, settings.closeToTray]);
+  }, [settings.hotkeys, settings.importPrefs, settings.scoutAutoShow, anyWidget, settings.autoAccept, settings.autoAcceptDelay, settings.champSelectAssist, settings.postGameSummary, settings.discordPresence, lang, settings.widgets, settings.minimizeInGame, settings.autoBorderless, settings.startWithWindows, settings.closeToTray]);
   // Light mode while a game runs: no blur, glow animations or transitions (frees GPU for League).
   const inGame = Boolean(client?.connected && ["GameStart", "InProgress"].includes(client.phase));
   useEffect(() => {
