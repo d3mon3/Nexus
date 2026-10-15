@@ -43,8 +43,7 @@ export function Onboarding() {
           <Button type="submit" variant="primary" disabled={!parsed}>{t("Continue")}</Button>
         </form>
       </Card>
-      <div className="mx-auto grid max-w-4xl gap-3 md:grid-cols-2">
-        <PlayersCard kind="favorites" />
+      <div className="mx-auto max-w-4xl">
         <PlayersCard kind="recent" />
       </div>
     </div>

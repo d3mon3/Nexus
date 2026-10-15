@@ -153,7 +153,6 @@ export function ChampionsView() {
                   <div className="relative aspect-[1.05] overflow-hidden">
                     <GameImage src={asset.championLoading(c.key)} alt={c.name} className="absolute inset-0 h-full w-full scale-[1.25] object-[50%_12%] text-3xl transition-transform duration-500 group-hover:scale-[1.32]" />
                     <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#0d1324] to-transparent" />
-                    {settings.favoriteChampions.includes(c.id) && <Star className="absolute right-2 top-2 size-4 fill-warning text-warning" />}
                   </div>
                   <div className="px-2 pb-2.5 pt-1">
                     <p className="text-[13px] font-semibold text-fg">{c.name}</p>
@@ -184,8 +183,6 @@ export function ChampionsView() {
               <ChampionSidePanel
                 championId={selected.id}
                 stat={selectedStat}
-                favorite={settings.favoriteChampions.includes(selected.id)}
-                onFavorite={() => toggleFavoriteChampion(selected.id)}
                 onClose={() => select(null)}
                 name={champion(selected.id)?.name ?? ""}
               />
@@ -199,7 +196,7 @@ export function ChampionsView() {
 
 type PanelTab = "overview" | "builds" | "runes" | "counters" | "matchups";
 
-function ChampionSidePanel({ championId, stat, favorite, onFavorite, onClose, name }: { championId: number; stat: ChampionStat | undefined; favorite: boolean; onFavorite: () => void; onClose: () => void; name: string }) {
+function ChampionSidePanel({ championId, stat, onClose, name }: { championId: number; stat: ChampionStat | undefined; onClose: () => void; name: string }) {
   const { champion } = useStatic();
   const c = champion(championId)!;
   const [tab, setTab] = useState<PanelTab>("overview");
@@ -216,9 +213,7 @@ function ChampionSidePanel({ championId, stat, favorite, onFavorite, onClose, na
           </div>
           <div className="absolute inset-0 bg-[linear-gradient(90deg,#0d1324_30%,rgba(13,19,36,0.35))]" />
           <div className="absolute right-2 top-2 flex gap-1">
-            <button onClick={onFavorite} aria-pressed={favorite} aria-label={favorite ? t("Unfavorite {0}", [name]) : t("Favorite {0}", [name])} className="grid size-8 place-items-center rounded-lg bg-black/40 text-white hover:text-warning">
-              <Star className={cn("size-4", favorite && "fill-warning text-warning")} />
-            </button>
+            
             <button onClick={onClose} aria-label={t("Close panel")} className="grid size-8 place-items-center rounded-lg bg-black/40 text-white hover:text-primary xl:hidden">
               <X className="size-4" />
             </button>

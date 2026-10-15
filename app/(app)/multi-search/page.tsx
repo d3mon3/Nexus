@@ -1,12 +1,6 @@
-import { Suspense } from "react";
-import { MultiSearchView } from "@/components/views/multi-search-view";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Multi Search" };
-
+/** Removed from NEXUS — old links go to the start page. */
 export default function Page() {
-  return (
-    <Suspense>
-      <MultiSearchView />
-    </Suspense>
-  );
+  redirect("/");
 }

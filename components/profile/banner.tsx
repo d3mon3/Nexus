@@ -57,12 +57,11 @@ export function ProfileBanner({
   isMine: boolean;
 }) {
   const { champion } = useStatic();
-  const { settings, update, isFavorite, toggleFavorite } = useSettings();
-  const fav = isFavorite(player);
+  const { settings, update } = useSettings();
   const { account } = profile;
   const solo = profile.ranked.find((r) => r.queue === "RANKED_SOLO_5x5");
   const main = profile.mainChampionId ? champion(profile.mainChampionId) : undefined;
-  const favChamps = (isMine && settings.favoriteChampions.length ? settings.favoriteChampions : profile.mastery.map((m) => m.championId)).slice(0, 4);
+  const favChamps = profile.mastery.map((m) => m.championId).slice(0, 4);
   const extra = Math.max(0, profile.mastery.length - 4);
   const motto = isMine ? settings.motto : profile.motto;
 
@@ -145,17 +144,11 @@ export function ProfileBanner({
                   </span>{t("Live Game")}</Button>
               </Link>
               <MoreMenu player={player} onRefresh={onRefresh} refreshing={refreshing} />
-              <Button variant="outline" className="h-10 px-5" onClick={() => {
-                toggleFavorite(player);
-                toast.success(fav ? t("Removed from favorites") : t("Added to favorites"), { description: `${account.gameName}#${account.tagLine}` });
-              }} aria-pressed={fav}>
-                <Star className={cn(fav && "fill-warning text-warning")} /> {fav ? t("Favorited") : t("Favorite")}
-              </Button>
             </div>
           </div>
 
           <div className="hidden self-end md:block">
-            <p className="mb-2 text-xs font-medium text-fg/80">{t("Favorite Champions")}</p>
+            <p className="mb-2 text-xs font-medium text-fg/80">{t("Top champions")}</p>
             <div className="flex items-center gap-2">
               {favChamps.map((id) => (
                 <ChampionIcon key={id} id={id} size={50} className="border-primary/40 transition-transform hover:-translate-y-0.5 hover:border-primary" />

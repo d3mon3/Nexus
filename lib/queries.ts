@@ -122,3 +122,11 @@ export function useCounters(opponent: number | null | undefined, role: Role | nu
     staleTime: 10 * 60_000,
   });
 }
+
+export function useAugmentCatalog(lang: string) {
+  return useQuery({ queryKey: ["augmentCatalog", lang], queryFn: () => api.augmentCatalog(lang), staleTime: 6 * 3600_000 });
+}
+
+export function useAugmentTiers(mode: "arena" | "aram-mayhem") {
+  return useQuery({ queryKey: ["augmentTiers", mode], queryFn: () => api.augmentTiers(mode), staleTime: 5 * 60_000 });
+}

@@ -46,7 +46,7 @@ export function PlayerPicker({ player, onChange, label = "Player", className }: 
   }, [player?.gameName, player?.tagLine, player?.platform]); // eslint-disable-line react-hooks/exhaustive-deps
   const parsed = parseRiotId(value);
   const profile = useProfile(player);
-  const quick = [settings.myAccount, ...settings.favorites].filter(Boolean) as PlayerRef[];
+  const quick = [settings.myAccount].filter(Boolean) as PlayerRef[];
 
   return (
     <Card className={cn("flex flex-wrap items-center gap-3 p-3", className)}>

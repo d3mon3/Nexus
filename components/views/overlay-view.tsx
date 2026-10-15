@@ -12,6 +12,7 @@ import { useChampionBuild } from "@/lib/queries";
 import { WIDGET_META, useSettings, type WidgetId } from "@/lib/settings";
 import { SPELLS } from "@/lib/static-data";
 import { antiHealFor, itemAlerts } from "@/lib/enemy-items";
+import { AugmentList } from "../augments/augment-list";
 import { useStatic } from "@/lib/static-context";
 import { cn } from "@/lib/utils";
 import { ChampionIcon, ItemIcon, SpellIcon } from "../game/icons";
@@ -76,6 +77,8 @@ function SingleWidget({ id }: { id: WidgetId }) {
   }, [settings.overlayScale]);
   if (!WIDGET_META[id]) return null;
   const me = findMe(snap, client?.summoner);
+  // Augment tiers only make sense in Arena / ARAM Mayhem: stay invisible in other modes.
+  if (id === "augments" && !edit && snap && snap.gameMode !== "CHERRY" && snap.gameMode !== "KIWI") return <div ref={box} />;
   return (
     <div
       ref={box}
@@ -197,7 +200,24 @@ function WidgetBody({ id, snap, me }: { id: WidgetId; snap: Snap; me: Player }) 
       return <EnemyWidget snap={snap} me={me} />;
     case "enemyItems":
       return <EnemyItemsWidget snap={snap} me={me} />;
+    case "augments":
+      return <AugmentsWidget snap={snap} me={me} />;
   }
+}
+
+/** Arena / ARAM Mayhem: best augments for my champion (glance at it when the choice appears). */
+function AugmentsWidget({ snap, me }: { snap: Snap; me: Player }) {
+  const { findChampion } = useStatic();
+  const mode = snap.gameMode === "CHERRY" ? "arena" : snap.gameMode === "KIWI" ? "aram-mayhem" : null;
+  const champ = findChampion(me.championName);
+  const build = useChampionBuild(mode ? champ?.id : null, null, undefined, mode ?? "sr");
+  if (!mode) return <p className="max-w-[220px] text-[11px] text-muted">{t("Only in Arena and ARAM Chaos.")}</p>;
+  const list = build.data?.data?.augments ?? [];
+  return (
+    <div className="w-[260px]">
+      <AugmentList augments={list} limit={8} compact arena={mode === "arena"} />
+    </div>
+  );
 }
 
 function EnemyItemsWidget({ snap, me }: { snap: Snap; me: Player }) {

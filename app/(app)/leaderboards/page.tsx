@@ -1,12 +1,6 @@
-import { Suspense } from "react";
-import { LeaderboardsView } from "@/components/views/leaderboards-view";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Leaderboards" };
-
+/** Removed from NEXUS — old links go to the start page. */
 export default function Page() {
-  return (
-    <Suspense>
-      <LeaderboardsView />
-    </Suspense>
-  );
+  redirect("/");
 }

@@ -65,6 +65,24 @@ export interface ChampSelectState {
   bans: number[];
 }
 
+export type UpdateState =
+  | { state: "none" }
+  | { state: "available"; tag: string; name: string }
+  | { state: "downloading"; tag: string; name: string; progress: number }
+  | { state: "installing"; tag: string; name: string }
+  | { state: "error"; tag: string; name: string; message: string };
+
+/** Desktop update state (topbar button + progress). */
+export function useUpdateState(): UpdateState {
+  const [u, setU] = useState<UpdateState>({ state: "none" });
+  useEffect(() => {
+    const b = getBridge();
+    b?.getUpdate?.().then(setU).catch(() => undefined);
+    return b?.onUpdate?.(setU);
+  }, []);
+  return u;
+}
+
 export interface NexusBridge {
   platform: string;
   version: string;
@@ -84,6 +102,12 @@ export interface NexusBridge {
   getChampSelect?(): Promise<ChampSelectState | null>;
   setWidgetSize?(w: number, h: number): Promise<void>;
   onWidgetMoved?(cb: (m: { id: string; x: number; y: number }) => void): () => void;
+  windowControl?(action: "minimize" | "maximize" | "close"): Promise<void>;
+  loadSettings?(): Promise<Record<string, unknown> | null>;
+  saveSettings?(value: unknown): Promise<void>;
+  getUpdate?(): Promise<UpdateState>;
+  installUpdate?(): Promise<void>;
+  onUpdate?(cb: (u: UpdateState) => void): () => void;
   /** The last finished game this app saw (for the post-game summary). */
   getLastGame?(): Promise<{ gameId: number | null; queueId: number | null; endedAt: number } | null>;
 }

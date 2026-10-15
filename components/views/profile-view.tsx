@@ -155,10 +155,7 @@ export function ProfileView({ player, variant }: { player: PlayerRef; variant: "
           </div>
           {statsLong.data?.data && <InsightsCard insights={statsLong.data.data.insights} games={statsLong.data.data.games} />}
           {variant === "dashboard" && (
-            <div className="grid gap-3 lg:grid-cols-2">
-              <PlayersCard kind="favorites" />
-              <PlayersCard kind="recent" />
-            </div>
+            <PlayersCard kind="recent" />
           )}
         </>
       )}

@@ -2,7 +2,7 @@
 
 
 import { t } from "@/lib/i18n";
-import { Download, Footprints, Shield, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Download, Footprints, Shield, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
 import { getBridge } from "@/lib/desktop";
 import Link from "next/link";
@@ -26,6 +26,7 @@ import { Skeleton } from "../ui/skeleton";
 import { EmptyState, ErrorState } from "../ui/states";
 import { Tabs } from "../ui/tabs";
 import { RuneTree } from "./rune-tree";
+import { AugmentList } from "../augments/augment-list";
 
 export type BuildTab = "builds" | "runes" | "skills" | "situational";
 export const BUILD_TABS: { value: BuildTab; label: string }[] = [
@@ -155,6 +156,14 @@ export function BuildPanel({
       {tab === "builds" && (
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_350px]">
           <div className="min-w-0 space-y-3">
+            {b.augments && (
+              <Card>
+                <CardHeader title={t("Augment tiers")} icon={<Sparkles className="size-4 text-primary" />} action={<Link href={`/augments?mode=${mode}`} className="text-xs text-primary hover:underline">{t("All augments")}</Link>} />
+                <CardBody className="pt-0">
+                  <AugmentList augments={b.augments} limit={16} arena={mode === "arena"} />
+                </CardBody>
+              </Card>
+            )}
             <Card>
               {header}
               <CardBody className="space-y-4 pt-4">

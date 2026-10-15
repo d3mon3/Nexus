@@ -37,3 +37,11 @@ test("ratings: one MVP on the winners, one ACE on the losers, 0–10 scores", ()
   assert.equal(r.find((x) => x.badge === "ACE")?.puuid, "c");
   assert.ok(r.every((x) => x.score >= 0 && x.score <= 10));
 });
+
+test("augment tiers: small samples are shrunk, best first", async () => {
+  const { augmentTiers } = await import("../lib/augment-tiers");
+  const list = augmentTiers({ "1": { games: 200, wins: 130 }, "2": { games: 6, wins: 6 }, "3": { games: 300, wins: 120 }, "4": { games: 2, wins: 2 } }, 400);
+  assert.equal(list[0].id, 1);
+  assert.ok(!list.some((a) => a.id === 4)); // below the minimum
+  assert.equal(list[list.length - 1].id, 3);
+});

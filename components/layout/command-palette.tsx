@@ -68,7 +68,7 @@ export function CommandPalette({ open, onClose, initialQuery = "" }: { open: boo
       });
     }
 
-    const players = [...settings.favorites.map((p) => ({ ...p, fav: true })), ...settings.recent.map((p) => ({ ...p, fav: false }))];
+    const players = settings.recent.map((p) => ({ ...p, fav: false }));
     const seen = new Set<string>();
     for (const p of players) {
       const key = `${p.gameName}#${p.tagLine}@${p.platform}`.toLowerCase();

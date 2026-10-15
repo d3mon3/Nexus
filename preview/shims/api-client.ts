@@ -54,6 +54,26 @@ export const api = {
     const start = (p.page - 1) * p.pageSize;
     return env({ entries: all.slice(start, start + p.pageSize), page: p.page, pageSize: p.pageSize, total: all.length });
   },
+  augmentCatalog: (_lang: string) =>
+    wait([
+      { id: 1, name: "Typhoon", icon: null, rarity: 2 },
+      { id: 2, name: "Blade Waltz", icon: null, rarity: 2 },
+      { id: 3, name: "Tank Engine", icon: null, rarity: 1 },
+      { id: 4, name: "Witchful Thinking", icon: null, rarity: 0 },
+      { id: 5, name: "Back to Basics", icon: null, rarity: 1 },
+    ]),
+  augmentTiers: (_mode: string) =>
+    env({
+      patch: "25.20",
+      games: 4120,
+      augments: [
+        { id: 1, games: 640, winRate: 0.58, pickRate: 0.15, tier: "S+" },
+        { id: 2, games: 420, winRate: 0.56, pickRate: 0.1, tier: "S" },
+        { id: 3, games: 380, winRate: 0.53, pickRate: 0.09, tier: "A" },
+        { id: 5, games: 200, winRate: 0.5, pickRate: 0.05, tier: "B" },
+        { id: 4, games: 500, winRate: 0.46, pickRate: 0.12, tier: "D" },
+      ],
+    }),
   counters: (opponent: number, role: any) =>
     wait({ data: { patch: "25.20", opponentId: opponent, role, picks: [{ championId: 157, games: 48, winRate: 0.56 }, { championId: 238, games: 31, winRate: 0.55 }, { championId: 103, games: 52, winRate: 0.53 }, { championId: 1, games: 22, winRate: 0.51 }] }, source: "aggregate", fetchedAt: new Date().toISOString() }),
   championDetail: async (key: string) => {

@@ -1,4 +1,6 @@
 import type {
+  AugmentInfo,
+  AugmentStat,
   DesktopReleaseInfo,
   AppStatus,
   ChampionBuild,
@@ -83,6 +85,8 @@ export interface ChampionDetail {
 export const api = {
   status: () => getJson<AppStatus>("/api/status"),
   download: () => getJson<DesktopReleaseInfo>("/api/download"),
+  augmentCatalog: (lang: string) => getJson<AugmentInfo[]>("/api/augments/catalog", { lang }),
+  augmentTiers: (mode: "arena" | "aram-mayhem") => getJson<Envelope<{ patch: string | null; games: number; augments: AugmentStat[] }>>("/api/augments", { mode }),
   staticData: () => getJson<StaticBundle>("/api/static"),
   profile: (region: string, riotId: string) => getJson<Envelope<PlayerProfile>>("/api/player", { region, riotId }),
   matches: (p: { region: string; puuid: string; start: number; count: number; queue?: string; champion?: number | null; result?: string | null }) =>

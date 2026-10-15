@@ -1,12 +1,6 @@
-import { Suspense } from "react";
-import { ProPlayersView } from "@/components/views/pro-players-view";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Pro Players" };
-
+/** Removed from NEXUS — old links go to the start page. */
 export default function Page() {
-  return (
-    <Suspense>
-      <ProPlayersView />
-    </Suspense>
-  );
+  redirect("/");
 }

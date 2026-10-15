@@ -66,6 +66,13 @@ function MotionPrefs({ children }: { children: ReactNode }) {
   return <MotionConfig reducedMotion={settings.reduceMotion ? "always" : "user"}>{children}</MotionConfig>;
 }
 
+/** Only the main window pushes settings to the desktop shell (overlay windows may be stale). */
+function MainWindowSync() {
+  const [main, setMain] = useState(false);
+  useEffect(() => setMain(!window.location.pathname.startsWith("/overlay")), []);
+  return main ? <DesktopSync /> : null;
+}
+
 export function Providers({ children, lang = "pl" }: { children: ReactNode; lang?: Lang }) {
   const [client] = useState(
     () =>
@@ -80,7 +87,7 @@ export function Providers({ children, lang = "pl" }: { children: ReactNode; lang
           <LangProvider initial={lang}>
           <StaticDataProvider>
             <MotionPrefs>{children}</MotionPrefs>
-            <DesktopSync />
+            <MainWindowSync />
             <Toaster
               theme="dark"
               position="bottom-right"

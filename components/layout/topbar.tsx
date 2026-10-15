@@ -3,11 +3,11 @@
 
 import { t } from "@/lib/i18n";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, FlaskConical, Menu, Monitor, Moon, Search, Settings, Sun, User, X } from "lucide-react";
+import { Bell, Download, FlaskConical, Menu, Minus, Monitor, Moon, Search, Settings, Square, Sun, User, X } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
-import { useClientState } from "@/lib/desktop";
+import { getBridge, useClientState, useUpdateState } from "@/lib/desktop";
 import { useProfile, useStatus } from "@/lib/queries";
 import { REGIONS, profileHref, type Platform } from "@/lib/regions";
 import { useSettings } from "@/lib/settings";
@@ -43,7 +43,7 @@ export function Topbar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 flex h-[68px] items-center gap-2 border-b border-line-soft/60 bg-bg/70 px-3 backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-6">
+    <header className="app-drag sticky top-0 z-40 flex h-[68px] items-center gap-2 border-b border-line-soft/60 bg-bg/70 px-3 backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-6">
       <button className="grid size-10 place-items-center rounded-lg text-muted hover:text-fg lg:hidden" onClick={() => setDrawer(true)} aria-label={t("Open menu")}>
         <Menu className="size-5" />
       </button>
@@ -94,8 +94,10 @@ export function Topbar() {
         <span className="hidden sm:contents">
           <ThemeToggle />
         </span>
+        <UpdateButton />
         <Notifications demo={status.data?.mode === "demo"} clientPhase={client?.connected ? client.phase : null} />
         <AvatarMenu />
+        <WindowControls />
       </div>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
@@ -124,6 +126,62 @@ export function Topbar() {
         )}
       </AnimatePresence>
     </header>
+  );
+}
+
+/** Desktop: "Update" button with an in-app download progress bar. */
+function UpdateButton() {
+  const u = useUpdateState();
+  if (u.state === "none") return null;
+  const bridge = getBridge();
+  if (u.state === "downloading" || u.state === "installing") {
+    const pctDone = u.state === "installing" ? 100 : Math.round(u.progress * 100);
+    return (
+      <div className="flex w-[170px] flex-col gap-1 rounded-lg border border-primary/50 bg-primary-soft px-3 py-1.5">
+        <span className="flex items-center justify-between text-[11px] font-semibold text-fg">
+          {u.state === "installing" ? t("Installing…") : t("Downloading update")}
+          <span className="tabular text-muted">{pctDone}%</span>
+        </span>
+        <span className="h-1.5 overflow-hidden rounded-full bg-surface-hover">
+          <span className="block h-full rounded-full bg-primary transition-[width] duration-200" style={{ width: `${pctDone}%` }} />
+        </span>
+      </div>
+    );
+  }
+  return (
+    <Tooltip content={u.state === "error" ? t("Update failed: {0}. Click to try again.", [u.message]) : t("New version {0} — downloads and installs inside NEXUS, then restarts.", [u.name])} side="bottom">
+      <button
+        onClick={() => bridge?.installUpdate?.()}
+        className={cn(
+          "flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white shadow-[0_0_18px_-6px_var(--primary-glow)] transition hover:brightness-110",
+          u.state === "error" ? "bg-danger" : "animate-pulse bg-primary",
+        )}
+      >
+        <Download className="size-3.5" />
+        {u.state === "error" ? t("Try again") : t("Update now")}
+      </button>
+    </Tooltip>
+  );
+}
+
+/** Desktop (Windows): our own minimise / maximise / close buttons instead of the system title bar. */
+function WindowControls() {
+  const [bridge, setBridge] = useState<ReturnType<typeof getBridge>>(null);
+  useEffect(() => setBridge(getBridge()), []);
+  if (!bridge?.windowControl || bridge.platform !== "win32") return null;
+  const btn = "grid h-10 w-11 place-items-center rounded-md text-muted transition-colors hover:bg-surface-hover/70 hover:text-fg";
+  return (
+    <div className="-mr-2 ml-1 flex items-center border-l border-line-soft/60 pl-1 sm:-mr-3 lg:-mr-5">
+      <button className={btn} onClick={() => bridge.windowControl!("minimize")} aria-label={t("Minimise")}>
+        <Minus className="size-4" />
+      </button>
+      <button className={btn} onClick={() => bridge.windowControl!("maximize")} aria-label={t("Maximise")}>
+        <Square className="size-3.5" />
+      </button>
+      <button className={cn(btn, "hover:bg-danger hover:text-white")} onClick={() => bridge.windowControl!("close")} aria-label={t("Close")}>
+        <X className="size-4" />
+      </button>
+    </div>
   );
 }
 

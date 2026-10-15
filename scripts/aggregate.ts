@@ -45,7 +45,7 @@ interface Bucket {
   kills: number;
   deaths: number;
   assists: number;
-  builds: { core: Counter; starting: Counter; boots: Counter; items: Counter; runes: Counter; spells: Counter; skills: Counter; matchups: Counter };
+  builds: { core: Counter; starting: Counter; boots: Counter; items: Counter; runes: Counter; spells: Counter; skills: Counter; matchups: Counter; augments: Counter };
 }
 
 const bump = (c: Counter, key: string, win: boolean) => {
@@ -55,7 +55,7 @@ const bump = (c: Counter, key: string, win: boolean) => {
 };
 
 function emptyBucket(): Bucket {
-  return { games: 0, wins: 0, bans: 0, kills: 0, deaths: 0, assists: 0, builds: { core: {}, starting: {}, boots: {}, items: {}, runes: {}, spells: {}, skills: {}, matchups: {} } };
+  return { games: 0, wins: 0, bans: 0, kills: 0, deaths: 0, assists: 0, builds: { core: {}, starting: {}, boots: {}, items: {}, runes: {}, spells: {}, skills: {}, matchups: {}, augments: {} } };
 }
 
 /** Item purchase order and skill level-up order per participant, from the timeline. */
@@ -129,6 +129,9 @@ function countMatch(ctx: Ctx, m: RiotMatch, tl: RiotTimeline | null, sr: boolean
     const start = ((pid ? orders.starts.get(pid) : undefined) ?? []).filter((i) => !isCore(i));
     const styles = p.perks?.styles ?? [];
     const prio = pid ? skillPriority(orders.skills.get(pid) ?? []) : null;
+    // Augments (Arena / ARAM Mayhem). In Arena a top-4 finish counts as a win.
+    const augments = [p.playerAugment1, p.playerAugment2, p.playerAugment3, p.playerAugment4, p.playerAugment5, p.playerAugment6].filter((a): a is number => Boolean(a && a > 0));
+    const augmentWin = p.placement ? p.placement <= 4 : p.win;
     const opponent = sr ? m.info.participants.find((o) => o.teamId !== p.teamId && o.teamPosition === p.teamPosition) : undefined;
 
     const record = (b: Bucket) => {
@@ -150,6 +153,7 @@ function countMatch(ctx: Ctx, m: RiotMatch, tl: RiotTimeline | null, sr: boolean
       bump(b.builds.spells, [p.summoner1Id, p.summoner2Id].sort((x, y) => x - y).join("-"), p.win);
       if (prio) bump(b.builds.skills, prio, p.win);
       if (opponent) bump(b.builds.matchups, String(opponent.championId), p.win);
+      for (const a of augments) bump(b.builds.augments, String(a), augmentWin);
     };
 
     const key = `${patch}|${p.championId}|${role}`;

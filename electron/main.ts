@@ -5,7 +5,7 @@
  *  - loading screen → shows the scouting board (Alt+Z by default),
  *  - in game → transparent widget overlay (Alt+X, Alt+V to move widgets and the board).
  */
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, screen, shell, Tray } from "electron";
+import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, Notification, screen, shell, Tray } from "electron";
 import { fork, spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
@@ -105,6 +105,7 @@ function buildTrayMenu() {
       { label: `${pl ? "Tabela graczy" : "Scouting board"} (Alt+${prefs.hotkeys.scout})`, click: () => runHotkey("scout") },
       { label: `${pl ? "Przesuń widgety i tabelę" : "Move widgets and board"} (Alt+${prefs.hotkeys.edit})`, click: () => runHotkey("edit") },
       { label: pl ? "Ustawienia" : "Settings", click: () => (showMain("/settings"), openMain()) },
+      ...(update.state === "available" ? [{ label: pl ? `Zaktualizuj do ${update.name}` : `Update to ${update.name}`, click: () => void installUpdate() }] : []),
       { type: "separator" },
       { label: pl ? "Zamknij NEXUS" : "Quit NEXUS", click: () => ((quitting = true), app.quit()) },
     ]),
@@ -124,6 +125,29 @@ if (!app.requestSingleInstanceLock()) app.quit();
 else app.on("second-instance", () => openMain());
 app.on("before-quit", () => (quitting = true));
 const watcher = new ChampSelectWatcher();
+
+/* Settings survive restarts in %APPDATA%/NEXUS: desktop prefs (used before the window has
+ * loaded, e.g. auto-accept right after Windows starts) and the full settings of the UI. */
+const prefsFile = () => path.join(app.getPath("userData"), "prefs.json");
+const settingsFile = () => path.join(app.getPath("userData"), "settings.json");
+function readJson<T>(file: string): T | null {
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8")) as T;
+  } catch {
+    return null;
+  }
+}
+function writeJson(file: string, value: unknown) {
+  try {
+    fs.writeFileSync(file, JSON.stringify(value));
+  } catch {
+    /* ignore */
+  }
+}
+function loadSavedPrefs() {
+  const saved = readJson<Partial<DesktopPrefs>>(prefsFile());
+  if (saved) prefs = { ...prefs, ...saved, import: { ...prefs.import, ...(saved.import ?? {}) }, hotkeys: { ...prefs.hotkeys, ...(saved.hotkeys ?? {}) } };
+}
 
 type ClientState = { connected: boolean; phase: string; summoner: { gameName: string; tagLine: string; puuid: string; platform: string | null } | null };
 let clientState: ClientState = { connected: false, phase: "None", summoner: null };
@@ -161,34 +185,68 @@ const BUILD_TAG = typeof __NEXUS_BUILD_TAG__ === "string" ? __NEXUS_BUILD_TAG__ 
  * without reinstalling. When a new installer is published (new client features), the app
  * offers to download it from the NEXUS server and runs it.
  */
-let updatePrompted = false;
-async function checkForUpdate(manual = false) {
-  if (isDev || !BUILD_TAG || !baseUrl.startsWith("https://") || (updatePrompted && !manual)) return;
+/* In-app updates: the topbar shows "Update", the installer downloads inside the app with a
+ * progress bar and installs silently, then NEXUS restarts by itself. */
+type UpdateState =
+  | { state: "none" }
+  | { state: "available"; tag: string; name: string }
+  | { state: "downloading"; tag: string; name: string; progress: number }
+  | { state: "installing"; tag: string; name: string }
+  | { state: "error"; tag: string; name: string; message: string };
+let update: UpdateState = { state: "none" };
+
+function setUpdate(next: UpdateState) {
+  update = next;
+  mainWindow?.webContents.send("nexus:update", update);
+  buildTrayMenu();
+}
+
+async function checkForUpdate() {
+  if (isDev || !BUILD_TAG || !baseUrl.startsWith("https://") || update.state === "downloading" || update.state === "installing") return;
   try {
     const info = (await fetch(`${baseUrl}/api/download`).then((r) => r.json())) as { release?: { tag: string; name: string } | null };
     const latest = info.release;
     if (!latest || latest.tag === BUILD_TAG) return;
-    updatePrompted = true;
-    const pl = prefs.language === "pl";
-    const { response } = await dialog.showMessageBox({
-      type: "info",
-      title: pl ? "Aktualizacja NEXUS" : "NEXUS update",
-      message: pl ? `Dostępna jest nowa wersja NEXUS (${latest.name}).` : `A new version of NEXUS is available (${latest.name}).`,
-      detail: pl ? "Pobrać i zainstalować teraz? NEXUS zamknie się na czas instalacji." : "Download and install it now? NEXUS will close while the installer runs.",
-      buttons: pl ? ["Aktualizuj teraz", "Później"] : ["Update now", "Later"],
-      defaultId: 0,
-      cancelId: 1,
-    });
-    if (response !== 0) return;
-    const file = path.join(app.getPath("temp"), `NEXUS-Setup-${latest.tag.replace(/[^\w.-]/g, "_")}.exe`);
-    const res = await fetch(`${baseUrl}/api/download/latest`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    fs.writeFileSync(file, Buffer.from(await res.arrayBuffer()));
-    spawn(file, [], { detached: true, stdio: "ignore" }).unref();
-    app.quit();
+    if (update.state === "none" || update.tag !== latest.tag) setUpdate({ state: "available", tag: latest.tag, name: latest.name });
   } catch (err) {
     console.error("[nexus] update check failed", err);
-    if (manual) dialog.showMessageBox({ type: "error", title: "NEXUS", message: prefs.language === "pl" ? "Nie udało się pobrać aktualizacji. Spróbuj później albo pobierz ją ze strony." : "Couldn't download the update. Try again later or get it from the Download page." });
+  }
+}
+
+async function installUpdate() {
+  if (update.state !== "available" && update.state !== "error") return;
+  const { tag, name } = update;
+  try {
+    setUpdate({ state: "downloading", tag, name, progress: 0 });
+    const res = await fetch(`${baseUrl}/api/download/latest`);
+    if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+    const total = Number(res.headers.get("content-length")) || 0;
+    const file = path.join(app.getPath("temp"), `NEXUS-Setup-${tag.replace(/[^\w.-]/g, "_")}.exe`);
+    const out = fs.createWriteStream(file);
+    const reader = res.body.getReader();
+    let received = 0;
+    let lastSent = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.length;
+      if (!out.write(Buffer.from(value))) await new Promise((r) => out.once("drain", r));
+      if (total && Date.now() - lastSent > 150) {
+        lastSent = Date.now();
+        setUpdate({ state: "downloading", tag, name, progress: Math.min(0.99, received / total) });
+      }
+    }
+    await new Promise<void>((resolve, reject) => out.end((err?: Error | null) => (err ? reject(err) : resolve())));
+    if (total && received < total) throw new Error("download incomplete");
+    setUpdate({ state: "installing", tag, name });
+    // Silent install over the current version; --force-run starts NEXUS again afterwards.
+    spawn(file, ["/S", "--force-run"], { detached: true, stdio: "ignore" }).unref();
+    setTimeout(() => {
+      quitting = true;
+      app.quit();
+    }, 800);
+  } catch (err) {
+    setUpdate({ state: "error", tag, name, message: err instanceof Error ? err.message : String(err) });
   }
 }
 
@@ -209,6 +267,10 @@ function offlinePage(url: string, detail: string) {
   const esc = (t: string) => t.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
   const html = `<!doctype html><meta charset="utf-8"><title>NEXUS</title>
 <body style="margin:0;height:100vh;display:grid;place-items:center;background:#070A13;color:#e8e9f3;font:15px system-ui,sans-serif">
+<div style="position:fixed;top:0;left:0;right:0;height:40px;-webkit-app-region:drag;display:flex;justify-content:flex-end">
+<button onclick="window.nexus&&window.nexus.windowControl('minimize')" style="-webkit-app-region:no-drag;width:46px;background:none;border:0;color:#8b8fa8;font-size:16px;cursor:pointer">&#8212;</button>
+<button onclick="window.nexus&&window.nexus.windowControl('close')" style="-webkit-app-region:no-drag;width:46px;background:none;border:0;color:#8b8fa8;font-size:16px;cursor:pointer">&#10005;</button>
+</div>
 <div style="max-width:440px;text-align:center;padding:24px">
 <div style="font:700 28px system-ui;letter-spacing:.12em;color:#a183ff">NEXUS</div>
 <p>Can't reach the NEXUS server.</p>
@@ -247,6 +309,8 @@ function createWindow(show = true) {
     backgroundColor: "#070A13",
     title: "NEXUS",
     show: false,
+    // Windows: no system title bar — NEXUS draws its own (drag area + buttons in the top bar).
+    frame: process.platform !== "win32",
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true },
@@ -745,7 +809,21 @@ ipcMain.handle("nexus:set-prefs", (_e, next: Partial<DesktopPrefs>) => {
   registerHotkeys();
   applyLoginItem();
   buildTrayMenu();
+  writeJson(prefsFile(), prefs);
 });
+ipcMain.handle("nexus:load-settings", () => readJson(settingsFile()));
+ipcMain.handle("nexus:save-settings", (_e, value: unknown) => {
+  if (value && typeof value === "object") writeJson(settingsFile(), value);
+});
+ipcMain.handle("nexus:window", (e, action: string) => {
+  const win = BrowserWindow.fromWebContents(e.sender);
+  if (!win || win !== mainWindow) return;
+  if (action === "minimize") win.minimize();
+  else if (action === "maximize") (win.isMaximized() ? win.unmaximize() : win.maximize());
+  else if (action === "close") win.close();
+});
+ipcMain.handle("nexus:get-update", () => update);
+ipcMain.handle("nexus:install-update", () => installUpdate());
 ipcMain.handle("nexus:get-champ-select", async () => {
   if (!conn || clientState.phase !== "ChampSelect") return null;
   return readChampSelect(conn, flow.queueId).catch(() => null);
@@ -784,6 +862,7 @@ ipcMain.handle("nexus:widget-size", (e, w: number, h: number) => {
 });
 
 app.whenReady().then(async () => {
+  loadSavedPrefs();
   try {
     baseUrl = await startServer();
   } catch (err) {

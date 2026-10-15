@@ -252,6 +252,8 @@ export interface ChampionBuild {
   skillOrder: { priority: ("Q" | "W" | "E")[]; sequence: ("Q" | "W" | "E" | "R")[]; winRate: number };
   counters: Matchup[]; // hardest matchups
   favorable: Matchup[]; // easiest matchups
+  /** Arena / ARAM Mayhem: augments taken on this champion, best first. */
+  augments?: AugmentStat[];
   /** Build styles played often enough to show (AP / AD / on-hit …), most played first. */
   variants?: { id: string; games: number; winRate: number }[];
   /** The style this build is for; null = all games together. */
@@ -380,4 +382,22 @@ export interface ScoutPlayer {
 export interface DesktopReleaseInfo {
   configured: boolean;
   release: { tag: string; name: string; publishedAt: string; fileName: string; url: string; size: number } | null;
+}
+
+/** Augment (Arena / ARAM Mayhem) with its name and icon from CommunityDragon. */
+export interface AugmentInfo {
+  id: number;
+  name: string;
+  icon: string | null;
+  /** 0 silver, 1 gold, 2 prismatic (higher values in newer modes). */
+  rarity: number;
+}
+
+export interface AugmentStat {
+  id: number;
+  games: number;
+  /** Arena: share of top-4 finishes. */
+  winRate: number;
+  pickRate: number;
+  tier: TierGrade;
 }

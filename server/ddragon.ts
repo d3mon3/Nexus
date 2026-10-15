@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { DDRAGON, FALLBACK_CHAMPIONS, FALLBACK_DDRAGON_VERSION, RUNES } from "@/lib/static-data";
-import type { ChampionInfo, Role } from "@/lib/types";
+import type { AugmentInfo, ChampionInfo, Role } from "@/lib/types";
 import { classifyAll, type ItemKind } from "@/lib/item-kinds";
 
 export interface ItemCatalog {
@@ -130,6 +130,29 @@ export function getItemCatalog(): Promise<ItemCatalog> {
 /** id → item class (boots / finished item / starter / component …). */
 export async function getItemKinds(): Promise<Record<number, ItemKind>> {
   return (await getItemCatalog()).kinds;
+}
+
+const augmentsSchema = z.object({
+  augments: z.array(
+    z
+      .object({ id: z.number(), name: z.string(), iconLarge: z.string().optional(), iconSmall: z.string().optional(), rarity: z.number().optional() })
+      .passthrough(),
+  ),
+});
+
+/** Arena / ARAM Mayhem augment names and icons (CommunityDragon). Empty if unreachable. */
+export function getAugmentCatalog(lang: "en_us" | "pl_pl" = "en_us"): Promise<AugmentInfo[]> {
+  return cached(`cdragon:augments:${lang}`, TTL.ddragon, async () => {
+    try {
+      const data = await getJson(`https://raw.communitydragon.org/latest/cdragon/arena/${lang}.json`, augmentsSchema);
+      return data.augments.map((a) => {
+        const icon = a.iconLarge || a.iconSmall;
+        return { id: a.id, name: a.name, rarity: a.rarity ?? 0, icon: icon ? `https://raw.communitydragon.org/latest/game/${icon.toLowerCase()}` : null };
+      });
+    } catch {
+      return [];
+    }
+  });
 }
 
 export function embeddedBundle(): StaticBundle {

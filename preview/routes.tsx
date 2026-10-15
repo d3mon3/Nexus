@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { BuildsView } from "@/components/views/builds-view";
+import { AugmentsView } from "@/components/views/augments-view";
 import { ChampionDetailView } from "@/components/views/champion-detail-view";
 import { ChampionsView } from "@/components/views/champions-view";
 import { CompareView } from "@/components/views/compare-view";
@@ -32,4 +33,5 @@ export const routes: { pattern: RegExp; render: (p: string[]) => ReactNode }[] =
   { pattern: /^\/pro-players$/, render: () => <ProPlayersView /> },
   { pattern: /^\/settings$/, render: () => <SettingsView /> },
   { pattern: /^\/download$/, render: () => <DownloadView /> },
+  { pattern: /^\/augments$/, render: () => <AugmentsView /> },
 ];

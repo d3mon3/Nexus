@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { getBridge } from "./desktop";
 import { DEFAULT_IMPORT_PREFS, type ImportPrefs } from "./client-import";
 import type { Platform } from "./regions";
 
@@ -55,9 +56,11 @@ export interface Settings {
   closeToTray: boolean;
   /** Desktop hotkeys: Alt + letter. */
   hotkeys: { widgets: string; scout: string; edit: string };
+  /** When these settings were last changed (ms). */
+  savedAt?: number;
 }
 
-export type WidgetId = "build" | "stats" | "timers" | "lane" | "enemySpells" | "enemyItems";
+export type WidgetId = "build" | "stats" | "timers" | "lane" | "enemySpells" | "enemyItems" | "augments";
 
 export interface WidgetConfig {
   enabled: boolean;
@@ -72,6 +75,7 @@ export const WIDGET_META: Record<WidgetId, { name: string; description: string }
   timers: { name: "Objective timers", description: "Dragon, Rift Herald and Baron respawns from the game's event feed." },
   lane: { name: "Lane opponent", description: "CS and level difference against the enemy in your role." },
   enemySpells: { name: "Enemy summoners", description: "Enemy champions with their summoner spells and levels." },
+  augments: { name: "Augment tiers", description: "Arena and ARAM Chaos: the best augments for your champion, so you can pick fast when the choice appears." },
   enemyItems: { name: "Enemy item alerts", description: "Warns when enemies buy Zhonya's, spell shields, cleanse, anti-heal or stack resistances, with what to do about it." },
 };
 
@@ -80,12 +84,9 @@ const KEY = "nexus.settings.v1";
 export const DEFAULT_SETTINGS: Settings = {
   region: "euw1",
   myAccount: null,
-  favorites: [
-    { gameName: "Kaizen", tagLine: "PRO", platform: "euw1" },
-    { gameName: "Ravenna", tagLine: "PRO", platform: "euw1" },
-  ],
+  favorites: [],
   recent: [],
-  favoriteChampions: [157, 238, 266, 245],
+  favoriteChampions: [],
   matchesPerPage: 10,
   reduceMotion: false,
   liveRefreshSec: 30,
@@ -102,6 +103,7 @@ export const DEFAULT_SETTINGS: Settings = {
     lane: { enabled: false, x: 0.83, y: 0.22 },
     enemySpells: { enabled: false, x: 0.83, y: 0.34 },
     enemyItems: { enabled: true, x: 0.83, y: 0.5 },
+    augments: { enabled: true, x: 0.012, y: 0.62 },
   },
   overlayOpacity: 0.92,
   overlayScale: 1,
@@ -120,33 +122,59 @@ export const DEFAULT_SETTINGS: Settings = {
 let cache: Settings | null = null;
 const listeners = new Set<() => void>();
 
+function merge(saved: Partial<Settings>): Settings {
+  return {
+    ...DEFAULT_SETTINGS,
+    ...saved,
+    importPrefs: { ...DEFAULT_SETTINGS.importPrefs, ...(saved.importPrefs ?? {}) },
+    widgets: { ...DEFAULT_SETTINGS.widgets, ...(saved.widgets ?? {}) },
+    hotkeys: { ...DEFAULT_SETTINGS.hotkeys, ...(saved.hotkeys ?? {}) },
+  };
+}
+
 function read(): Settings {
   if (cache) return cache;
   if (typeof window === "undefined") return DEFAULT_SETTINGS;
   try {
     const raw = window.localStorage.getItem(KEY);
-    const saved = raw ? (JSON.parse(raw) as Partial<Settings>) : {};
-    cache = {
-      ...DEFAULT_SETTINGS,
-      ...saved,
-      importPrefs: { ...DEFAULT_SETTINGS.importPrefs, ...(saved.importPrefs ?? {}) },
-      widgets: { ...DEFAULT_SETTINGS.widgets, ...(saved.widgets ?? {}) },
-      hotkeys: { ...DEFAULT_SETTINGS.hotkeys, ...(saved.hotkeys ?? {}) },
-    };
+    cache = merge(raw ? (JSON.parse(raw) as Partial<Settings>) : {});
   } catch {
     cache = DEFAULT_SETTINGS;
   }
   return cache;
 }
 
-function write(next: Settings) {
-  cache = next;
+/** Overlay windows (widgets, scouting board) only read settings; the main window owns them. */
+const isOverlayWindow = () => typeof window !== "undefined" && window.location.pathname.startsWith("/overlay");
+
+function write(next: Settings, toDisk = true) {
+  const stamped = { ...next, savedAt: Date.now() };
+  cache = stamped;
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(next));
+    window.localStorage.setItem(KEY, JSON.stringify(stamped));
   } catch {
     /* storage may be unavailable (private mode) — settings stay in memory */
   }
+  // Desktop: also keep a copy in %APPDATA%/NEXUS so nothing resets between launches.
+  if (toDisk && !isOverlayWindow()) getBridge()?.saveSettings?.(stamped)?.catch(() => undefined);
   listeners.forEach((l) => l());
+}
+
+/** Desktop: on start, take the copy saved by the app if it is newer than the browser storage. */
+function hydrateFromDisk() {
+  const bridge = getBridge();
+  if (!bridge?.loadSettings || isOverlayWindow()) return;
+  bridge
+    .loadSettings()
+    .then((disk) => {
+      if (!disk) {
+        bridge.saveSettings?.(read()).catch(() => undefined); // first run: create the file
+        return;
+      }
+      const diskAt = Number((disk as { savedAt?: number }).savedAt ?? 0);
+      if (diskAt > (read().savedAt ?? 0)) write(merge(disk as Partial<Settings>), false);
+    })
+    .catch(() => undefined);
 }
 
 function subscribe(listener: () => void) {
@@ -182,6 +210,7 @@ const same = (a: PlayerRef, b: PlayerRef) =>
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const settings = useSyncExternalStore(subscribe, read, () => DEFAULT_SETTINGS);
+  useEffect(hydrateFromDisk, []);
 
   const update = useCallback<SettingsApi["update"]>((patch) => {
     const current = read();

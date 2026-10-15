@@ -6,6 +6,7 @@ import { demoChampionBuild, demoChampionStats, demoPatches, gradeStats } from ".
 import { skillSequence } from "../demo/archetypes";
 import { env } from "../env";
 import { NON_SR_MODES, type GameModeId } from "@/lib/modes";
+import { augmentTiers } from "@/lib/augment-tiers";
 import { BOOT_IDS, bestWinRatePath, lateItems, popularPath, runePages } from "./build-select";
 
 const now = () => new Date().toISOString();
@@ -118,6 +119,7 @@ interface StoredBuilds {
   spells?: Counter;
   skills?: Counter;
   matchups?: Counter;
+  augments?: Counter;
 }
 
 const top = (c: Counter | undefined, n: number) =>
@@ -227,6 +229,7 @@ export async function getChampionBuild(championId: number, role: Role | null, pa
         skillOrder: { priority, sequence: skillSequence(priority), winRate: skill ? skill[1].wins / skill[1].games : 0 },
         counters: [...matchups].sort((a, b) => a.winRate - b.winRate).slice(0, 5),
         favorable: [...matchups].sort((a, b) => b.winRate - a.winRate).slice(0, 5),
+        augments: mode === "arena" || mode === "aram-mayhem" ? augmentTiers(merged.augments, games).slice(0, 30) : undefined,
         variants: variants.length >= 2 || (variants.length === 1 && variants[0].games < baseGames * 0.85) ? variants : [],
         variant,
       };
@@ -273,4 +276,24 @@ export async function getCounters(opponentId: number, role: Role, patchValue?: s
     .map(([championId, v]) => ({ championId, games: v.games, winRate: v.wins / v.games }))
     .sort((a, b) => b.winRate - a.winRate || b.games - a.games);
   return { data: { patch, opponentId, role, picks }, source: "aggregate", fetchedAt: now(), note: picks.length ? `${picks.reduce((s, p) => s + p.games, 0)} lane games against this champion.` : "Not enough games against this champion yet." };
+}
+
+/** Augment tier list for a mode (all champions together). */
+export async function getAugmentTierList(mode: "arena" | "aram-mayhem"): Promise<Envelope<{ patch: string | null; games: number; augments: import("@/lib/types").AugmentStat[] }>> {
+  const stats = await getChampionStats({ mode });
+  const db = await getDb();
+  if (!db || stats.source !== "aggregate" || !stats.data.rows.length) return { data: { patch: null, games: 0, augments: [] }, source: "aggregate", fetchedAt: now(), note: COLLECTING_NOTE };
+  const rows = await db.championAggregate.findMany({ where: { patch: stats.data.patch, rankBand: mode, ...BASE_ROLE } });
+  const merged: Counter = {};
+  let games = 0;
+  for (const r of rows) {
+    games += r.games;
+    for (const [id, v] of Object.entries((r.builds as StoredBuilds).augments ?? {})) {
+      const e = (merged[id] ??= { games: 0, wins: 0 });
+      e.games += v.games;
+      e.wins += v.wins;
+    }
+  }
+  // Each player takes several augments; pick rate is per player-game.
+  return { data: { patch: stats.data.patch, games, augments: augmentTiers(merged, games, 10) }, source: "aggregate", fetchedAt: now() };
 }

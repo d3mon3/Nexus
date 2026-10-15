@@ -61,7 +61,7 @@ export function CompareView() {
       </div>
       {!b ? (
         <Card>
-          <EmptyState icon={<ArrowLeftRight />} title={t("Pick a second player")} description={t("Enter a Riot ID for Player B — or pick one of your favorites.")} />
+          <EmptyState icon={<ArrowLeftRight />} title={t("Pick a second player")} description={t("Enter a Riot ID for Player B.")} />
         </Card>
       ) : da.profile.error || db.profile.error ? (
         <Card>

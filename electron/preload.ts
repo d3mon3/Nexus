@@ -29,6 +29,16 @@ contextBridge.exposeInMainWorld("nexus", {
     return () => ipcRenderer.removeListener("nexus:widget-moved", handler);
   },
   getLastGame: () => ipcRenderer.invoke("nexus:get-last-game"),
+  windowControl: (action: "minimize" | "maximize" | "close") => ipcRenderer.invoke("nexus:window", action),
+  loadSettings: () => ipcRenderer.invoke("nexus:load-settings"),
+  saveSettings: (value: unknown) => ipcRenderer.invoke("nexus:save-settings", value),
+  getUpdate: () => ipcRenderer.invoke("nexus:get-update"),
+  installUpdate: () => ipcRenderer.invoke("nexus:install-update"),
+  onUpdate: (cb: (u: unknown) => void) => {
+    const handler = (_e: unknown, u: unknown) => cb(u);
+    ipcRenderer.on("nexus:update", handler);
+    return () => ipcRenderer.removeListener("nexus:update", handler);
+  },
   toggleScout: (show: boolean) => ipcRenderer.invoke("nexus:toggle-scout", show),
   setOverlayEdit: (on: boolean) => ipcRenderer.invoke("nexus:set-overlay-edit", on),
   onImport: (cb: (r: unknown) => void) => {

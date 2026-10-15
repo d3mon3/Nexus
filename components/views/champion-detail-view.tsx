@@ -97,9 +97,6 @@ export function ChampionDetailView({ championKey }: { championKey: string }) {
             )}
             <div className="ml-auto flex items-center gap-2">
               <SourceBadge source={stats.data?.source} note={t(stats.data?.note)} />
-              <Button variant="outline" onClick={() => toggleFavoriteChampion(c.id)} aria-pressed={fav}>
-                <Star className={cn(fav && "fill-warning text-warning")} /> {fav ? t("Favorited") : t("Favorite")}
-              </Button>
             </div>
           </div>
           {detail.data?.spells.length ? (

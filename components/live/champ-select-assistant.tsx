@@ -17,6 +17,7 @@ import { useStatic } from "@/lib/static-context";
 import type { ChampionStat, Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ChampionIcon, ItemIcon, RuneIcon, SpellIcon } from "../game/icons";
+import { AugmentList } from "../augments/augment-list";
 import { Button } from "../ui/button";
 import { Switch } from "../ui/switch";
 import { RoleIcon } from "../game/role-icon";
@@ -207,6 +208,12 @@ function ImportPanel({ championId, role, mode, myStats }: { championId: number; 
             </div>
           </div>
         </div>
+        {build.augments && build.augments.length > 0 && (
+          <div className="mt-3">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-dim">{t("Best augments for this champion")}</p>
+            <AugmentList augments={build.augments} limit={8} arena={mode === "arena"} />
+          </div>
+        )}
         </>
       )}
       {status && <p className="mt-2 text-xs text-muted">{status}</p>}

@@ -2,7 +2,7 @@
 
 
 import { LANGS, t, useLanguage, type Lang } from "@/lib/i18n";
-import { Database, Download, Gamepad2, Keyboard, LayoutDashboard, Monitor, Move, Palette, RotateCcw, Star, Trash2, UserRound, Users } from "lucide-react";
+import { Database, Download, Gamepad2, History, Keyboard, LayoutDashboard, Monitor, Move, Palette, RotateCcw, Star, Trash2, UserRound, Users } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -69,7 +69,7 @@ function Row({ label, hint, children, htmlFor }: { label: string; hint?: string;
 }
 
 export function SettingsView() {
-  const { settings, update, reset, toggleFavorite, toggleFavoriteChampion, updateWidget } = useSettings();
+  const { settings, update, reset, updateWidget } = useSettings();
   const setImport = (patch: Partial<typeof settings.importPrefs>) => update((s) => ({ importPrefs: { ...s.importPrefs, ...patch } }));
   const { theme, setTheme } = useTheme();
   const status = useStatus();
@@ -298,35 +298,7 @@ export function SettingsView() {
           )}
         </Section>
 
-        <Section icon={<Star />} title={t("Favorites")}>
-          {settings.favorites.length === 0 && <p className="text-sm text-muted">{t("No favorite players.")}</p>}
-          <ul className="space-y-1.5">
-            {settings.favorites.map((p) => (
-              <li key={`${p.gameName}#${p.tagLine}${p.platform}`} className="flex items-center justify-between rounded-lg border border-line-soft px-3 py-2 text-sm">
-                <span>
-                  {p.gameName}
-                  <span className="text-muted">#{p.tagLine}</span> <span className="text-xs text-dim">{regionLabel(p.platform)}</span>
-                </span>
-                <button onClick={() => toggleFavorite(p)} className="text-muted hover:text-danger" aria-label={t("Remove {0}", [p.gameName])}>
-                  <Trash2 className="size-4" />
-                </button>
-              </li>
-            ))}
-          </ul>
-          <div>
-            <p className="mb-2 text-sm font-medium">{t("Favorite champions")}</p>
-            <div className="flex flex-wrap gap-2">
-              {settings.favoriteChampions.map((id) => (
-                <button key={id} onClick={() => toggleFavoriteChampion(id)} aria-label={t("Remove {0}", [champion(id)?.name])} className="group relative">
-                  <ChampionIcon id={id} size={40} />
-                  <span className="absolute inset-0 hidden place-items-center rounded-lg bg-black/60 group-hover:grid">
-                    <Trash2 className="size-4 text-danger" />
-                  </span>
-                </button>
-              ))}
-              {settings.favoriteChampions.length === 0 && <p className="text-sm text-muted">{t("Star champions on the Champions page.")}</p>}
-            </div>
-          </div>
+        <Section icon={<History />} title={t("History")}>
           <Row label={t("Recently viewed")} hint={`${settings.recent.length} profiles`}>
             <Button size="sm" variant="outline" onClick={() => update({ recent: [] })} disabled={!settings.recent.length}>{t("Clear history")}</Button>
           </Row>

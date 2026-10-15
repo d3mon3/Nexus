@@ -92,6 +92,14 @@ export const participantSchema = z.object({
     })
     .optional(),
   win: z.boolean(),
+  // Arena / ARAM Mayhem augments (0 = none) and Arena placement.
+  playerAugment1: z.number().optional(),
+  playerAugment2: z.number().optional(),
+  playerAugment3: z.number().optional(),
+  playerAugment4: z.number().optional(),
+  playerAugment5: z.number().optional(),
+  playerAugment6: z.number().optional(),
+  placement: z.number().optional(),
 });
 
 const objective = z.object({ kills: z.number().default(0) }).optional();
