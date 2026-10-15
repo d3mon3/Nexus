@@ -9,7 +9,6 @@ export interface DdItem {
   into?: string[];
   from?: string[];
   consumed?: boolean;
-  maps?: Record<string, boolean>;
 }
 
 export function classifyItem(id: number, it: DdItem | undefined): ItemKind {
