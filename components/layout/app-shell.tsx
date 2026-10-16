@@ -5,6 +5,7 @@ import { t } from "@/lib/i18n";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
+import { asset } from "@/lib/assets";
 import { getBridge } from "@/lib/desktop";
 import { useSettings } from "@/lib/settings";
 import { Sidebar } from "./sidebar";
@@ -18,6 +19,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => getBridge()?.onNavigate?.((p) => settings.autoDetectClient && router.push(p)), [router, settings.autoDetectClient]);
   return (
     <div className="flex min-h-dvh">
+      {/* Glass theme: soft painted champion art behind everything. */}
+      <div className="pointer-events-none fixed inset-0 -z-10 hidden overflow-hidden light:block" aria-hidden>
+        <img src={asset.championCentered("Lux", 0)} alt="" className="absolute right-[-8%] top-[-6%] h-[115%] w-[75%] object-cover object-[50%_20%] opacity-[0.28] blur-[3px] saturate-[0.85] [mask-image:radial-gradient(70%_70%_at_60%_40%,black,transparent)]" onError={(e) => (e.currentTarget.style.display = "none")} />
+        <img src={asset.championCentered("Janna", 0)} alt="" className="absolute bottom-[-10%] left-[-10%] h-[70%] w-[55%] object-cover opacity-[0.18] blur-[4px] [mask-image:radial-gradient(60%_60%_at_40%_60%,black,transparent)]" onError={(e) => (e.currentTarget.style.display = "none")} />
+      </div>
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[200] focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-white">{t("Skip to content")}</a>
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">

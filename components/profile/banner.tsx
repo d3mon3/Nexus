@@ -82,14 +82,14 @@ export function ProfileBanner({
             <div className="absolute inset-0 bg-[radial-gradient(60%_90%_at_70%_35%,rgba(160,110,255,0.35),transparent_70%)] mix-blend-screen" />
           </motion.div>
         )}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,#0b1020_22%,rgba(11,16,32,0.55)_45%,rgba(11,16,32,0.05)_75%)] light:bg-[linear-gradient(90deg,#fff_30%,rgba(255,255,255,0.7)_55%,rgba(122,69,255,0.15))]" />
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#0d1324] to-transparent light:from-white" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,#0b1020_22%,rgba(11,16,32,0.55)_45%,rgba(11,16,32,0.05)_75%)] light:bg-[linear-gradient(90deg,rgba(255,255,255,0.88)_28%,rgba(255,255,255,0.45)_55%,rgba(255,255,255,0.05))]" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#0d1324] to-transparent light:from-white/70" />
 
         <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:px-6 sm:pb-3 sm:pt-5">
           <div className="relative w-max shrink-0 self-start">
-            <div className="glow-border relative size-[124px] overflow-hidden rounded-2xl p-[3px]">
+            <div className="glow-border relative size-[124px] overflow-hidden rounded-2xl p-[3px] light:rounded-full light:border-[3px] light:border-white light:p-0 light:shadow-[0_0_0_3px_rgba(120,110,255,0.45),0_12px_30px_-10px_rgba(64,76,160,0.6)]">
               {main ? (
-                <span className="relative block size-full overflow-hidden rounded-[13px]">
+                <span className="relative block size-full overflow-hidden rounded-[13px] light:rounded-full">
                   <GameImage src={asset.championLoading(main.key)} alt={`${account.gameName} avatar`} loading="eager" className="art-duotone size-full scale-[1.6] object-[50%_14%] text-3xl" />
                   <span className="art-tint absolute inset-0" aria-hidden />
                   <span className="absolute inset-0 bg-[radial-gradient(circle_at_60%_40%,rgba(190,150,255,0.35),transparent_65%)] mix-blend-screen" aria-hidden />
@@ -98,7 +98,7 @@ export function ProfileBanner({
                 <ProfileIcon id={account.profileIconId} size={128} className="rounded-[13px]" />
               )}
             </div>
-            <span className="absolute -bottom-1 -right-2 rounded-lg border border-primary/60 bg-[#0d1226] px-2 py-0.5 text-[15px] font-bold text-fg shadow-[0_0_14px_-3px_var(--primary-glow)] tabular light:bg-white">{account.summonerLevel}</span>
+            <span className="absolute -bottom-1 -right-2 rounded-lg border border-primary/60 bg-[#0d1226] px-2 py-0.5 text-[15px] font-bold text-fg shadow-[0_0_14px_-3px_var(--primary-glow)] tabular light:-bottom-2 light:left-1/2 light:right-auto light:-translate-x-1/2 light:rounded-full light:border-white light:bg-[#1c2348] light:px-3 light:text-white">{account.summonerLevel}</span>
           </div>
 
           <div className="min-w-0 flex-1 pt-1">

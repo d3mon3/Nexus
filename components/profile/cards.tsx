@@ -129,7 +129,7 @@ export function RecentPerformanceCard({ stats, loading, artKey }: { stats: Playe
         <div aria-hidden className="pointer-events-none absolute inset-0">
           <img src={asset.championSplash(artKey)} alt="" className="art-duotone h-full w-full object-cover object-[60%_25%] opacity-25" onError={(e) => (e.currentTarget.style.display = "none")} />
           <div className="art-tint absolute inset-0 opacity-40" />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(12,17,29,0.75),rgba(12,17,29,0.4)_50%,rgba(12,17,29,0.85))]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(12,17,29,0.75),rgba(12,17,29,0.4)_50%,rgba(12,17,29,0.85))] light:bg-[linear-gradient(180deg,rgba(255,255,255,0.85),rgba(255,255,255,0.55)_50%,rgba(255,255,255,0.88))]" />
         </div>
       )}
       <CardHeader title={t("Recent Performance")} className="relative" />

@@ -50,7 +50,11 @@ export function MatchRow({ match, region, puuid, variant = "full", defaultOpen =
     <div
       className={cn(
         "group relative overflow-hidden rounded-xl border transition-all duration-200",
-        remake ? "border-line-soft bg-white/[0.02]" : win ? "border-[#1b2440] bg-[linear-gradient(90deg,rgba(54,92,190,0.22),rgba(30,40,80,0.18)_50%,rgba(14,19,38,0.6))]" : "border-[#2a1a2c] bg-[linear-gradient(90deg,rgba(190,50,90,0.2),rgba(60,25,45,0.25)_50%,rgba(24,20,34,0.6))]",
+        remake
+          ? "border-line-soft bg-white/[0.02] light:bg-white/50"
+          : win
+            ? "border-[#1b2440] bg-[linear-gradient(90deg,rgba(54,92,190,0.22),rgba(30,40,80,0.18)_50%,rgba(14,19,38,0.6))] light:border-[#c9d8ff] light:bg-[linear-gradient(90deg,rgba(58,123,242,0.16),rgba(255,255,255,0.6)_55%)]"
+            : "border-[#2a1a2c] bg-[linear-gradient(90deg,rgba(190,50,90,0.2),rgba(60,25,45,0.25)_50%,rgba(24,20,34,0.6))] light:border-[#ffd0d6] light:bg-[linear-gradient(90deg,rgba(229,72,77,0.14),rgba(255,255,255,0.6)_55%)]",
         "hover:border-primary/40 hover:shadow-[0_0_24px_-10px_var(--primary-glow)]",
       )}
     >

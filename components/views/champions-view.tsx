@@ -152,7 +152,7 @@ export function ChampionsView() {
                 >
                   <div className="relative aspect-[1.05] overflow-hidden">
                     <GameImage src={asset.championLoading(c.key)} alt={c.name} className="absolute inset-0 h-full w-full scale-[1.25] object-[50%_12%] text-3xl transition-transform duration-500 group-hover:scale-[1.32]" />
-                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#0d1324] to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#0d1324] to-transparent light:from-white/90" />
                   </div>
                   <div className="px-2 pb-2.5 pt-1">
                     <p className="text-[13px] font-semibold text-fg">{c.name}</p>

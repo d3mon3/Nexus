@@ -82,11 +82,11 @@ function SingleWidget({ id }: { id: WidgetId }) {
   return (
     <div
       ref={box}
-      className={cn("w-max min-w-[200px] max-w-[320px] select-none rounded-xl border bg-[#070a13]/92 p-3 text-fg", edit ? "cursor-move border-primary ring-2 ring-primary/50" : "border-[#a58df8]/35")}
+      className={cn("widget-card w-max min-w-[200px] max-w-[320px] select-none p-3", edit && "cursor-move !border-primary ring-2 ring-primary/50")}
       style={{ opacity: settings.overlayOpacity, transform: `scale(${settings.overlayScale})`, transformOrigin: "top left", ...(edit ? ({ WebkitAppRegion: "drag" } as React.CSSProperties) : {}) }}
     >
       <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#b8a4fb]">{t(WIDGET_META[id].name)}</span>
+        <span className="widget-title text-[11px] font-bold uppercase tracking-[0.14em]">{t(WIDGET_META[id].name)}</span>
         {edit ? <Move className="size-3.5 text-primary" /> : <Logo size="sm" className="h-[12px] opacity-70" />}
       </div>
       {edit && <p className="mb-1.5 text-[10px] text-primary">{t("Drag to move · Alt+{0} to lock", [settings.hotkeys.edit])}</p>}
@@ -114,7 +114,7 @@ function FullOverlay() {
   return (
     <div className={cn("fixed inset-0 select-none overflow-hidden", edit && "bg-black/35")} style={{ opacity: settings.overlayOpacity }}>
       {edit && (
-        <div className="absolute left-1/2 top-6 -translate-x-1/2 rounded-xl border border-primary/60 bg-[#0b0f1a]/95 px-4 py-2 text-center text-sm text-fg shadow-[0_0_30px_-8px_var(--primary-glow)]">
+        <div className="absolute left-1/2 top-6 -translate-x-1/2 widget-card px-4 py-2 text-center text-sm">
           <p className="font-semibold">{t("Edit layout — drag widgets to move them")}</p>
           <p className="text-xs text-muted">{t("Press Alt+{0} again to lock. Turn widgets on or off in NEXUS → Settings.", [settings.hotkeys.edit])}</p>
           <button className="mt-1 text-xs text-primary hover:underline" onClick={() => (getBridge()?.setOverlayEdit ? getBridge()!.setOverlayEdit!(false) : setEdit(false))}>{t("Done")}</button>
@@ -172,13 +172,13 @@ function DraggableWidget({ id, edit, children }: { id: WidgetId; edit: boolean; 
       ref={ref}
       onPointerDown={onPointerDown}
       className={cn(
-        "absolute w-max min-w-[220px] max-w-[320px] rounded-xl border bg-[#070a13]/92 p-3 text-fg shadow-[0_10px_30px_-10px_rgba(0,0,0,0.9)]",
-        edit ? "cursor-grab border-primary/80 ring-2 ring-primary/40 active:cursor-grabbing" : "border-[#a58df8]/35",
+        "widget-card absolute w-max min-w-[220px] max-w-[320px] p-3",
+        edit && "cursor-grab !border-primary/80 ring-2 ring-primary/40 active:cursor-grabbing",
       )}
       style={{ left: `${pos.x * 100}%`, top: `${pos.y * 100}%`, transform: `scale(${settings.overlayScale})`, transformOrigin: "top left" }}
     >
       <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#b8a4fb]">{t(WIDGET_META[id].name)}</span>
+        <span className="widget-title text-[11px] font-bold uppercase tracking-[0.14em]">{t(WIDGET_META[id].name)}</span>
         {edit ? <Move className="size-3.5 text-primary" /> : <Logo size="sm" className="h-[12px] opacity-70" />}
       </div>
       {children}
@@ -287,7 +287,7 @@ function StatsWidget({ snap, me }: { snap: Snap; me: Player }) {
   const mins = Math.max(1, snap.gameTime / 60);
   const cell = (icon: ReactNode, value: ReactNode, label: string) => (
     <div className="rounded-lg bg-white/[0.05] px-2 py-1.5 text-center">
-      <div className="mx-auto mb-0.5 flex justify-center text-[#b8a4fb] [&_svg]:size-3.5">{icon}</div>
+      <div className="widget-title mx-auto mb-0.5 flex justify-center [&_svg]:size-3.5">{icon}</div>
       <p className="text-sm font-bold tabular">{value}</p>
       <p className="text-[10px] text-muted">{label}</p>
     </div>

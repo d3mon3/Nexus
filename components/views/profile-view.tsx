@@ -32,6 +32,7 @@ import {
 import { ChampionPerformanceTable } from "../profile/champion-table";
 import { ProfileBanner, PROFILE_TABS, type ProfileTab } from "../profile/banner";
 import { InsightsCard } from "../stats/insights-card";
+import { HeroTiles, MatchStrip, RankTiles } from "../home/home-dashboard";
 import { StatsPanel } from "../stats/stats-panel";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
@@ -115,8 +116,10 @@ export function ProfileView({ player, variant }: { player: PlayerRef; variant: "
   const liveHref = `/live?player=${encodeURIComponent(`${player.gameName}#${player.tagLine}`)}&region=${region}`;
   const isMine = same(settings.myAccount, player);
 
-  return (
-    <div className="space-y-3">
+  const dashboard = variant === "dashboard";
+  const main = (
+    <div className="min-w-0 space-y-3">
+      {dashboard && <HeroTiles />}
       <ProfileBanner
         profile={data}
         player={player}
@@ -130,7 +133,19 @@ export function ProfileView({ player, variant }: { player: PlayerRef; variant: "
         isMine={isMine}
       />
 
-      {tab === "overview" && (
+      {tab === "overview" && dashboard && (
+        <>
+          <RankTiles profile={data} stats={statsLong.data?.data} />
+          <MatchStrip matches={latest.data?.data.matches} loading={latest.isLoading} onViewAll={() => setTab("matches")} />
+          <div className="grid gap-3 lg:grid-cols-[1.35fr_1fr]">
+            <TrendsCard stats={statsLong.data?.data} loading={statsLong.isLoading} height={210} />
+            <MostPlayedCard stats={statsLong.data?.data} loading={statsLong.isLoading} onShowMore={() => setTab("champions")} />
+          </div>
+          {statsLong.data?.data && <InsightsCard insights={statsLong.data.data.insights} games={statsLong.data.data.games} />}
+        </>
+      )}
+
+      {tab === "overview" && !dashboard && (
         <>
           <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_270px]">
             <div className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-[1.42fr_1.55fr_0.92fr]">
@@ -154,9 +169,6 @@ export function ProfileView({ player, variant }: { player: PlayerRef; variant: "
             <ChampionPoolCard mastery={data.mastery} onViewAll={() => setTab("champions")} />
           </div>
           {statsLong.data?.data && <InsightsCard insights={statsLong.data.data.insights} games={statsLong.data.data.games} />}
-          {variant === "dashboard" && (
-            <PlayersCard kind="recent" />
-          )}
         </>
       )}
 
@@ -170,6 +182,18 @@ export function ProfileView({ player, variant }: { player: PlayerRef; variant: "
       {tab === "statistics" && puuid && <StatsPanel region={region} puuid={puuid} />}
       {tab === "builds" && <BuildPanel championId={mainId ?? 157} />}
       {tab === "trends" && <TrendsCard stats={statsLong.data?.data} loading={statsLong.isLoading} height={300} />}
+    </div>
+  );
+  if (!dashboard) return main;
+  // Home: right rail with live status, personal stats and recently viewed players.
+  return (
+    <div className="grid gap-3 2xl:grid-cols-[minmax(0,1fr)_300px]">
+      {main}
+      <div className="grid content-start gap-3 md:grid-cols-2 2xl:grid-cols-1">
+        <LiveStatusCard live={live.data?.data} loading={live.isLoading} puuid={puuid} href={liveHref} />
+        <PersonalStatsCard stats={statsLong.data?.data} loading={statsLong.isLoading} />
+        <PlayersCard kind="recent" />
+      </div>
     </div>
   );
 }

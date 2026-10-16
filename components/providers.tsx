@@ -81,7 +81,7 @@ export function Providers({ children, lang = "pl" }: { children: ReactNode; lang
       }),
   );
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} themes={["dark", "light"]} value={{ dark: "dark", light: "light" }}>
+    <ThemeProvider attribute="class" defaultTheme="light" storageKey="nexus-theme-v2" enableSystem={false} themes={["dark", "light"]} value={{ dark: "dark", light: "light" }}>
       <QueryClientProvider client={client}>
         <SettingsProvider>
           <LangProvider initial={lang}>

@@ -33,30 +33,33 @@
   color-scheme: dark;
 }
 
+/* "Glass" light theme: pastel sky background, frosted white panels (default look). */
 .light {
-  --background: #f3f2fb;
-  --background-2: #ebe9f8;
-  --sidebar: #ffffff;
-  --surface: #ffffff;
-  --surface-2: #f7f6fd;
-  --surface-hover: #efebff;
-  --border: #dcd7f0;
-  --border-soft: #e8e4f6;
-  --primary: #7a45ff;
-  --primary-glow: #6a35f5;
-  --primary-soft: rgba(122, 69, 255, 0.1);
-  --secondary: #2f74f0;
-  --success: #0fae80;
-  --danger: #e23462;
-  --warning: #d48a10;
-  --text: #171528;
-  --text-muted: #5c5a78;
-  --text-dim: #8c89a8;
-  --win: #0fae80;
-  --loss: #e23462;
-  --glass: rgba(255, 255, 255, 0.82);
-  --shadow: 0 10px 30px -14px rgba(60, 40, 140, 0.25);
-  --ring: rgba(122, 69, 255, 0.45);
+  --background: #e8ebfb;
+  --background-2: #dfe3f8;
+  --sidebar: rgba(255, 255, 255, 0.55);
+  --surface: rgba(255, 255, 255, 0.62);
+  --surface-2: rgba(255, 255, 255, 0.5);
+  --surface-hover: rgba(255, 255, 255, 0.9);
+  --border: rgba(255, 255, 255, 0.85);
+  --border-soft: rgba(255, 255, 255, 0.7);
+  --primary: #4f5dff;
+  --primary-glow: #6c78ff;
+  --primary-soft: rgba(79, 93, 255, 0.12);
+  --secondary: #2f86f6;
+  --success: #12a875;
+  --danger: #e5484d;
+  --warning: #e09b12;
+  --text: #182040;
+  --text-muted: #59628a;
+  --text-dim: #8b93b5;
+  --win: #12a875;
+  --loss: #e5484d;
+  --victory: #3a7bf2;
+  --glass: rgba(255, 255, 255, 0.7);
+  --shadow: 0 10px 34px -14px rgba(64, 76, 160, 0.32);
+  --ring: rgba(79, 93, 255, 0.45);
+  --radius-panel: 18px;
   color-scheme: light;
 }
 
@@ -142,8 +145,16 @@
   }
   .light body {
     background:
-      radial-gradient(1200px 600px at 75% -10%, rgba(122, 69, 255, 0.1), transparent 60%),
-      var(--background);
+      radial-gradient(900px 600px at 85% 0%, rgba(175, 160, 255, 0.45), transparent 65%),
+      radial-gradient(800px 600px at 10% 100%, rgba(150, 190, 255, 0.45), transparent 65%),
+      linear-gradient(160deg, #eef0ff 0%, #e4e6fb 45%, #ece4fb 100%);
+    background-attachment: fixed;
+  }
+  .light * {
+    scrollbar-color: rgba(90, 100, 160, 0.35) transparent;
+  }
+  .light ::-webkit-scrollbar-thumb {
+    background: rgba(90, 100, 160, 0.3);
   }
   ::selection {
     background: rgba(145, 97, 255, 0.4);
@@ -209,7 +220,43 @@
     backdrop-filter: blur(14px);
   }
   .light .panel {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(250, 249, 255, 0.92));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.55));
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 10px 34px -16px rgba(64, 76, 160, 0.35);
+    backdrop-filter: blur(22px) saturate(1.3);
+  }
+  .light .panel-hover:hover {
+    border-color: rgba(79, 93, 255, 0.35);
+    box-shadow:
+      0 0 0 1px rgba(79, 93, 255, 0.12),
+      0 14px 34px -14px rgba(64, 76, 160, 0.45);
+  }
+  .light .glow-border {
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow:
+      0 0 0 1px rgba(79, 93, 255, 0.18),
+      0 14px 40px -16px rgba(64, 76, 160, 0.45);
+  }
+  .light .art-duotone {
+    filter: none;
+  }
+  .light .art-tint {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(214, 220, 255, 0.4));
+    mix-blend-mode: normal;
+    opacity: 0.5;
+  }
+  .light .text-glow {
+    text-shadow: none;
+  }
+  /* Hero tiles with champion art (home banners, rank cards). */
+  .hero-tile {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-panel);
+    isolation: isolate;
+    box-shadow: 0 12px 30px -14px rgba(40, 40, 120, 0.55);
   }
   .panel-hover {
     transition:
@@ -296,4 +343,26 @@
 }
 .app-drag :is(button, a, input, select, textarea, kbd, [role="button"], [role="combobox"], [role="listbox"], [role="menu"], [role="dialog"], .panel) {
   -webkit-app-region: no-drag;
+}
+
+/* In-game widgets and the scouting board: frosted cards that match the app theme. */
+.widget-card {
+  border-radius: 16px;
+  border: 1px solid rgba(165, 141, 248, 0.35);
+  background: rgba(7, 10, 19, 0.92);
+  color: var(--text);
+  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.8);
+}
+.light .widget-card {
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  background: linear-gradient(180deg, rgba(250, 251, 255, 0.95), rgba(238, 240, 255, 0.93));
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 12px 32px -12px rgba(20, 24, 60, 0.55);
+}
+.widget-title {
+  color: #b8a4fb;
+}
+.light .widget-title {
+  color: var(--primary);
 }

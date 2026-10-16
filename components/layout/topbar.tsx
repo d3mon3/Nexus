@@ -43,7 +43,7 @@ export function Topbar() {
   }, []);
 
   return (
-    <header className="app-drag sticky top-0 z-40 flex h-[68px] items-center gap-2 border-b border-line-soft/60 bg-bg/70 px-3 backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-6">
+    <header className="app-drag sticky top-0 z-40 flex h-[72px] items-center gap-2 border-b border-line-soft/60 bg-bg/70 px-3 backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-6 light:border-transparent light:bg-transparent light:backdrop-blur-none light:lg:px-3">
       <button className="grid size-10 place-items-center rounded-lg text-muted hover:text-fg lg:hidden" onClick={() => setDrawer(true)} aria-label={t("Open menu")}>
         <Menu className="size-5" />
       </button>
@@ -51,10 +51,10 @@ export function Topbar() {
         <Logo size="sm" />
       </Link>
 
-      <div className="flex min-w-0 flex-1 justify-end sm:justify-center">
+      <div className="flex min-w-0 flex-1 justify-end sm:justify-start">
         <button
           onClick={() => setPaletteOpen(true)}
-          className="group flex h-11 w-11 shrink-0 items-center justify-center gap-3 rounded-xl sm:w-full sm:max-w-[580px] sm:justify-start border border-line bg-surface-2/70 text-left text-sm text-dim transition-all sm:px-4 hover:border-primary/50 hover:shadow-[0_0_24px_-10px_var(--primary-glow)]"
+          className="group flex h-11 w-11 shrink-0 items-center justify-center gap-3 rounded-xl sm:w-full sm:max-w-[580px] sm:justify-start border border-line bg-surface-2/70 text-left text-sm text-dim transition-all sm:px-4 hover:border-primary/50 hover:shadow-[0_0_24px_-10px_var(--primary-glow)] light:h-12 light:rounded-2xl light:border-white/85 light:bg-white/55 light:shadow-[0_8px_24px_-14px_rgba(64,76,160,0.45)] light:backdrop-blur-xl"
           aria-label={t("Search a player, champion or match (Ctrl+K)")}
         >
           <Search className="size-[18px] text-muted transition-colors group-hover:text-primary" />
@@ -91,9 +91,6 @@ export function Topbar() {
           options={REGIONS.map((r) => ({ value: r.platform, label: t(r.label) }))}
           align="right"
         />
-        <span className="hidden sm:contents">
-          <ThemeToggle />
-        </span>
         <UpdateButton />
         <Notifications demo={status.data?.mode === "demo"} clientPhase={client?.connected ? client.phase : null} />
         <AvatarMenu />
@@ -253,10 +250,28 @@ function AvatarMenu() {
   const profile = useProfile(settings.myAccount);
   const { open, setOpen, ref } = usePopover();
   const me = settings.myAccount;
+  const client = useClientState();
+  const status = !client?.connected ? null : ["InProgress", "GameStart"].includes(client.phase) ? t("In game") : client.phase === "ChampSelect" ? t("Champion select") : client.phase === "Matchmaking" || client.phase === "ReadyCheck" ? t("In queue") : t("Online");
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={t("Account menu")} className="grid size-11 place-items-center rounded-full border-2 border-primary/40 p-0.5 transition-colors hover:border-primary">
-        <ProfileIcon id={profile.data?.data.account.profileIconId ?? 29} size={36} className="rounded-full" />
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label={t("Account menu")}
+        className="flex items-center gap-2.5 rounded-2xl p-0.5 transition-colors light:border light:border-white/85 light:bg-white/55 light:py-1 light:pl-1 light:pr-3 light:shadow-[0_8px_24px_-14px_rgba(64,76,160,0.45)] light:backdrop-blur-xl"
+      >
+        <span className="grid size-11 place-items-center rounded-full border-2 border-primary/40 p-0.5 light:size-10 light:border-white">
+          <ProfileIcon id={profile.data?.data.account.profileIconId ?? 29} size={36} className="rounded-full" />
+        </span>
+        {me && (
+          <span className="hidden text-left leading-tight xl:block">
+            <span className="block max-w-[120px] truncate text-[14px] font-semibold text-fg">{me.gameName}</span>
+            <span className="flex items-center gap-1.5 text-[11.5px] text-muted">
+              <span className={cn("size-2 rounded-full", status ? "bg-success" : "bg-dim")} />
+              {status ?? t("Offline")}
+            </span>
+          </span>
+        )}
       </button>
       <AnimatePresence>
         {open && (

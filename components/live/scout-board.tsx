@@ -94,7 +94,7 @@ function ScoutCard({ participant, region, depth, compactMode, premade }: { parti
 
   return (
     <div
-      className={cn("overflow-hidden rounded-xl border border-line-soft bg-[#0b0f1a]/95 shadow-[0_12px_30px_-14px_rgba(0,0,0,0.9)] backdrop-blur", compactMode && "text-[0.92em]")}
+      className={cn("widget-card overflow-hidden", compactMode && "text-[0.92em]")}
       style={premade ? { borderColor: premade.color, boxShadow: `0 0 0 1px ${premade.color}, 0 12px 30px -14px rgba(0,0,0,0.9)` } : undefined}
     >
       {premade && (

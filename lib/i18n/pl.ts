@@ -872,6 +872,19 @@ export const PL: Record<string, string> = {
   "Top champions": "Najlepsze postacie",
   "History": "Historia",
   "Enter a Riot ID for Player B.": "Wpisz Riot ID gracza B.",
+  "Builds & runes": "Buildy i runy",
+  "Every champion, every mode — imported for you in champion select.": "Każda postać, każdy tryb — import w wyborze postaci.",
+  "Win, pick and ban rates from real ranked games.": "Winrate, picki i bany z prawdziwych gier rankingowych.",
+  "Live game": "Gra na żywo",
+  "Scout all ten players, then follow your game live.": "Sprawdź 10 graczy, potem śledź grę na żywo.",
+  "Recent form": "Aktualna forma",
+  "See all": "Zobacz wszystko",
+  "Arena and ARAM Chaos — the best augments for your champion.": "Arena i ARAM Chaos — najlepsze wzmocnienia dla Twojej postaci.",
+  "Open": "Otwórz",
+  "In game": "W grze",
+  "In queue": "W kolejce",
+  "Online": "Online",
+  "Offline": "Offline",
 };
 
 export const PL_PLURAL: Record<string, { n: string | number; forms: [string, string, string] }> = {

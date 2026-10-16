@@ -40,7 +40,7 @@ export function ScoutOverlayView() {
   return (
     <div className={cn("flex h-dvh flex-col overflow-auto p-3", edit && "rounded-xl outline-2 outline-dashed outline-primary")} style={{ opacity: settings.overlayOpacity }}>
       <div
-        className={cn("mb-2 flex items-center gap-3 rounded-xl border bg-[#070a13]/92 px-4 py-2", edit ? "cursor-move border-primary" : "border-[#a58df8]/30")}
+        className={cn("widget-card mb-2 flex items-center gap-3 px-4 py-2", edit && "cursor-move !border-primary")}
         style={edit ? ({ WebkitAppRegion: "drag" } as React.CSSProperties) : undefined}
       >
         <Logo size="sm" />

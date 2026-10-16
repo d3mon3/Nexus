@@ -92,7 +92,7 @@ export function Select<T extends string>({
         onClick={() => setOpen((o) => !o)}
         onKeyDown={onKey}
         className={cn(
-          "flex w-full items-center justify-between gap-2 rounded-lg border border-line bg-surface-2/80 text-fg transition-colors hover:border-primary/50",
+          "flex w-full items-center justify-between gap-2 rounded-lg border border-line bg-surface-2/80 text-fg transition-colors hover:border-primary/50 light:rounded-xl light:bg-white/60 light:shadow-[0_6px_18px_-12px_rgba(64,76,160,0.5)]",
           size === "sm" ? "h-8 px-2.5 text-xs" : "h-10 px-3 text-sm",
           open && "border-primary/70",
         )}
@@ -118,7 +118,7 @@ export function Select<T extends string>({
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.12 }}
             className={cn(
-              "panel max-h-72 overflow-auto p-1 text-sm shadow-[0_16px_40px_-12px_rgba(0,0,0,0.9)]",
+              "panel max-h-72 overflow-auto p-1 text-sm shadow-[0_16px_40px_-12px_rgba(0,0,0,0.9)] light:bg-white/95 light:shadow-[0_16px_40px_-12px_rgba(64,76,160,0.5)]",
             )}
           >
             {options.map((o, i) => (
