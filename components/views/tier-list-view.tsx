@@ -94,7 +94,7 @@ export function TierListView() {
       {q.isLoading ? (
         <div className="space-y-2">
           {TIER_GRADES.map((g) => (
-            <Skeleton key={g} className="h-[86px] rounded-[14px]" />
+            <Skeleton key={g} className="h-[86px] rounded-[20px]" />
           ))}
         </div>
       ) : q.error ? (

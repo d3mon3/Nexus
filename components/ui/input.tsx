@@ -7,7 +7,7 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
   ({ className, icon, trailing, wrapperClassName, ...props }, ref) => (
     <div
       className={cn(
-        "group flex h-10 items-center gap-2 rounded-lg border border-line bg-surface-2/80 px-3 text-sm transition-colors focus-within:border-primary/70 focus-within:shadow-[0_0_0_3px_rgba(145,97,255,0.15)] hover:border-line",
+        "group flex h-10 items-center gap-2 rounded-xl border border-line bg-surface-2/80 px-3 text-sm transition-colors focus-within:border-primary/70 focus-within:shadow-[0_0_0_3px_rgba(145,97,255,0.15)] hover:border-line",
         wrapperClassName,
       )}
     >

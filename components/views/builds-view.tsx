@@ -96,7 +96,7 @@ export function BuildsView() {
                 <li key={r.championId} role="option" aria-selected={active}>
                   <button
                     onClick={() => c && choose(c.key)}
-                    className={cn("flex w-full items-center gap-2.5 rounded-lg border px-2 py-1.5 text-left transition-colors", active ? "border-primary/60 bg-primary-soft shadow-[0_0_16px_-6px_var(--primary-glow)]" : "border-transparent hover:bg-surface-hover/60")}
+                    className={cn("flex w-full items-center gap-2.5 rounded-xl border px-2 py-1.5 text-left transition-colors", active ? "border-primary/60 bg-primary-soft shadow-[0_0_16px_-6px_var(--primary-glow)]" : "border-transparent hover:bg-surface-hover/60")}
                   >
                     <ChampionIcon id={r.championId} size={38} tooltip={false} />
                     <span className="flex-1 truncate text-[14px] font-medium">{c?.name}</span>

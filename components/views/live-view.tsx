@@ -41,7 +41,7 @@ export function LiveView() {
           <EmptyState title={t("Choose a player")} description={t("Enter a Riot ID below to check whether they're in a game.")} />
         </Card>
       ) : profile.isLoading ? (
-        <Skeleton className="h-[420px] rounded-[14px]" />
+        <Skeleton className="h-[420px] rounded-[20px]" />
       ) : profile.error || !puuid ? (
         <Card>
           <ErrorState error={profile.error} onRetry={() => profile.refetch()} />

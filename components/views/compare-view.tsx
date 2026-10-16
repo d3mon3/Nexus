@@ -68,7 +68,7 @@ export function CompareView() {
           <ErrorState error={da.profile.error ?? db.profile.error} />
         </Card>
       ) : !sa || !sb || !da.profile.data || !db.profile.data ? (
-        <Skeleton className="h-[520px] rounded-[14px]" />
+        <Skeleton className="h-[520px] rounded-[20px]" />
       ) : (
         <Comparison pa={da.profile.data.data} pb={db.profile.data.data} sa={sa} sb={sb} />
       )}

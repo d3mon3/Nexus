@@ -131,7 +131,7 @@ export function LeaderboardsView() {
                     <td className="px-4 py-2.5 font-semibold tabular text-muted">{e.rank}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-3">
-                        <ProfileIcon id={e.profileIconId ?? 29} size={30} className="rounded-lg" />
+                        <ProfileIcon id={e.profileIconId ?? 29} size={30} className="rounded-xl" />
                         {id ? (
                           <Link href={profileHref(region, id.gameName, id.tagLine)} className="font-medium hover:text-primary">
                             {id.gameName}

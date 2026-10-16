@@ -182,7 +182,7 @@ export function AdminView() {
             {status?.aggregate.length ? (
               <ul className="space-y-1.5 text-sm">
                 {status.aggregate.map((r, i) => (
-                  <li key={i} className="flex justify-between gap-2 rounded-lg border border-line-soft px-3 py-2">
+                  <li key={i} className="flex justify-between gap-2 rounded-xl border border-line-soft px-3 py-2">
                     <span>
                       Patch {r.patch} · {r.platform.toUpperCase()} · {r.rankBand}
                     </span>

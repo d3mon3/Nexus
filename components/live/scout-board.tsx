@@ -106,11 +106,11 @@ function ScoutCard({ participant, region, depth, compactMode, premade }: { parti
       {/* header */}
       <div className={cn("flex items-center gap-2.5 border-b-2 px-3 py-2", blue ? "border-secondary/80" : "border-loss/80")}>
         {s ? (
-          <ProfileIcon id={s.profileIconId} size={34} className="rounded-lg" />
+          <ProfileIcon id={s.profileIconId} size={34} className="rounded-xl" />
         ) : hidden ? (
-          <ChampionIcon id={participant.championId} size={34} className="rounded-lg" />
+          <ChampionIcon id={participant.championId} size={34} className="rounded-xl" />
         ) : (
-          <Skeleton className="size-[34px] rounded-lg" />
+          <Skeleton className="size-[34px] rounded-xl" />
         )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-semibold leading-tight text-fg" title={participant.riotId}>

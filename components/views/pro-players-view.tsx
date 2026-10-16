@@ -52,7 +52,7 @@ export function ProPlayersView() {
       {q.isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 8 }, (_, i) => (
-            <Skeleton key={i} className="h-[190px] rounded-[14px]" />
+            <Skeleton key={i} className="h-[190px] rounded-[20px]" />
           ))}
         </div>
       ) : q.error ? (

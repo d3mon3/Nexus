@@ -236,7 +236,7 @@ export function MostPlayedCard({ stats, loading, onShowMore }: { stats: PlayerSt
                 <Link
                   key={c.championId}
                   href={`/champions/${info?.key.toLowerCase() ?? c.championId}`}
-                  className="group flex items-center gap-3 rounded-lg px-1.5 py-0.5 transition-colors hover:bg-surface-hover/60"
+                  className="group flex items-center gap-3 rounded-xl px-1.5 py-0.5 transition-colors hover:bg-surface-hover/60"
                 >
                   <ChampionIcon id={c.championId} size={42} tooltip={false} className="group-hover:border-primary/60" />
                   <div className="min-w-0 flex-1">
@@ -402,7 +402,7 @@ export function MasteryCard({ mastery }: { mastery: MasteryEntry[] }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
                 tabIndex={0}
-                className="group relative h-[84px] w-full overflow-hidden rounded-lg border border-line-soft transition-all hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-[0_0_20px_-6px_var(--primary-glow)]"
+                className="group relative h-[84px] w-full overflow-hidden rounded-xl border border-line-soft transition-all hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-[0_0_20px_-6px_var(--primary-glow)]"
               >
                 {c && <img src={asset.championCentered(c.key)} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover object-[50%_25%] transition-transform duration-500 group-hover:scale-110" onError={(e) => (e.currentTarget.style.display = "none")} />}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,#3b2a7a,#101729)] -z-10" />
@@ -511,7 +511,7 @@ export function PlayersCard({ kind }: { kind: "favorites" | "recent" }) {
         ) : (
           <ul className="grid gap-1.5 sm:grid-cols-2">
             {list.slice(0, 8).map((p) => (
-              <li key={`${p.gameName}#${p.tagLine}@${p.platform}`} className="group flex items-center gap-2 rounded-lg border border-line-soft bg-white/[0.02] px-2.5 py-2 transition-colors hover:border-primary/40">
+              <li key={`${p.gameName}#${p.tagLine}@${p.platform}`} className="group flex items-center gap-2 rounded-xl border border-line-soft bg-white/[0.02] px-2.5 py-2 transition-colors hover:border-primary/40">
                 <span className="grid size-8 place-items-center rounded-md bg-primary-soft text-xs font-bold text-primary">{p.gameName.slice(0, 2).toUpperCase()}</span>
                 <Link href={profileHref(p.platform, p.gameName, p.tagLine)} className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-fg group-hover:text-primary">

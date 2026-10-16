@@ -37,7 +37,7 @@ export function AugmentList({ augments, limit, compact = false, arena = false }:
       {list.map((a) => {
         const info = names.get(a.id);
         return (
-          <li key={a.id} className="flex items-center gap-2.5 rounded-lg border border-line-soft bg-surface-2/40 px-2.5 py-1.5">
+          <li key={a.id} className="flex items-center gap-2.5 rounded-xl border border-line-soft bg-surface-2/40 px-2.5 py-1.5">
             <AugmentIcon info={info} size={compact ? 28 : 34} />
             <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{info?.name ?? `#${a.id}`}</span>
             <TierBadge tier={a.tier} size="sm" />

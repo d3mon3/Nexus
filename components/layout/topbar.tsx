@@ -44,7 +44,7 @@ export function Topbar() {
 
   return (
     <header className="app-drag sticky top-0 z-40 flex h-[68px] items-center gap-2 bg-[linear-gradient(180deg,rgba(16,26,54,0.92),rgba(16,26,54,0.55))] px-3 backdrop-blur-xl sm:gap-3 sm:px-4 light:bg-[linear-gradient(180deg,rgba(236,238,255,0.85),rgba(236,238,255,0.4))]">
-      <button className="grid size-10 place-items-center rounded-lg text-muted hover:text-fg lg:hidden" onClick={() => setDrawer(true)} aria-label={t("Open menu")}>
+      <button className="grid size-10 place-items-center rounded-xl text-muted hover:text-fg lg:hidden" onClick={() => setDrawer(true)} aria-label={t("Open menu")}>
         <Menu className="size-5" />
       </button>
       <Link href="/" className="flex shrink-0 items-center gap-2.5 lg:w-[223px] lg:pl-2" aria-label={t("NEXUS home")}>
@@ -136,7 +136,7 @@ function UpdateButton() {
   if (u.state === "downloading" || u.state === "installing") {
     const pctDone = u.state === "installing" ? 100 : Math.round(u.progress * 100);
     return (
-      <div className="flex w-[170px] flex-col gap-1 rounded-lg border border-primary/50 bg-primary-soft px-3 py-1.5">
+      <div className="flex w-[170px] flex-col gap-1 rounded-xl border border-primary/50 bg-primary-soft px-3 py-1.5">
         <span className="flex items-center justify-between text-[11px] font-semibold text-fg">
           {u.state === "installing" ? t("Installing…") : t("Downloading update")}
           <span className="tabular text-muted">{pctDone}%</span>
@@ -152,7 +152,7 @@ function UpdateButton() {
       <button
         onClick={() => bridge?.installUpdate?.()}
         className={cn(
-          "flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white shadow-[0_0_18px_-6px_var(--primary-glow)] transition hover:brightness-110",
+          "flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-white shadow-[0_0_18px_-6px_var(--primary-glow)] transition hover:brightness-110",
           u.state === "error" ? "bg-danger" : "animate-pulse bg-primary",
         )}
       >
@@ -192,7 +192,7 @@ function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(dark ? "light" : "dark")}
-      className="grid size-10 place-items-center rounded-lg text-muted transition-colors hover:bg-surface-hover/60 hover:text-fg"
+      className="grid size-10 place-items-center rounded-xl text-muted transition-colors hover:bg-surface-hover/60 hover:text-fg"
       aria-label={dark ? t("Switch to light theme") : t("Switch to dark theme")}
     >
       {dark ? <Moon className="size-[18px]" /> : <Sun className="size-[18px]" />}
@@ -226,7 +226,7 @@ function Notifications({ demo, clientPhase }: { demo: boolean; clientPhase: stri
   ].filter(Boolean) as { title: string; body: string; href: string }[];
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={t("Notifications ({0})", [items.length])} className="relative grid size-10 place-items-center rounded-lg text-muted hover:bg-surface-hover/60 hover:text-fg">
+      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={t("Notifications ({0})", [items.length])} className="relative grid size-10 place-items-center rounded-xl text-muted hover:bg-surface-hover/60 hover:text-fg">
         <Bell className="size-[18px]" />
         {items.length > 0 && <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-danger shadow-[0_0_8px_var(--danger)]" />}
       </button>
@@ -235,7 +235,7 @@ function Notifications({ demo, clientPhase }: { demo: boolean; clientPhase: stri
           <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="panel absolute right-0 z-50 mt-2 w-80 p-2">
             <p className="px-2 pb-1 pt-1 text-xs font-semibold uppercase tracking-wider text-dim">{t("Notifications")}</p>
             {items.map((n) => (
-              <Link key={n.title} href={n.href} onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2 hover:bg-surface-hover">
+              <Link key={n.title} href={n.href} onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 hover:bg-surface-hover">
                 <p className="text-sm font-medium text-fg">{t(n.title)}</p>
                 <p className="text-xs text-muted">{t(n.body)}</p>
               </Link>

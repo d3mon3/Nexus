@@ -234,7 +234,7 @@ function EnemyItemsWidget({ snap, me }: { snap: Snap; me: Player }) {
       {alerts.map((a) => {
         const fresh = now - (firstSeen.current.get(a.rule.id) ?? 0) < 20_000;
         return (
-          <div key={a.rule.id} className={cn("rounded-lg border px-2 py-1.5", fresh ? "border-warning/70 bg-warning/10" : "border-line-soft")}>
+          <div key={a.rule.id} className={cn("rounded-xl border px-2 py-1.5", fresh ? "border-warning/70 bg-warning/10" : "border-line-soft")}>
             <div className="flex items-center gap-1.5">
               <span className={cn("text-[12px] font-semibold", fresh ? "text-warning" : "text-fg")}>{t(a.rule.title)}</span>
               <span className="ml-auto flex gap-1">
@@ -286,7 +286,7 @@ function BuildWidget({ me }: { me: Player }) {
 function StatsWidget({ snap, me }: { snap: Snap; me: Player }) {
   const mins = Math.max(1, snap.gameTime / 60);
   const cell = (icon: ReactNode, value: ReactNode, label: string) => (
-    <div className="rounded-lg bg-white/[0.05] px-2 py-1.5 text-center">
+    <div className="rounded-xl bg-white/[0.05] px-2 py-1.5 text-center">
       <div className="widget-title mx-auto mb-0.5 flex justify-center [&_svg]:size-3.5">{icon}</div>
       <p className="text-sm font-bold tabular">{value}</p>
       <p className="text-[10px] text-muted">{label}</p>

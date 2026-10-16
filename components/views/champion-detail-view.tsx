@@ -103,13 +103,13 @@ export function ChampionDetailView({ championKey }: { championKey: string }) {
             <div className="flex flex-wrap gap-2">
               {detail.data.passive && (
                 <Tooltip content={t("Passive — {0}", [detail.data.passive.name])}>
-                  <GameImage src={detail.data.passive.image} alt={detail.data.passive.name} className="size-11 rounded-lg border border-white/15" />
+                  <GameImage src={detail.data.passive.image} alt={detail.data.passive.name} className="size-11 rounded-xl border border-white/15" />
                 </Tooltip>
               )}
               {detail.data.spells.map((sp) => (
                 <Tooltip key={sp.slot} content={`${sp.slot} — ${sp.name}`}>
                   <span className="relative">
-                    <GameImage src={sp.image} alt={sp.name} fallbackText={sp.slot} className="size-11 rounded-lg border border-white/15" />
+                    <GameImage src={sp.image} alt={sp.name} fallbackText={sp.slot} className="size-11 rounded-xl border border-white/15" />
                     <span className="absolute -bottom-1 -right-1 rounded bg-black/80 px-1 text-[10px] font-bold text-white">{sp.slot}</span>
                   </span>
                 </Tooltip>

@@ -27,7 +27,7 @@ import { Segmented } from "../ui/tabs";
 export function Kpi({ icon, label, value, sub, tone }: { icon: ReactNode; label: string; value: ReactNode; sub?: ReactNode; tone?: "win" | "loss" | "primary" }) {
   return (
     <Card hover className="flex items-center gap-3 p-3.5">
-      <span className={cn("grid size-10 shrink-0 place-items-center rounded-lg border [&_svg]:size-[18px]", tone === "win" ? "border-win/30 bg-win/10 text-win" : tone === "loss" ? "border-loss/30 bg-loss/10 text-loss" : "border-primary/30 bg-primary-soft text-primary")}>{icon}</span>
+      <span className={cn("grid size-10 shrink-0 place-items-center rounded-xl border [&_svg]:size-[18px]", tone === "win" ? "border-win/30 bg-win/10 text-win" : tone === "loss" ? "border-loss/30 bg-loss/10 text-loss" : "border-primary/30 bg-primary-soft text-primary")}>{icon}</span>
       <div className="min-w-0">
         <p className="text-[11px] uppercase tracking-wider text-dim">{label}</p>
         <p className="text-lg font-bold leading-tight text-fg tabular">{value}</p>
@@ -63,7 +63,7 @@ export function StatsPanel({ region, puuid }: { region: string; puuid: string })
       {q.isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 8 }, (_, i) => (
-            <Skeleton key={i} className={cn("rounded-[14px]", i < 4 ? "h-[72px]" : "h-[240px] sm:col-span-2")} />
+            <Skeleton key={i} className={cn("rounded-[20px]", i < 4 ? "h-[72px]" : "h-[240px] sm:col-span-2")} />
           ))}
         </div>
       ) : q.error ? (
@@ -185,7 +185,7 @@ function StatsBody({ s, loadingMore }: { s: PlayerStats; loadingMore: boolean })
           <CardHeader title={t("Champion performance")} />
           <CardBody className="space-y-1.5">
             {s.champions.slice(0, 6).map((c) => (
-              <div key={c.championId} className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-surface-hover/40">
+              <div key={c.championId} className="flex items-center gap-3 rounded-xl px-1 py-1 hover:bg-surface-hover/40">
                 <ChampionIcon id={c.championId} size={32} />
                 <span className="w-24 truncate text-sm font-medium">{champion(c.championId)?.name}</span>
                 <span className="w-14 text-xs text-muted tabular">{c.games}{" " + t("games")}</span>

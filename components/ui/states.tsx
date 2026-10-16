@@ -41,7 +41,7 @@ export function ErrorState({ error, onRetry, className }: { error: unknown; onRe
 
 export function Unavailable({ label, reason, className }: { label: string; reason: string; className?: string }) {
   return (
-    <div className={cn("flex items-center gap-2 rounded-lg border border-dashed border-line px-3 py-2 text-xs text-muted", className)}>
+    <div className={cn("flex items-center gap-2 rounded-xl border border-dashed border-line px-3 py-2 text-xs text-muted", className)}>
       <span className="size-1.5 rounded-full bg-dim" />
       <span className="font-medium text-fg/80">{t(label)}</span>
       <span className="text-dim">— {t(reason)}</span>

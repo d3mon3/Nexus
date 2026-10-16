@@ -25,7 +25,7 @@ function Section({ id, icon, title, description, children }: { id?: string; icon
   return (
     <Card id={id} className="scroll-mt-24 p-5">
       <div className="mb-4 flex items-start gap-3">
-        <span className="grid size-9 place-items-center rounded-lg border border-primary/30 bg-primary-soft text-primary [&_svg]:size-4">{icon}</span>
+        <span className="grid size-9 place-items-center rounded-xl border border-primary/30 bg-primary-soft text-primary [&_svg]:size-4">{icon}</span>
         <div>
           <h2 className="font-semibold">{title}</h2>
           {description && <p className="text-sm text-muted">{description}</p>}
@@ -294,7 +294,7 @@ export function SettingsView() {
             <span className="text-sm text-muted">{status.data?.aggregateDataset ? t("patch {0} · {1} matches", [status.data.aggregateDataset.patch, status.data.aggregateDataset.matches.toLocaleString()]) : status.data?.mode === "offline" || status.data?.mode === "live" ? t("being collected") : t("not built — demo dataset shown")}</span>
           </Row>
           {status.data?.mode === "demo" && (
-            <p className="rounded-lg border border-warning/30 bg-warning/5 p-3 text-xs leading-relaxed text-muted">{t("Add") + " "}<code className="text-fg">RIOT_API_KEY=RGAPI-…</code>{" " + t("to") + " "}<code className="text-fg">.env</code>{" " + t("and restart NEXUS to switch to real data. The key stays on the server and is never sent to the browser.")}</p>
+            <p className="rounded-xl border border-warning/30 bg-warning/5 p-3 text-xs leading-relaxed text-muted">{t("Add") + " "}<code className="text-fg">RIOT_API_KEY=RGAPI-…</code>{" " + t("to") + " "}<code className="text-fg">.env</code>{" " + t("and restart NEXUS to switch to real data. The key stays on the server and is never sent to the browser.")}</p>
           )}
         </Section>
 

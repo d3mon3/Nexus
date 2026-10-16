@@ -37,7 +37,7 @@ export function MultiSearchView() {
           onChange={(e) => setText(e.target.value)}
           rows={4}
           placeholder={t("d3monek #EUW joined the lobby\nKaizen#PRO joined the lobby\nRavenna#PRO")}
-          className="w-full resize-y rounded-lg border border-line bg-surface-2/80 p-3 text-sm text-fg outline-none placeholder:text-dim focus:border-primary/70"
+          className="w-full resize-y rounded-xl border border-line bg-surface-2/80 p-3 text-sm text-fg outline-none placeholder:text-dim focus:border-primary/70"
           aria-label={t("Lobby text or Riot IDs")}
         />
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -77,7 +77,7 @@ function ScoutCard({ player }: { player: PlayerRef }) {
   const stats = usePlayerStats(player.platform, puuid, 20);
   const s = stats.data?.data;
   const solo = profile.data?.data.ranked.find((r) => r.queue === "RANKED_SOLO_5x5");
-  if (profile.isLoading) return <Skeleton className="h-[330px] rounded-[14px]" />;
+  if (profile.isLoading) return <Skeleton className="h-[330px] rounded-[20px]" />;
   if (profile.error)
     return (
       <Card className="p-4 text-center">
@@ -100,7 +100,7 @@ function ScoutCard({ player }: { player: PlayerRef }) {
           </p>
         </div>
       </Link>
-      <div className="flex items-center gap-3 rounded-lg border border-line-soft bg-white/[0.02] p-2">
+      <div className="flex items-center gap-3 rounded-xl border border-line-soft bg-white/[0.02] p-2">
         <RankEmblem tier={solo?.tier ?? null} size={44} />
         <div>
           <p className="text-sm font-semibold">{solo ? rankLabel(solo.tier, solo.division) : t("Unranked")}</p>

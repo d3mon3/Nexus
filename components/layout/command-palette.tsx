@@ -165,7 +165,7 @@ export function CommandPalette({ open, onClose, initialQuery = "" }: { open: boo
                       aria-selected={i === active}
                       onMouseEnter={() => setActive(i)}
                       onClick={() => go(r)}
-                      className={cn("flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm", i === active ? "bg-primary-soft text-fg" : "text-fg/90")}
+                      className={cn("flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm", i === active ? "bg-primary-soft text-fg" : "text-fg/90")}
                     >
                       <span className="grid size-7 place-items-center text-muted">{r.icon}</span>
                       <span className="flex-1 truncate">{t(r.label)}</span>

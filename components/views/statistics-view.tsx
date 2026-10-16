@@ -23,7 +23,7 @@ export function StatisticsView() {
           <EmptyState title={t("Choose a player")} />
         </Card>
       ) : profile.isLoading ? (
-        <Skeleton className="h-[480px] rounded-[14px]" />
+        <Skeleton className="h-[480px] rounded-[20px]" />
       ) : profile.error || !puuid ? (
         <Card>
           <ErrorState error={profile.error} onRetry={() => profile.refetch()} />

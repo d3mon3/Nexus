@@ -35,7 +35,7 @@ export function ChampionIcon({
       style={{ width: size, height: size, fontSize: size * 0.42 }}
       className={cn(
         "shrink-0 border border-white/10",
-        rounded === "full" ? "rounded-full" : rounded === "md" ? "rounded-md" : "rounded-lg",
+        rounded === "full" ? "rounded-full" : rounded === "md" ? "rounded-md" : "rounded-xl",
         ring === "win" && "border-win/70 shadow-[0_0_10px_-2px_var(--win)]",
         ring === "loss" && "border-loss/70",
         ring === "primary" && "border-primary/80 shadow-[0_0_12px_-2px_var(--primary-glow)]",

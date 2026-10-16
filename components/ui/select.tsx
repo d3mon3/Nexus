@@ -95,7 +95,7 @@ export function Select<T extends string>({
         onClick={() => setOpen((o) => !o)}
         onKeyDown={onKey}
         className={cn(
-          "flex w-full items-center justify-between gap-2 rounded-lg border border-line bg-surface-2/80 text-fg transition-colors hover:border-primary/50 light:rounded-xl light:bg-white/60 light:shadow-[0_6px_18px_-12px_rgba(64,76,160,0.5)]",
+          "flex w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface-2/80 text-fg transition-colors hover:border-primary/50 light:bg-white/60 light:shadow-[0_6px_18px_-12px_rgba(64,76,160,0.5)]",
           size === "sm" ? "h-8 px-2.5 text-xs" : "h-10 px-3 text-sm",
           open && "border-primary/70",
         )}

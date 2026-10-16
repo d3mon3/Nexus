@@ -214,7 +214,7 @@ function ChampionSidePanel({ championId, stat, onClose, name }: { championId: nu
           <div className="absolute inset-0 bg-[linear-gradient(90deg,#0d1324_30%,rgba(13,19,36,0.35))]" />
           <div className="absolute right-2 top-2 flex gap-1">
             
-            <button onClick={onClose} aria-label={t("Close panel")} className="grid size-8 place-items-center rounded-lg bg-black/40 text-white hover:text-primary xl:hidden">
+            <button onClick={onClose} aria-label={t("Close panel")} className="grid size-8 place-items-center rounded-xl bg-black/40 text-white hover:text-primary xl:hidden">
               <X className="size-4" />
             </button>
           </div>
@@ -247,7 +247,7 @@ function ChampionSidePanel({ championId, stat, onClose, name }: { championId: nu
 
       {stat && (
         <Card className="grid grid-cols-[auto_1fr_1fr_1.2fr] items-center gap-2 p-3 text-center">
-          <div className="grid place-items-center gap-0.5 rounded-lg border border-[#ff4d78]/30 bg-[#ff4d78]/8 px-3 py-1.5">
+          <div className="grid place-items-center gap-0.5 rounded-xl border border-[#ff4d78]/30 bg-[#ff4d78]/8 px-3 py-1.5">
             <TierBadge tier={stat.tier} className="border-0 bg-transparent" />
             <span className="text-[10px] text-muted">{t("Tier")}</span>
           </div>
@@ -269,7 +269,7 @@ function ChampionSidePanel({ championId, stat, onClose, name }: { championId: nu
       )}
 
       {!b ? (
-        <Skeleton className="h-60 rounded-[14px]" />
+        <Skeleton className="h-60 rounded-[20px]" />
       ) : (
         <>
           {(tab === "overview" || tab === "builds") && (

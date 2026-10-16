@@ -201,17 +201,17 @@ export function ProfileView({ player, variant }: { player: PlayerRef; variant: "
 function ProfileSkeleton() {
   return (
     <div className="space-y-3" role="status" aria-label={t("Loading profile")}>
-      <Skeleton className="h-[290px] rounded-[14px]" />
+      <Skeleton className="h-[290px] rounded-[20px]" />
       <div className="grid gap-3 xl:grid-cols-[1.42fr_1.55fr_0.92fr_270px]">
-        <Skeleton className="h-[170px] rounded-[14px]" />
-        <Skeleton className="h-[170px] rounded-[14px]" />
-        <Skeleton className="h-[170px] rounded-[14px]" />
-        <Skeleton className="h-[200px] rounded-[14px]" />
+        <Skeleton className="h-[170px] rounded-[20px]" />
+        <Skeleton className="h-[170px] rounded-[20px]" />
+        <Skeleton className="h-[170px] rounded-[20px]" />
+        <Skeleton className="h-[200px] rounded-[20px]" />
       </div>
       <div className="grid gap-3 xl:grid-cols-[1.42fr_2.47fr_270px]">
-        <Skeleton className="h-[340px] rounded-[14px]" />
-        <Skeleton className="h-[340px] rounded-[14px]" />
-        <Skeleton className="h-[340px] rounded-[14px]" />
+        <Skeleton className="h-[340px] rounded-[20px]" />
+        <Skeleton className="h-[340px] rounded-[20px]" />
+        <Skeleton className="h-[340px] rounded-[20px]" />
       </div>
     </div>
   );

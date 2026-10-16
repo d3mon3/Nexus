@@ -79,7 +79,7 @@ export function ChampSelectAssistant({ forceShow = false }: { forceShow?: boolea
       {mode === "sr" && warnings.length > 0 && (
         <div className="mx-3 mb-3 space-y-1.5">
           {warnings.map((w) => (
-            <p key={w.id} className={cn("flex items-start gap-2 rounded-lg border px-3 py-2 text-xs", w.tone === "bad" ? "border-warning/40 bg-warning/8 text-warning" : "border-secondary/40 bg-secondary/8 text-secondary")}>
+            <p key={w.id} className={cn("flex items-start gap-2 rounded-xl border px-3 py-2 text-xs", w.tone === "bad" ? "border-warning/40 bg-warning/8 text-warning" : "border-secondary/40 bg-secondary/8 text-secondary")}>
               {w.tone === "bad" ? <AlertTriangle className="mt-px size-3.5 shrink-0" /> : <Info className="mt-px size-3.5 shrink-0" />}
               {t(w.text)}
             </p>
@@ -186,7 +186,7 @@ function ImportPanel({ championId, role, mode, myStats }: { championId: number; 
                 <button
                   key={i}
                   onClick={() => choose(i)}
-                  className={cn("flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition", i === chosen ? "border-primary bg-primary-soft" : "border-line-soft hover:border-line")}
+                  className={cn("flex items-center gap-2 rounded-xl border px-2.5 py-1.5 text-left transition", i === chosen ? "border-primary bg-primary-soft" : "border-line-soft hover:border-line")}
                 >
                   <RuneIcon id={r.perks[0]} size={28} />
                   <RuneIcon id={r.subStyle} size={18} />
@@ -270,7 +270,7 @@ function CountersPanel({ opponent, role, myChamp, mine }: { opponent: number | n
       ) : (
         <>
           {myVs && (
-            <p className="mb-2 rounded-lg bg-primary-soft px-2.5 py-1.5 text-xs">
+            <p className="mb-2 rounded-xl bg-primary-soft px-2.5 py-1.5 text-xs">
               {t("Your pick {0} wins {1} of {2} games in this matchup.", [champion(myChamp)?.name ?? "", pct(myVs.winRate), myVs.games])}
             </p>
           )}
@@ -278,7 +278,7 @@ function CountersPanel({ opponent, role, myChamp, mine }: { opponent: number | n
             {ranked.map((p) => {
               const m = mineById.get(p.championId);
               return (
-                <li key={p.championId} className="flex items-center gap-2.5 rounded-lg px-1 py-1 hover:bg-surface-hover/40">
+                <li key={p.championId} className="flex items-center gap-2.5 rounded-xl px-1 py-1 hover:bg-surface-hover/40">
                   <ChampionIcon id={p.championId} size={30} />
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">{champion(p.championId)?.name}</span>
                   <span className={cn("w-12 text-right text-sm font-semibold tabular", wrClass(p.winRate))}>{pct(p.winRate)}</span>
@@ -309,7 +309,7 @@ function BansPanel({ rows, taken, highlight }: { rows: ChampionStat[]; taken: Se
       ) : (
         <ul className="space-y-1">
           {list.map((r) => (
-            <li key={r.championId} className="flex items-center gap-2.5 rounded-lg px-1 py-1">
+            <li key={r.championId} className="flex items-center gap-2.5 rounded-xl px-1 py-1">
               <ChampionIcon id={r.championId} size={30} />
               <span className="min-w-0 flex-1 truncate text-sm font-medium">{champion(r.championId)?.name}</span>
               <TierBadge tier={r.tier} />

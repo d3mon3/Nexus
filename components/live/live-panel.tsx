@@ -68,11 +68,11 @@ export function LivePanel({ region, puuid, player }: { region: string; puuid: st
   if (q.isLoading)
     return (
       <div className="space-y-3">
-        <Skeleton className="h-16 rounded-[14px]" />
+        <Skeleton className="h-16 rounded-[20px]" />
         <div className="grid gap-3 xl:grid-cols-[1fr_1fr_300px]">
-          <Skeleton className="h-[380px] rounded-[14px]" />
-          <Skeleton className="h-[380px] rounded-[14px]" />
-          <Skeleton className="h-[380px] rounded-[14px]" />
+          <Skeleton className="h-[380px] rounded-[20px]" />
+          <Skeleton className="h-[380px] rounded-[20px]" />
+          <Skeleton className="h-[380px] rounded-[20px]" />
         </div>
       </div>
     );

@@ -30,7 +30,7 @@ function PillTabs<T extends string>({ value, onChange, items }: { value: T; onCh
           key={i.value}
           onClick={() => onChange(i.value)}
           className={cn(
-            "relative rounded-lg px-2.5 py-1 text-[13px] transition",
+            "relative rounded-xl px-2.5 py-1 text-[13px] transition",
             value === i.value ? "bg-[rgba(79,145,255,0.25)] font-semibold text-white light:bg-white light:text-primary" : "text-muted hover:text-fg",
           )}
         >
@@ -102,7 +102,7 @@ function RankCard({ title, entry, art, color, accent, trend, href, children }: {
       <div className="relative p-4">
         <div className="flex items-center justify-between">
           <p className="text-[16px] font-semibold text-fg">{t(title)}</p>
-          <Link href={href} className="grid size-7 place-items-center rounded-lg border border-white/15 bg-white/10 text-fg/80 hover:text-fg" aria-label={t(title)}>
+          <Link href={href} className="grid size-7 place-items-center rounded-xl border border-white/15 bg-white/10 text-fg/80 hover:text-fg" aria-label={t(title)}>
             <ArrowRight className="size-3.5" />
           </Link>
         </div>

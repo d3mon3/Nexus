@@ -18,7 +18,7 @@ export function SkillPriorityIcons({ championId, priority, size = 38 }: { champi
           return (
             <span key={slot} className="flex items-center gap-1.5">
               <Tooltip content={spell ? `${slot} — ${spell.name}` : slot}>
-                <GameImage src={spell?.image} alt={spell?.name ?? slot} fallbackText={slot} style={{ width: size, height: size }} className="rounded-lg border border-primary/40 shadow-[0_0_12px_-4px_var(--primary-glow)]" />
+                <GameImage src={spell?.image} alt={spell?.name ?? slot} fallbackText={slot} style={{ width: size, height: size }} className="rounded-xl border border-primary/40 shadow-[0_0_12px_-4px_var(--primary-glow)]" />
               </Tooltip>
               {i < priority.length - 1 && <ChevronRight className="size-3.5 text-dim" />}
             </span>

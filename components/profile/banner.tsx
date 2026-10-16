@@ -180,7 +180,7 @@ export function ProfileBanner({
 }
 
 function Chip({ children }: { children: ReactNode }) {
-  return <span className="flex h-8 items-center gap-1.5 rounded-lg border border-[#9bb7ff]/30 bg-white/[0.07] px-2.5 text-[13px] font-medium text-fg backdrop-blur light:border-white light:bg-white/70">{children}</span>;
+  return <span className="flex h-8 items-center gap-1.5 rounded-xl border border-[#9bb7ff]/30 bg-white/[0.07] px-2.5 text-[13px] font-medium text-fg backdrop-blur light:border-white light:bg-white/70">{children}</span>;
 }
 
 function Motto({ value, editable, onSave }: { value?: string; editable: boolean; onSave: (v: string) => void }) {

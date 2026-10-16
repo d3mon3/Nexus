@@ -73,7 +73,7 @@ export function PostGameView() {
   const avg = usePlayerStats(region, puuid, 20);
 
   if (!player) return <Card><EmptyState title={t("No account yet")} description={t("Set your Riot ID in Settings or open the League client.")} /></Card>;
-  if (profile.isLoading || latest.isLoading) return <Skeleton className="h-[420px] rounded-[14px]" />;
+  if (profile.isLoading || latest.isLoading) return <Skeleton className="h-[420px] rounded-[20px]" />;
   if (!top || !isFresh)
     return (
       <Card>
@@ -85,7 +85,7 @@ export function PostGameView() {
       </Card>
     );
   const detail = match.data?.data;
-  return detail ? <Summary m={detail} puuid={puuid!} avg={avg.data?.data} lpChange={top.lpChange} /> : <Skeleton className="h-[420px] rounded-[14px]" />;
+  return detail ? <Summary m={detail} puuid={puuid!} avg={avg.data?.data} lpChange={top.lpChange} /> : <Skeleton className="h-[420px] rounded-[20px]" />;
 }
 
 interface Metric {

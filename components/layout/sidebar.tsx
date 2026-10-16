@@ -65,7 +65,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
 export function Sidebar() {
   return (
-    <aside className="panel sticky top-[68px] mb-3 ml-3 hidden h-[calc(100dvh-80px)] w-[235px] shrink-0 flex-col overflow-hidden !rounded-[18px] lg:flex light:border-white/80 light:bg-white/45">
+    <aside className="panel sticky top-[68px] mb-3 ml-3 hidden h-[calc(100dvh-80px)] w-[235px] shrink-0 flex-col overflow-hidden !rounded-[24px] lg:flex light:border-white/80 light:bg-white/45">
       <div className="flex-1 overflow-y-auto px-2.5 pt-3 scrollbar-none">
         <SidebarNav />
       </div>

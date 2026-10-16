@@ -33,7 +33,7 @@ export function MatchesView() {
           <EmptyState title={t("Choose a player")} description={t("Enter a Riot ID above to load their matches.")} />
         </Card>
       ) : profile.isLoading ? (
-        <Skeleton className="h-[480px] rounded-[14px]" />
+        <Skeleton className="h-[480px] rounded-[20px]" />
       ) : profile.error || !puuid ? (
         <Card>
           <ErrorState error={profile.error} onRetry={() => profile.refetch()} />

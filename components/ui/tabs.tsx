@@ -76,7 +76,7 @@ export function Tabs<T extends string>({
 /** Pill-style segmented control. */
 export function Segmented<T extends string>({ value, onChange, items, className, label = "Options" }: { value: T; onChange: (v: T) => void; items: TabItem<T>[]; className?: string; label?: string }) {
   return (
-    <div role="radiogroup" aria-label={label} className={cn("inline-flex rounded-lg border border-line bg-surface-2/80 p-0.5", className)}>
+    <div role="radiogroup" aria-label={label} className={cn("inline-flex rounded-xl border border-line bg-surface-2/80 p-0.5", className)}>
       {items.map((tt) => (
         <button
           key={tt.value}

@@ -54,14 +54,14 @@ export function DownloadView() {
 
           <div className="mt-7 flex flex-wrap items-center gap-3">
             {desktop ? (
-              <span className="rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-sm font-semibold text-success">{t("You're already using the desktop app.")}</span>
+              <span className="rounded-xl border border-success/40 bg-success/10 px-4 py-3 text-sm font-semibold text-success">{t("You're already using the desktop app.")}</span>
             ) : q.isLoading ? (
-              <Skeleton className="h-12 w-[250px] rounded-lg" />
+              <Skeleton className="h-12 w-[250px] rounded-xl" />
             ) : r ? (
               <a href={r.url} className={cn(buttonVariants({ variant: "primary", size: "lg" }), "min-w-[250px]")} download>
                 <Download />{" " + t("Download for Windows")}</a>
             ) : (
-              <span className="rounded-lg border border-line bg-surface-hover/60 px-4 py-3 text-sm text-muted">
+              <span className="rounded-xl border border-line bg-surface-hover/60 px-4 py-3 text-sm text-muted">
                 {q.data?.configured === false ? t("Downloads aren't set up on this server yet.") : t("The first build is on its way — check back in a few minutes.")}
               </span>
             )}
@@ -79,7 +79,7 @@ export function DownloadView() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {FEATURES.map((f) => (
           <Card key={f.title} className="p-4">
-            <span className="grid size-9 place-items-center rounded-lg bg-primary-soft text-primary [&_svg]:size-[18px]">{f.icon}</span>
+            <span className="grid size-9 place-items-center rounded-xl bg-primary-soft text-primary [&_svg]:size-[18px]">{f.icon}</span>
             <h2 className="mt-3 text-[15px] font-semibold">{t(f.title)}</h2>
             <p className="mt-1 text-[13px] leading-relaxed text-muted">{t(f.text)}</p>
           </Card>

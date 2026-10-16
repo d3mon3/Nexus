@@ -72,7 +72,7 @@ export function BuildPanel({
   const tab = tabProp ?? localTab;
   const b = q.data?.data;
 
-  if (q.isLoading) return <Skeleton className="h-[520px] rounded-[14px]" />;
+  if (q.isLoading) return <Skeleton className="h-[520px] rounded-[20px]" />;
   if (!q.error && q.data && !b)
     return (
       <Card>
@@ -99,7 +99,7 @@ export function BuildPanel({
         <p className="text-[13px] capitalize text-muted">{t(c?.title)}</p>
       </div>
       <div className="ml-auto flex items-center gap-1">
-        <div className="grid place-items-center gap-0.5 rounded-lg border border-[#ff4d78]/30 bg-[#ff4d78]/8 px-3 py-1">
+        <div className="grid place-items-center gap-0.5 rounded-xl border border-[#ff4d78]/30 bg-[#ff4d78]/8 px-3 py-1">
           <TierBadge tier={b.summary.tier} className="border-0 bg-transparent" />
           <span className="text-[10px] text-muted">{t("Tier")}</span>
         </div>
@@ -244,7 +244,7 @@ function PathRow({ title, path }: { title: string; path: BuildPath }) {
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {path.items.map((id, i) => (
-            <ItemIcon key={`${id}-${i}`} id={id} size={44} className="rounded-lg transition-transform hover:scale-110 hover:border-primary/70" />
+            <ItemIcon key={`${id}-${i}`} id={id} size={44} className="rounded-xl transition-transform hover:scale-110 hover:border-primary/70" />
           ))}
         </div>
         <div className="ml-auto text-right">
@@ -309,7 +309,7 @@ function RunePages({ b }: { b: ChampionBuild }) {
           <button
             key={idx}
             onClick={() => setI(idx)}
-            className={cn("rounded-lg border px-3 py-2 text-left text-xs transition-colors", idx === i ? "border-primary/70 bg-primary-soft" : "border-line hover:border-primary/40")}
+            className={cn("rounded-xl border px-3 py-2 text-left text-xs transition-colors", idx === i ? "border-primary/70 bg-primary-soft" : "border-line hover:border-primary/40")}
           >
             <p className="font-semibold text-fg">{t("Page") + " "}{idx + 1}</p>
             <p className="text-muted tabular">
@@ -376,7 +376,7 @@ function SituationalStrip({ b }: { b: ChampionBuild }) {
     <div className="flex flex-wrap gap-2.5">
       {b.situational.slice(0, 8).map((s) => (
         <div key={s.itemId} className="text-center">
-          <ItemIcon id={s.itemId} size={44} className="rounded-lg" />
+          <ItemIcon id={s.itemId} size={44} className="rounded-xl" />
           <p className={cn("mt-1 text-[10px] font-semibold tabular", wrColor(s.winRate))}>{pct(s.winRate)}</p>
         </div>
       ))}
@@ -389,7 +389,7 @@ function Situational({ b }: { b: ChampionBuild }) {
   return (
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
       {b.situational.map((s) => (
-        <div key={s.itemId} className="flex items-center gap-3 rounded-lg border border-line-soft p-2.5 hover:border-primary/40">
+        <div key={s.itemId} className="flex items-center gap-3 rounded-xl border border-line-soft p-2.5 hover:border-primary/40">
           <ItemIcon id={s.itemId} size={38} />
           <div className="flex-1">
             <p className={cn("text-sm font-semibold tabular", wrColor(s.winRate))}>{pct(s.winRate, 1)}{" " + t("WR")}</p>
@@ -409,7 +409,7 @@ function MatchupList({ title, icon, list }: { title: string; icon: ReactNode; li
       <CardHeader title={title} icon={icon} />
       <CardBody className="space-y-1.5">
         {list.map((m) => (
-          <Link key={m.opponentId} href={`/champions/${champion(m.opponentId)?.key.toLowerCase()}`} className="flex items-center gap-3 rounded-lg px-1.5 py-1 hover:bg-surface-hover/50">
+          <Link key={m.opponentId} href={`/champions/${champion(m.opponentId)?.key.toLowerCase()}`} className="flex items-center gap-3 rounded-xl px-1.5 py-1 hover:bg-surface-hover/50">
             <ChampionIcon id={m.opponentId} size={30} tooltip={false} />
             <span className="flex-1 text-sm">{champion(m.opponentId)?.name}</span>
             <span className={cn("text-sm font-semibold tabular", wrColor(m.winRate))}>{pct(m.winRate, 1)}</span>
