@@ -31,7 +31,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
               aria-current={active ? "page" : undefined}
               className={cn(
                 "group relative flex h-[46px] items-center gap-3 rounded-xl px-3 text-[14.5px] font-medium transition-colors",
-                active ? "font-semibold text-white light:text-primary" : "text-fg/85 hover:bg-white/[0.05] hover:text-fg light:hover:bg-white/60",
+                active ? "font-semibold text-white light:text-primary" : "text-fg/90 [text-shadow:0_1px_6px_rgba(5,10,30,0.6)] hover:bg-white/[0.07] hover:text-fg light:hover:bg-white/60",
               )}
             >
               {active && (
@@ -65,7 +65,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
 export function Sidebar() {
   return (
-    <aside className="panel sticky top-[68px] mb-3 ml-3 hidden h-[calc(100dvh-80px)] w-[235px] shrink-0 flex-col overflow-hidden !rounded-[24px] lg:flex light:border-white/80 light:bg-white/45">
+    <aside className="sticky top-[68px] mb-3 ml-3 hidden h-[calc(100dvh-80px)] w-[235px] shrink-0 flex-col overflow-hidden rounded-[24px] border border-white/[0.12] bg-[linear-gradient(180deg,rgba(40,60,120,0.22),rgba(24,38,80,0.14))] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[10px] lg:flex light:border-white/70 light:bg-white/25 light:bg-none">
       <div className="flex-1 overflow-y-auto px-2.5 pt-3 scrollbar-none">
         <SidebarNav />
       </div>
@@ -78,7 +78,7 @@ export function Sidebar() {
 /** Promo card with champion art: augment tiers (Arena / ARAM Chaos). */
 function SidebarPromo() {
   return (
-    <div className="hero-tile mx-2.5 mb-2.5 shrink-0 border border-[#8fb6ff]/40">
+    <div className="hero-tile mx-2.5 mb-2.5 shrink-0 border border-[#8fb6ff]/30 opacity-95">
       <img
         src={asset.championCentered("Seraphine", 0)}
         alt=""
@@ -86,7 +86,7 @@ function SidebarPromo() {
         className="absolute inset-0 -z-10 h-full w-full object-cover object-[60%_15%]"
         onError={(e) => (e.currentTarget.style.display = "none")}
       />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#15124a] via-[#2b2580]/75 to-[#2b2580]/10" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#15124a]/85 via-[#2b2580]/55 to-transparent" />
       <div className="px-3.5 pb-3.5 pt-[92px] text-white">
         <p className="text-[19px] font-bold leading-tight">{t("Augment tiers")}</p>
         <ul className="mt-2 space-y-1 text-[12.5px] text-white/90">
@@ -112,7 +112,7 @@ function ThemeSwitch() {
   const dark = mounted && resolvedTheme === "dark";
   const btn = (on: boolean) => cn("grid h-9 w-11 place-items-center rounded-xl transition", on ? (dark ? "bg-surface-hover text-fg" : "bg-white text-primary shadow-[0_4px_12px_-4px_rgba(64,76,160,0.45)]") : "text-muted hover:text-fg");
   return (
-    <div className="mx-2.5 mb-2.5 flex w-fit gap-1 rounded-2xl border border-line-soft bg-surface-2/60 p-1 light:border-white/80 light:bg-white/50">
+    <div className="mx-2.5 mb-2.5 flex w-fit gap-1 rounded-2xl border border-white/10 bg-white/[0.04] p-1 light:border-white/70 light:bg-white/30">
       <button className={btn(!dark)} onClick={() => setTheme("light")} aria-label={t("Switch to light theme")}>
         <Sun className="size-4" />
       </button>

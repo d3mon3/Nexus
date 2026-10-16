@@ -57,6 +57,11 @@ if (process.env.CLICK) {
   await page.locator(process.env.CLICK).first().click();
   await page.waitForTimeout(400);
 }
+if (process.env.TYPE) {
+  const [sel, text] = process.env.TYPE.split("|");
+  await page.locator(sel).first().fill(text);
+  await page.waitForTimeout(400);
+}
 if (process.env.HOVER) {
   await page.locator(process.env.HOVER).first().hover();
   await page.waitForTimeout(400);
