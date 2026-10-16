@@ -5,31 +5,32 @@
 @custom-variant light (&:where(.light, .light *));
 
 :root {
-  /* Palette sampled from the NEXUS reference screens. */
-  --background: #04060c;
-  --background-2: #080b14;
-  --sidebar: #0a0e19;
-  --surface: #0c111d;
-  --surface-2: #0a0e19;
-  --surface-hover: #141a2b;
-  --border: #1d2336;
-  --border-soft: #151b2a;
-  --primary: #7b62fa;
-  --primary-glow: #6a4cf5;
-  --primary-soft: rgba(123, 98, 250, 0.14);
-  --secondary: #4c97ea;
-  --success: #2fcf98;
-  --danger: #f54c7c;
-  --warning: #f2b544;
-  --text: #f7f7fb;
-  --text-muted: #8285a6;
-  --text-dim: #565a78;
-  --win: #42c9aa;
-  --loss: #f54c7c;
-  --victory: #5aa2e2;
-  --glass: rgba(12, 17, 29, 0.8);
-  --shadow: 0 10px 40px -12px rgba(0, 0, 0, 0.75);
-  --ring: rgba(145, 97, 255, 0.55);
+  /* NEXUS midnight glass: midnight-blue and violet glassmorphism (default). */
+  --background: #101a36;
+  --background-2: #172347;
+  --sidebar: rgba(25, 39, 77, 0.6);
+  --surface: rgba(25, 39, 77, 0.68);
+  --surface-2: rgba(30, 46, 90, 0.55);
+  --surface-hover: rgba(60, 86, 160, 0.38);
+  --border: rgba(155, 183, 255, 0.28);
+  --border-soft: rgba(155, 183, 255, 0.18);
+  --primary: #4f91ff;
+  --primary-glow: #6aa2ff;
+  --primary-soft: rgba(79, 145, 255, 0.18);
+  --secondary: #8365ff;
+  --success: #00d5a4;
+  --danger: #ff4c70;
+  --warning: #ffb339;
+  --text: #f4f6ff;
+  --text-muted: #b5c4ea;
+  --text-dim: #7f8fbd;
+  --win: #00d5a4;
+  --loss: #ff4c70;
+  --victory: #4f91ff;
+  --glass: rgba(25, 39, 77, 0.68);
+  --shadow: 0 14px 40px -18px rgba(3, 8, 30, 0.9);
+  --ring: rgba(79, 145, 255, 0.55);
+  --radius-panel: 16px;
   color-scheme: dark;
 }
 
@@ -139,8 +140,10 @@
   body {
     min-height: 100dvh;
     background:
-      radial-gradient(1100px 520px at 70% -12%, rgba(106, 76, 245, 0.08), transparent 60%),
-      var(--background);
+      radial-gradient(900px 620px at 82% 8%, rgba(131, 101, 255, 0.32), transparent 65%),
+      radial-gradient(800px 600px at 8% 90%, rgba(79, 145, 255, 0.22), transparent 65%),
+      radial-gradient(700px 500px at 45% 45%, rgba(60, 50, 160, 0.18), transparent 70%),
+      linear-gradient(160deg, #141f42 0%, #101a36 50%, #161a44 100%);
     background-attachment: fixed;
   }
   .light body {
@@ -166,14 +169,14 @@
   }
   * {
     scrollbar-width: thin;
-    scrollbar-color: #2a3150 transparent;
+    scrollbar-color: rgba(155, 183, 255, 0.3) transparent;
   }
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
   ::-webkit-scrollbar-thumb {
-    background: #2a3150;
+    background: rgba(155, 183, 255, 0.3);
     border-radius: 99px;
   }
   button {
@@ -201,23 +204,23 @@
 @layer components {
   /* Violet duotone used for cinematic champion art (banner, avatar, sidebar). */
   .art-duotone {
-    filter: grayscale(1) contrast(1.55) brightness(0.8);
+    filter: saturate(1.1) brightness(0.9);
   }
   .art-tint {
-    background: linear-gradient(135deg, #7d62f0, #4a2fb0 55%, #170d3a);
-    mix-blend-mode: color;
-    opacity: 0.55;
+    background: linear-gradient(135deg, rgba(79, 145, 255, 0.35), rgba(131, 101, 255, 0.3) 55%, rgba(16, 26, 54, 0.6));
+    mix-blend-mode: soft-light;
+    opacity: 0.8;
   }
   /* Glass panel used for every card. */
   .panel {
     position: relative;
     border-radius: var(--radius-panel);
-    background: linear-gradient(180deg, rgba(14, 19, 31, 0.92), rgba(10, 14, 25, 0.94));
-    border: 1px solid var(--border-soft);
+    background: linear-gradient(180deg, rgba(30, 46, 92, 0.7), rgba(22, 35, 72, 0.66));
+    border: 1px solid rgba(155, 183, 255, 0.24);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.025),
-      0 12px 32px -16px rgba(0, 0, 0, 0.9);
-    backdrop-filter: blur(14px);
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 14px 40px -18px rgba(3, 8, 30, 0.9);
+    backdrop-filter: blur(22px) saturate(150%);
   }
   .light .panel {
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.55));
@@ -266,18 +269,18 @@
       background 0.2s;
   }
   .panel-hover:hover {
-    border-color: rgba(145, 97, 255, 0.45);
+    border-color: rgba(120, 165, 255, 0.55);
     box-shadow:
-      0 0 0 1px rgba(145, 97, 255, 0.15),
-      0 0 28px -6px rgba(112, 66, 255, 0.45),
+      0 0 0 1px rgba(79, 145, 255, 0.18),
+      0 0 26px -8px rgba(79, 145, 255, 0.5),
       var(--shadow);
   }
   .glow-border {
-    border: 1px solid rgba(145, 97, 255, 0.6);
+    border: 1px solid rgba(120, 165, 255, 0.6);
     box-shadow:
-      0 0 0 1px rgba(145, 97, 255, 0.2),
-      0 0 22px -4px rgba(112, 66, 255, 0.65),
-      inset 0 0 16px -8px rgba(145, 97, 255, 0.6);
+      0 0 0 1px rgba(79, 145, 255, 0.2),
+      0 0 22px -6px rgba(79, 145, 255, 0.6),
+      inset 0 0 16px -8px rgba(131, 101, 255, 0.5);
   }
   .text-glow {
     text-shadow: 0 0 18px rgba(145, 97, 255, 0.55);
@@ -348,10 +351,12 @@
 /* In-game widgets and the scouting board: frosted cards that match the app theme. */
 .widget-card {
   border-radius: 16px;
-  border: 1px solid rgba(165, 141, 248, 0.35);
-  background: rgba(7, 10, 19, 0.92);
+  border: 1px solid rgba(155, 183, 255, 0.32);
+  background: linear-gradient(180deg, rgba(27, 42, 86, 0.94), rgba(19, 30, 64, 0.93));
   color: var(--text);
-  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 32px -12px rgba(3, 8, 30, 0.85);
 }
 .light .widget-card {
   border: 1px solid rgba(255, 255, 255, 0.95);
@@ -361,7 +366,7 @@
     0 12px 32px -12px rgba(20, 24, 60, 0.55);
 }
 .widget-title {
-  color: #b8a4fb;
+  color: #8fb6ff;
 }
 .light .widget-title {
   color: var(--primary);

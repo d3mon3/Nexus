@@ -885,6 +885,16 @@ export const PL: Record<string, string> = {
   "In queue": "W kolejce",
   "Online": "Online",
   "Offline": "Offline",
+  "Solo": "Solo",
+  "Roles": "Role",
+  "Performance": "Wyniki",
+  "Range": "Zakres",
+  "Vision (÷10)": "Wizja (÷10)",
+  "Most Played": "Najczęściej grane",
+  "Starts by itself when your game loads.": "Pojawi się samo, gdy gra się wczyta.",
+  "Arena and ARAM Chaos": "Arena i ARAM Chaos",
+  "Best augments for your champion": "Najlepsze wzmocnienia dla postaci",
+  "In-game widget": "Widget w grze",
 };
 
 export const PL_PLURAL: Record<string, { n: string | number; forms: [string, string, string] }> = {

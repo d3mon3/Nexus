@@ -3,7 +3,7 @@
 
 import { t } from "@/lib/i18n";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, Download, FlaskConical, Menu, Minus, Monitor, Moon, Search, Settings, Square, Sun, User, X } from "lucide-react";
+import { Bell, ChevronDown, Download, Globe, FlaskConical, Menu, Minus, Monitor, Moon, Search, Settings, Square, Sun, User, X } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
@@ -43,23 +43,24 @@ export function Topbar() {
   }, []);
 
   return (
-    <header className="app-drag sticky top-0 z-40 flex h-[72px] items-center gap-2 border-b border-line-soft/60 bg-bg/70 px-3 backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-6 light:border-transparent light:bg-transparent light:backdrop-blur-none light:lg:px-3">
+    <header className="app-drag sticky top-0 z-40 flex h-[68px] items-center gap-2 bg-[linear-gradient(180deg,rgba(16,26,54,0.92),rgba(16,26,54,0.55))] px-3 backdrop-blur-xl sm:gap-3 sm:px-4 light:bg-[linear-gradient(180deg,rgba(236,238,255,0.85),rgba(236,238,255,0.4))]">
       <button className="grid size-10 place-items-center rounded-lg text-muted hover:text-fg lg:hidden" onClick={() => setDrawer(true)} aria-label={t("Open menu")}>
         <Menu className="size-5" />
       </button>
-      <Link href="/" className="lg:hidden" aria-label={t("NEXUS home")}>
-        <Logo size="sm" />
+      <Link href="/" className="flex shrink-0 items-center gap-2.5 lg:w-[223px] lg:pl-2" aria-label={t("NEXUS home")}>
+        <Logo size="sm" className="h-[30px]" />
+        <span className="hidden rounded-md border border-primary/40 bg-primary-soft px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-primary sm:inline">BETA</span>
       </Link>
 
       <div className="flex min-w-0 flex-1 justify-end sm:justify-start">
         <button
           onClick={() => setPaletteOpen(true)}
-          className="group flex h-11 w-11 shrink-0 items-center justify-center gap-3 rounded-xl sm:w-full sm:max-w-[580px] sm:justify-start border border-line bg-surface-2/70 text-left text-sm text-dim transition-all sm:px-4 hover:border-primary/50 hover:shadow-[0_0_24px_-10px_var(--primary-glow)] light:h-12 light:rounded-2xl light:border-white/85 light:bg-white/55 light:shadow-[0_8px_24px_-14px_rgba(64,76,160,0.45)] light:backdrop-blur-xl"
+          className="group flex h-11 w-11 shrink-0 items-center justify-center gap-3 rounded-2xl border border-line bg-surface/70 text-left text-sm text-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition-all sm:w-full sm:max-w-[470px] sm:justify-start sm:px-4 hover:border-primary/60 hover:shadow-[0_0_24px_-10px_var(--primary-glow)] light:border-white/85 light:bg-white/55"
           aria-label={t("Search a player, champion or match (Ctrl+K)")}
         >
           <Search className="size-[18px] text-muted transition-colors group-hover:text-primary" />
           <span className="hidden flex-1 truncate sm:inline">{t("Search a player, champion or match…")}</span>
-          <kbd className="hidden rounded-md border border-line bg-surface-hover/60 px-1.5 py-0.5 text-[11px] text-muted sm:inline">{t("Ctrl K")}</kbd>
+          <kbd className="hidden rounded-md px-1.5 py-0.5 text-[12px] text-muted sm:inline">{t("Ctrl K")}</kbd>
         </button>
       </div>
 
@@ -84,7 +85,8 @@ export function Topbar() {
           </Tooltip>
         )}
         <Select
-          className="hidden w-[92px] sm:block"
+          className="hidden w-[104px] sm:block [&>button]:h-11 [&>button]:rounded-2xl [&>button]:bg-surface/70"
+          icon={<Globe className="size-4 text-muted" />}
           label={t("Region")}
           value={settings.region}
           onChange={(v) => update({ region: v as Platform })}
@@ -258,9 +260,9 @@ function AvatarMenu() {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-label={t("Account menu")}
-        className="flex items-center gap-2.5 rounded-2xl p-0.5 transition-colors light:border light:border-white/85 light:bg-white/55 light:py-1 light:pl-1 light:pr-3 light:shadow-[0_8px_24px_-14px_rgba(64,76,160,0.45)] light:backdrop-blur-xl"
+        className="flex h-12 items-center gap-2.5 rounded-2xl border border-line bg-surface/70 py-1 pl-1 pr-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition-colors hover:border-primary/60 light:border-white/85 light:bg-white/55"
       >
-        <span className="grid size-11 place-items-center rounded-full border-2 border-primary/40 p-0.5 light:size-10 light:border-white">
+        <span className="grid size-10 place-items-center rounded-full border-2 border-primary/60 p-0.5 light:border-white">
           <ProfileIcon id={profile.data?.data.account.profileIconId ?? 29} size={36} className="rounded-full" />
         </span>
         {me && (
@@ -272,6 +274,7 @@ function AvatarMenu() {
             </span>
           </span>
         )}
+        <ChevronDown className="hidden size-4 text-muted xl:block" />
       </button>
       <AnimatePresence>
         {open && (

@@ -26,6 +26,7 @@ export function Select<T extends string>({
   className,
   size = "md",
   align = "left",
+  icon,
 }: {
   value: T;
   onChange: (v: T) => void;
@@ -34,6 +35,8 @@ export function Select<T extends string>({
   className?: string;
   size?: "sm" | "md";
   align?: "left" | "right";
+  /** Icon shown before the selected value (e.g. a globe for the region). */
+  icon?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -98,6 +101,7 @@ export function Select<T extends string>({
         )}
       >
         <span className="flex min-w-0 items-center gap-2 truncate">
+          {icon}
           {current?.icon}
           {t(current?.label)}
         </span>
