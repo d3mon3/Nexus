@@ -84,7 +84,7 @@ export function ScoutBoard({ game, region, compactMode = false, className }: { g
   );
 }
 
-function ScoutCard({ participant, region, depth, compactMode, premade }: { participant: LiveParticipant; region: string; depth: number; compactMode: boolean; premade?: { color: string; size: number; games: number } }) {
+export function ScoutCard({ participant, region, depth, compactMode, premade, hiddenText }: { participant: LiveParticipant; region: string; depth: number; compactMode: boolean; premade?: { color: string; size: number; games: number }; hiddenText?: string }) {
   const q = useScoutPlayer(region, participant, depth);
   const s = q.data?.data;
   const blue = participant.teamId === 100;
@@ -123,7 +123,7 @@ function ScoutCard({ participant, region, depth, compactMode, premade }: { parti
       </div>
 
       {hidden ? (
-        <p className="p-3 text-xs leading-relaxed text-muted">{t("This player uses Riot's privacy option, so their profile isn't shown.")}</p>
+        <p className="p-3 text-xs leading-relaxed text-muted">{hiddenText ?? t("This player uses Riot's privacy option, so their profile isn't shown.")}</p>
       ) : q.error ? (
         <p className="p-3 text-xs text-loss">{t((q.error as Error).message) || t("Couldn't load this player.")}</p>
       ) : q.isLoading || !s ? (

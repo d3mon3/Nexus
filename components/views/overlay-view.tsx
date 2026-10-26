@@ -12,6 +12,7 @@ import { useChampionBuild } from "@/lib/queries";
 import { WIDGET_META, useSettings, type WidgetId } from "@/lib/settings";
 import { SPELLS } from "@/lib/static-data";
 import { antiHealFor, itemAlerts } from "@/lib/enemy-items";
+import { SituationalItems } from "../game/situational-items";
 import { AugmentList } from "../augments/augment-list";
 import { useStatic } from "@/lib/static-context";
 import { cn } from "@/lib/utils";
@@ -227,10 +228,17 @@ function EnemyItemsWidget({ snap, me }: { snap: Snap; me: Player }) {
   const firstSeen = useRef(new Map<string, number>());
   const now = Date.now();
   for (const a of alerts) if (!firstSeen.current.has(a.rule.id)) firstSeen.current.set(a.rule.id, now);
-  if (!alerts.length) return <p className="max-w-[240px] text-[11px] text-muted">{t("Nothing to watch out for yet — alerts appear when enemies buy key items.")}</p>;
   const myChamp = findChampion(me.championName);
+  const enemies = snap.players
+    .filter((p) => p.team !== me.team)
+    .flatMap((p) => {
+      const c = findChampion(p.championName);
+      return c ? [{ champion: c, items: p.items }] : [];
+    });
   return (
     <div className="max-w-[280px] space-y-2">
+      <SituationalItems me={myChamp} enemies={enemies} owned={me.items} compact />
+      {!alerts.length && <p className="text-[11px] text-muted">{t("Nothing to watch out for yet — alerts appear when enemies buy key items.")}</p>}
       {alerts.map((a) => {
         const fresh = now - (firstSeen.current.get(a.rule.id) ?? 0) < 20_000;
         return (

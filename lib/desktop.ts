@@ -60,7 +60,7 @@ export interface ChampSelectState {
   phase: string;
   myCellId: number;
   myBanTurn: boolean;
-  myTeam: { cellId: number; championId: number; intentId: number; position: string }[];
+  myTeam: { cellId: number; championId: number; intentId: number; position: string; /** Riot ID when the client shows it (hidden names stay null). */ riotId?: string | null; spells?: [number, number] }[];
   theirTeam: { cellId: number; championId: number; position: string }[];
   bans: number[];
 }

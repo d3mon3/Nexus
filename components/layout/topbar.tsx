@@ -3,7 +3,7 @@
 
 import { t } from "@/lib/i18n";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, ChevronDown, Download, Globe, FlaskConical, Menu, Minus, Monitor, Moon, Search, Settings, Square, Sun, User, X } from "lucide-react";
+import { Bell, BellOff, ChevronDown, Download, Globe, FlaskConical, Menu, Minus, Monitor, Moon, Search, Settings, Square, Sun, User, X } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
@@ -11,6 +11,7 @@ import { getBridge, useClientState, useUpdateState } from "@/lib/desktop";
 import { useProfile, useStatus } from "@/lib/queries";
 import { REGIONS, profileHref, type Platform } from "@/lib/regions";
 import { useSettings } from "@/lib/settings";
+import { clearNotifications, markAllRead, useNotifications } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 import { ProfileIcon } from "../game/icons";
 import { Select } from "../ui/select";
@@ -94,7 +95,7 @@ export function Topbar() {
           align="right"
         />
         <UpdateButton />
-        <Notifications demo={status.data?.mode === "demo"} clientPhase={client?.connected ? client.phase : null} />
+        <Notifications />
         <AvatarMenu />
         <WindowControls />
       </div>
@@ -217,34 +218,84 @@ function usePopover() {
   return { open, setOpen, ref };
 }
 
-function Notifications({ demo, clientPhase }: { demo: boolean; clientPhase: string | null }) {
+function Notifications() {
   const { open, setOpen, ref } = usePopover();
-  const items = [
-    demo && { title: "Demo mode is on", body: "Add RIOT_API_KEY to your .env to load real player data.", href: "/settings#data" },
-    clientPhase && { title: "League client detected", body: t("Current phase: {0}", [clientPhase]), href: "/live" },
-    { title: "Patch data refreshed", body: "Champion, item and rune data loaded from Data Dragon.", href: "/tier-list" },
-  ].filter(Boolean) as { title: string; body: string; href: string }[];
+  const items = useNotifications();
+  const unread = items.filter((n) => !n.read).length;
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={t("Notifications ({0})", [items.length])} className="relative grid size-10 place-items-center rounded-xl text-muted hover:bg-surface-hover/60 hover:text-fg">
+      <button
+        onClick={() => {
+          setOpen((o) => !o);
+          if (!open && unread) setTimeout(markAllRead, 1500);
+        }}
+        aria-expanded={open}
+        aria-label={t("Notifications ({0})", [unread])}
+        className="relative grid size-10 place-items-center rounded-xl text-muted hover:bg-surface-hover/60 hover:text-fg"
+      >
         <Bell className="size-[18px]" />
-        {items.length > 0 && <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-danger shadow-[0_0_8px_var(--danger)]" />}
+        {unread > 0 && <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[10px] font-bold leading-none text-white shadow-[0_0_8px_var(--danger)]">{unread > 9 ? "9+" : unread}</span>}
       </button>
       <AnimatePresence>
         {open && (
-          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="panel absolute right-0 z-50 mt-2 w-80 p-2">
-            <p className="px-2 pb-1 pt-1 text-xs font-semibold uppercase tracking-wider text-dim">{t("Notifications")}</p>
-            {items.map((n) => (
-              <Link key={n.title} href={n.href} onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 hover:bg-surface-hover">
-                <p className="text-sm font-medium text-fg">{t(n.title)}</p>
-                <p className="text-xs text-muted">{t(n.body)}</p>
-              </Link>
-            ))}
+          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="panel absolute right-0 z-50 mt-2 w-[340px] p-2 !bg-[#131d3d]/95 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.85)] backdrop-blur-2xl light:!bg-white/95">
+            <div className="flex items-center gap-2 px-2 pb-1.5 pt-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-dim">{t("Notifications")}</p>
+              {items.length > 0 && (
+                <>
+                  <button onClick={markAllRead} className="ml-auto text-[11px] text-primary hover:underline">{t("Mark all read")}</button>
+                  <button onClick={clearNotifications} className="text-[11px] text-muted hover:text-fg">{t("Clear")}</button>
+                </>
+              )}
+            </div>
+            {items.length === 0 ? (
+              <div className="flex flex-col items-center gap-1.5 px-3 py-6 text-center">
+                <BellOff className="size-5 text-dim" />
+                <p className="text-sm text-muted">{t("No notifications yet")}</p>
+                <p className="text-xs text-dim">{t("Updates, new patches, account switches and finished games show up here.")}</p>
+              </div>
+            ) : (
+              <div className="max-h-[380px] space-y-0.5 overflow-y-auto">
+                {items.map((n) => {
+                  const body = (
+                    <>
+                      <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", n.read ? "bg-transparent" : n.kind === "warning" ? "bg-warning" : n.kind === "success" ? "bg-success" : "bg-primary")} />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-baseline gap-2">
+                          <span className={cn("text-sm text-fg", !n.read && "font-semibold")}>{n.title}</span>
+                          <span className="ml-auto shrink-0 text-[10.5px] text-dim">{timeAgo(n.at)}</span>
+                        </span>
+                        <span className="block text-xs text-muted">{n.body}</span>
+                      </span>
+                    </>
+                  );
+                  const cls = "flex gap-2.5 rounded-xl px-2.5 py-2 hover:bg-surface-hover";
+                  return n.href ? (
+                    <Link key={n.id} href={n.href} onClick={() => setOpen(false)} className={cls}>
+                      {body}
+                    </Link>
+                  ) : (
+                    <div key={n.id} className={cls}>
+                      {body}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
     </div>
   );
+}
+
+function timeAgo(at: number) {
+  const m = Math.round((Date.now() - at) / 60_000);
+  if (m < 1) return t("now");
+  if (m < 60) return t("{0} min", [m]);
+  const h = Math.round(m / 60);
+  if (h < 24) return t("{0} h", [h]);
+  return t("{0} d", [Math.round(h / 24)]);
 }
 
 function AvatarMenu() {

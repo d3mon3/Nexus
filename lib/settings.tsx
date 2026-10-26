@@ -56,6 +56,12 @@ export interface Settings {
   closeToTray: boolean;
   /** Desktop hotkeys: Alt + letter. */
   hotkeys: { widgets: string; scout: string; edit: string };
+  /** Riot ID of the account last seen in the League client (to notice account switches). */
+  lastClientAccount: string | null;
+  /** Data Dragon patch the user last saw (for the "new patch" notification). */
+  lastSeenPatch: string | null;
+  /** Mirror notifications as Windows notifications while NEXUS isn't in front. */
+  systemNotifications: boolean;
   /** When these settings were last changed (ms). */
   savedAt?: number;
 }
@@ -76,7 +82,7 @@ export const WIDGET_META: Record<WidgetId, { name: string; description: string }
   lane: { name: "Lane opponent", description: "CS and level difference against the enemy in your role." },
   enemySpells: { name: "Enemy summoners", description: "Enemy champions with their summoner spells and levels." },
   augments: { name: "Augment tiers", description: "Arena and ARAM Chaos: the best augments for your champion, so you can pick fast when the choice appears." },
-  enemyItems: { name: "Enemy item alerts", description: "Warns when enemies buy Zhonya's, spell shields, cleanse, anti-heal or stack resistances, with what to do about it." },
+  enemyItems: { name: "Situational items & enemy alerts", description: "Anti-heal, magic resist, armor and penetration for this enemy team — for AD, ADC, AP or tank — plus warnings when enemies buy Zhonya's, spell shields or cleanse." },
 };
 
 const KEY = "nexus.settings.v1";
@@ -117,6 +123,9 @@ export const DEFAULT_SETTINGS: Settings = {
   startWithWindows: true,
   closeToTray: true,
   hotkeys: { widgets: "X", scout: "Z", edit: "V" },
+  lastClientAccount: null,
+  lastSeenPatch: null,
+  systemNotifications: true,
 };
 
 let cache: Settings | null = null;

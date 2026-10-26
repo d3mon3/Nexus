@@ -18,6 +18,8 @@ import type { ChampionStat, Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ChampionIcon, ItemIcon, RuneIcon, SpellIcon } from "../game/icons";
 import { AugmentList } from "../augments/augment-list";
+import { SituationalItems } from "../game/situational-items";
+import { ChampSelectBoard } from "./champ-select-board";
 import { Button } from "../ui/button";
 import { Switch } from "../ui/switch";
 import { RoleIcon } from "../game/role-icon";
@@ -93,6 +95,18 @@ export function ChampSelectAssistant({ forceShow = false }: { forceShow?: boolea
           <LanePanel myRole={myRole} myChamp={myChamp} enemies={enemies.map((e) => e.championId)} opponent={opponent} onPick={setManualOpponent} />
           <CountersPanel opponent={opponent} role={myRole} myChamp={myChamp} mine={mine.data?.data.champions ?? []} />
           <BansPanel rows={stats.data?.data.rows ?? []} taken={new Set([...cs.bans, ...cs.myTeam.flatMap((m) => [m.championId, m.intentId]), ...enemies.map((e) => e.championId)])} highlight={cs.myBanTurn} />
+        </div>
+      )}
+      {platform && (
+        <div className="mx-3 mb-3">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-dim">{t("Teams")}</p>
+          <ChampSelectBoard cs={cs} region={platform} myRiotId={client?.summoner ? `${client.summoner.gameName}#${client.summoner.tagLine}` : null} counters={mode === "sr"} />
+        </div>
+      )}
+      {enemyChamps.length > 0 && (
+        <div className="mx-3 mb-3 rounded-xl border border-line-soft p-3">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-dim">{t("Situational items for this game")}</p>
+          <SituationalItems me={champion(myChamp)} enemies={enemyChamps.map((c) => ({ champion: c }))} />
         </div>
       )}
     </Card>

@@ -5,13 +5,14 @@ import { t } from "@/lib/i18n";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { duration } from "@/lib/format";
-import { getBridge, useClientState } from "@/lib/desktop";
+import { getBridge, useChampSelect, useClientState } from "@/lib/desktop";
 import { useLiveGame, useProfile } from "@/lib/queries";
 import { resolveRegion } from "@/lib/regions";
 import { useSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 import { Logo } from "../layout/logo";
 import { ScoutBoard } from "../live/scout-board";
+import { ChampSelectBoard } from "../live/champ-select-board";
 
 /** Loading-screen scouting window (desktop). `?demo=1` previews it with the demo game. */
 export function ScoutOverlayView() {
@@ -34,7 +35,10 @@ export function ScoutOverlayView() {
       : null;
   const profile = useProfile(player);
   const puuid = profile.data?.data.account.puuid;
-  const live = useLiveGame(player?.platform, puuid, 0);
+  const inChampSelect = Boolean(client?.connected && client.phase === "ChampSelect");
+  const cs = useChampSelect(inChampSelect);
+  // Polls until the game shows up (the window now opens already in champ select).
+  const live = useLiveGame(inChampSelect ? undefined : player?.platform, inChampSelect ? undefined : puuid, 20);
   const game = live.data?.data;
 
   return (
@@ -45,7 +49,7 @@ export function ScoutOverlayView() {
       >
         <Logo size="sm" />
         <span className="text-sm text-fg/85">
-          {game ? `${game.queueName.replace("Ranked Solo/Duo", "Ranked Solo")} · ${game.mapName} · ${duration(game.gameLengthSec)}` : t("Waiting for the game to load…")}
+          {cs ? t("Champion select — your team and who counters each pick") : game ? `${game.queueName.replace("Ranked Solo/Duo", "Ranked Solo")} · ${game.mapName} · ${duration(game.gameLengthSec)}` : t("Waiting for the game to load…")}
         </span>
         <span className={cn("ml-auto text-xs", edit ? "text-primary" : "text-muted")}>
           {edit
@@ -53,7 +57,11 @@ export function ScoutOverlayView() {
             : t("Alt+{0} to hide · Alt+{1} to move", [settings.hotkeys.scout, settings.hotkeys.edit])}
         </span>
       </div>
-      {game && player ? <ScoutBoard game={game} region={player.platform} compactMode /> : null}
+      {cs && player ? (
+        <ChampSelectBoard cs={cs} region={player.platform} myRiotId={s ? `${s.gameName}#${s.tagLine}` : null} compactMode />
+      ) : game && player ? (
+        <ScoutBoard game={game} region={player.platform} compactMode />
+      ) : null}
     </div>
   );
 }

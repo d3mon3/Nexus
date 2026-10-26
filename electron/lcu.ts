@@ -268,7 +268,7 @@ export async function acceptReadyCheck(conn: LcuConnection): Promise<boolean> {
 
 interface RawChampSelect {
   localPlayerCellId: number;
-  myTeam: { cellId: number; championId: number; championPickIntent: number; assignedPosition: string }[];
+  myTeam: { cellId: number; championId: number; championPickIntent: number; assignedPosition: string; gameName?: string; tagLine?: string; nameVisibilityType?: string; spell1Id?: number; spell2Id?: number }[];
   theirTeam: { cellId: number; championId: number; championPickIntent?: number; assignedPosition: string }[];
   bans?: { myTeamBans?: number[]; theirTeamBans?: number[] };
   actions?: { actorCellId: number; type: string; completed: boolean; championId: number; isInProgress?: boolean }[][];
@@ -287,7 +287,15 @@ export async function readChampSelect(conn: LcuConnection, queueId: number | nul
     phase: s.timer?.phase ?? "",
     myCellId: s.localPlayerCellId,
     myBanTurn,
-    myTeam: s.myTeam.map((m) => ({ cellId: m.cellId, championId: m.championId || 0, intentId: m.championPickIntent || 0, position: m.assignedPosition || "" })),
+    myTeam: s.myTeam.map((m) => ({
+      cellId: m.cellId,
+      championId: m.championId || 0,
+      intentId: m.championPickIntent || 0,
+      position: m.assignedPosition || "",
+      // Names the client hides in ranked stay hidden — NEXUS never de-anonymises players.
+      riotId: m.gameName && m.tagLine && m.nameVisibilityType !== "HIDDEN" ? `${m.gameName}#${m.tagLine}` : null,
+      spells: [m.spell1Id || 0, m.spell2Id || 0] as [number, number],
+    })),
     theirTeam: s.theirTeam.map((m) => ({ cellId: m.cellId, championId: m.championId || 0, position: m.assignedPosition || "" })),
     bans: [...new Set([...(s.bans?.myTeamBans ?? []), ...(s.bans?.theirTeamBans ?? []), ...bans])].filter((id) => id > 0),
   };

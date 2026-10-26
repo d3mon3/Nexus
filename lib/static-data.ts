@@ -110,6 +110,15 @@ export const FALLBACK_CHAMPIONS: ChampionInfo[] = CHAMPION_TABLE.trim()
 /* ------------------------------------------------------------------ items */
 
 export const ITEMS: Record<number, string> = {
+  3123: "Executioner's Calling",
+  6609: "Chempunk Chainsword",
+  3916: "Oblivion Orb",
+  3076: "Bramble Vest",
+  3139: "Mercurial Scimitar",
+  8020: "Abyssal Mask",
+  6653: "Liandry's Torment",
+  3137: "Cryptbloom",
+  6695: "Serpent's Fang",
   1036: "Long Sword",
   1054: "Doran's Shield",
   1055: "Doran's Blade",

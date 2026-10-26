@@ -2,14 +2,16 @@
  * Which app is in front (Windows), plus NEXUS hotkeys while League is in front.
  *
  * One small hidden PowerShell process asks Windows for the foreground window's process name
- * (every 400 ms) and — only while League itself is in front — reads the state of the Alt key
- * and the hotkey letters (every 50 ms). League reads the keyboard with raw input and blocks
+ * (every 400 ms) and — only while League (game or client) or NEXUS itself is in front — reads
+ * the state of the Alt key and the hotkey letters (every 50 ms). No global hotkeys are
+ * registered, so Alt+letter keeps working normally in every other app and game. League reads the keyboard with raw input and blocks
  * normal global hotkeys, so this is how Alt+X & co. work in game. Nothing touches the game:
  * GetAsyncKeyState only reads whether a key is held down.
  */
 import { spawn, type ChildProcess } from "node:child_process";
 
-const script = (keys: number[]) => `
+const ps = (v: string) => `'${v.replace(/'/g, "''")}'`;
+const script = (keys: number[], hotApps: string[]) => `
 $ErrorActionPreference = 'SilentlyContinue'
 Add-Type @"
 using System;
@@ -21,6 +23,7 @@ public static class NexusFg {
 }
 "@
 $keys = @(${keys.join(",")})
+$hot = @(${hotApps.map(ps).join(",")})
 $down = @{}
 $last = ''
 $game = $false
@@ -32,7 +35,7 @@ while ($true) {
     $n = ''
     if ($p -ne 0) { $n = (Get-Process -Id $p).ProcessName }
     if ($n -ne $last) { [Console]::Out.WriteLine("FG:" + $n); [Console]::Out.Flush(); $last = $n }
-    $game = ($n -eq 'League of Legends')
+    $game = ($hot -contains $n)
   }
   if ($game -and $keys.Count -gt 0) {
     $alt = ([NexusFg]::GetAsyncKeyState(0x12) -band 0x8000) -ne 0
@@ -55,7 +58,13 @@ export class ForegroundWatcher {
   constructor(
     private onChange: (processName: string) => void,
     private onKey: (letter: string) => void = () => undefined,
+    /** Process names (without .exe) where the hotkeys work. */
+    private hotApps: string[] = ["League of Legends"],
   ) {}
+
+  get running() {
+    return Boolean(this.proc);
+  }
 
   /** Letters (A–Z) that trigger onKey together with Alt while League is in front. */
   setKeys(letters: string[]) {
@@ -70,7 +79,7 @@ export class ForegroundWatcher {
 
   start() {
     if (this.proc || process.platform !== "win32") return;
-    const p = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script(this.keys)], { windowsHide: true, stdio: ["ignore", "pipe", "ignore"] });
+    const p = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script(this.keys, this.hotApps)], { windowsHide: true, stdio: ["ignore", "pipe", "ignore"] });
     this.proc = p;
     let buf = "";
     p.stdout?.on("data", (chunk: Buffer) => {
@@ -100,3 +109,6 @@ export class ForegroundWatcher {
 
 /** League's in-game process ("League of Legends.exe"). */
 export const isGameProcess = (name: string) => /^league of legends$/i.test(name);
+
+/** League client windows (lobby, champ select). */
+export const isClientProcess = (name: string) => /^leagueclient(ux(render)?)?$/i.test(name);

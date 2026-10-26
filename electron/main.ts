@@ -15,7 +15,7 @@ import { normalizeServerUrl } from "../server/admin-utils";
 import type { Role } from "../lib/types";
 import { ChampSelectWatcher, importBuild, type ImportResult } from "./importer";
 import { DiscordPresence } from "./discord";
-import { ForegroundWatcher, isGameProcess } from "./foreground";
+import { ForegroundWatcher, isClientProcess, isGameProcess } from "./foreground";
 import { acceptReadyCheck, findConnection, getLiveClientSnapshot, lcuPost, lcuRequest, readChampSelect, readClientState, readGameflowSession, type GameflowInfo, type LcuConnection } from "./lcu";
 import { modeForQueue, modeInfo, isGameModeId, type GameModeId } from "../lib/modes";
 import { queueName } from "../lib/static-data";
@@ -393,7 +393,8 @@ function toggleOverlay(show = !overlayShown()) {
     placeWidget(win, id);
     win.loadURL(`${baseUrl}/overlay?widget=${encodeURIComponent(id)}`);
     win.once("ready-to-show", () => {
-      if (editMode || !foreground.current || isGameProcess(foreground.current)) win.showInactive();
+      // Only over the League game itself — never over other games or apps.
+      if (editMode || isGameProcess(foreground.current)) win.showInactive();
     });
     win.on("moved", () => {
       const d = overlayDisplay ?? screen.getPrimaryDisplay();
@@ -415,19 +416,28 @@ function applyForeground(name: string) {
   if (!overlayShown() && !scoutWin) return;
   // "" = Windows is between windows (alt-tab, lock screen) — keep the current state.
   if (!name && !editMode) return;
-  // Widgets only over the game itself; alt-tab to Discord / desktop / browser hides them.
+  // Widgets only over the game itself; alt-tab to another game, Discord or the desktop hides them.
   const visible = editMode || isGameProcess(name);
-  // A board moved to another monitor stays there while you play.
-  const scoutHere = scoutWin && scoutOnGameDisplay() ? [scoutWin] : [];
-  for (const w of [...widgetWins.values(), ...scoutHere]) {
-    if (visible && !w.isVisible()) w.showInactive();
-    else if (!visible && w.isVisible()) w.hide();
-  }
+  for (const w of widgetWins.values()) setShown(w, visible);
+  // The board also shows over the League client (champ select) and NEXUS itself; one moved
+  // to another monitor stays there while you play.
+  if (scoutWin && scoutOnGameDisplay()) setShown(scoutWin, visible || isClientProcess(name) || name === OWN_PROCESS);
 }
-const foreground = new ForegroundWatcher(applyForeground, (letter) => {
-  const action = (Object.entries(prefs.hotkeys) as [keyof DesktopPrefs["hotkeys"], string][]).find(([, l]) => l.toUpperCase() === letter)?.[0];
-  if (action) runHotkey(action);
-});
+function setShown(w: BrowserWindow, show: boolean) {
+  if (show && !w.isVisible()) w.showInactive();
+  else if (!show && w.isVisible()) w.hide();
+}
+/** Process name of NEXUS itself (e.g. "NEXUS" for NEXUS.exe). */
+const OWN_PROCESS = path.parse(process.execPath).name;
+const foreground = new ForegroundWatcher(
+  applyForeground,
+  (letter) => {
+    const action = (Object.entries(prefs.hotkeys) as [keyof DesktopPrefs["hotkeys"], string][]).find(([, l]) => l.toUpperCase() === letter)?.[0];
+    if (action) runHotkey(action);
+  },
+  // Alt+letter works only while League (game or client) or NEXUS is in front.
+  ["League of Legends", "LeagueClientUx", "LeagueClientUxRender", "LeagueClient", OWN_PROCESS],
+);
 
 /* Hotkeys: Alt + letter. Registered globally (outside the game) and read by the foreground
  * watcher while League is in front (the game blocks normal global hotkeys). */
@@ -450,6 +460,10 @@ function registerHotkeys() {
   if (sig === registeredKeys) return;
   registeredKeys = sig;
   globalShortcut.unregisterAll();
+  foreground.setKeys(Object.values(keys));
+  // Windows: the foreground watcher reads the keys only while League or NEXUS is in front, so
+  // Alt+X & co. never trigger (or get stolen) in other games and apps.
+  if (process.platform === "win32") return;
   for (const [action, letter] of Object.entries(keys) as [keyof DesktopPrefs["hotkeys"], string][]) {
     if (!/^[A-Z]$/i.test(letter)) continue;
     try {
@@ -458,7 +472,6 @@ function registerHotkeys() {
       /* invalid accelerator */
     }
   }
-  foreground.setKeys(Object.values(keys));
 }
 
 /** Edit mode makes the widget windows draggable (Ctrl+Shift+E). */
@@ -513,6 +526,14 @@ function scoutOnGameDisplay(): boolean {
   if (!scoutWin) return true;
   const game = overlayDisplay ?? screen.getPrimaryDisplay();
   return screen.getDisplayMatching(scoutWin.getBounds()).id === game.id;
+}
+
+/** The board was last placed on a monitor other than the one League is on. */
+function scoutOnOtherMonitor(): boolean {
+  const saved = loadScoutBounds();
+  if (!saved) return false;
+  const game = overlayDisplay ?? screen.getPrimaryDisplay();
+  return screen.getDisplayMatching(saved).id !== game.id;
 }
 
 function applyScoutMode() {
@@ -719,6 +740,12 @@ async function pollClient() {
     // Champ select → show the assistant page, auto import once per champion/role.
     if (next.phase === "ChampSelect" && prevPhase !== "ChampSelect") {
       if (prefs.champSelectAssist) showMain("/live?view=champ-select");
+      // 10-player board right away: the League client is on the screen the mouse is on.
+      overlayDisplay = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+      if (prefs.scoutAutoShow && scoutOnOtherMonitor()) {
+        toggleScout(true);
+        scoutShownAt = Date.now();
+      }
       void snapshotRank();
       void ensureBorderless().catch(() => undefined);
     }
@@ -727,13 +754,19 @@ async function pollClient() {
       const off = pick && (prefs.import.disabledChampions ?? []).includes(pick.championId);
       if (pick && !off && watcher.shouldImport(pick.championId, mode === "sr" ? pick.role : null)) runImport(pick.championId, pick.role, false, mode).catch(() => undefined);
     }
-    if (next.phase !== "ChampSelect" && prevPhase === "ChampSelect") watcher.reset();
+    if (next.phase !== "ChampSelect" && prevPhase === "ChampSelect") {
+      watcher.reset();
+      // Dodge / back to lobby: close the auto-shown board.
+      if (!IN_GAME.has(next.phase) && scoutShownAt && !editMode) {
+        toggleScout(false);
+        scoutShownAt = 0;
+      }
+    }
 
     // Game start → scouting board on the loading screen, widgets once in game.
     if (next.phase === "InProgress" && prevPhase !== "InProgress") {
       mainWindow?.webContents.send("nexus:navigate", "/live");
       if (prefs.minimizeInGame && mainWindow && !mainWindow.isFocused()) mainWindow.minimize();
-      foreground.start();
       if (prefs.scoutAutoShow) {
         toggleScout(true);
         scoutShownAt = Date.now();
@@ -751,7 +784,6 @@ async function pollClient() {
     if (next.phase !== "InProgress" && prevPhase === "InProgress") {
       toggleOverlay(false);
       toggleScout(false);
-      foreground.stop();
     }
 
     // Game over → post-game summary.
@@ -778,6 +810,11 @@ async function pollClient() {
       clientState = { connected: false, phase: "None", summoner: null };
       broadcast(clientState);
       discord.update(null);
+      // Client closed or crashed mid-game: never leave widgets over other apps.
+      if (!editMode) {
+        toggleOverlay(false);
+        toggleScout(false);
+      }
     }
   }
 }
@@ -877,6 +914,7 @@ app.whenReady().then(async () => {
   setInterval(() => void checkForUpdate(), 6 * 3600e3);
   // Overlays only draw over League in Borderless / Windowed display mode.
   registerHotkeys();
+  foreground.start();
   setInterval(pollClient, 2000);
   pollClient();
   app.on("activate", () => BrowserWindow.getAllWindows().length === 0 && createWindow());

@@ -368,6 +368,9 @@ export function SettingsView() {
           <Row label={t("Start with Windows")} hint={t("NEXUS starts hidden in the tray and opens by itself when champion select begins.")} htmlFor="start-win">
             <Switch id="start-win" label={t("Start with Windows")} checked={settings.startWithWindows} onChange={(v) => update({ startWithWindows: v })} />
           </Row>
+          <Row label={t("Windows notifications")} hint={t("Also shows NEXUS notifications (updates, new patch) in Windows while the app is in the background.")} htmlFor="sys-notif">
+            <Switch id="sys-notif" label={t("Windows notifications")} checked={settings.systemNotifications} onChange={(v) => update({ systemNotifications: v })} />
+          </Row>
           <Row label={t("Keep running in the tray")} hint={t("Closing the window keeps NEXUS in the tray (next to the clock). Quit from the tray menu.")} htmlFor="close-tray">
             <Switch id="close-tray" label={t("Keep running in the tray")} checked={settings.closeToTray} onChange={(v) => update({ closeToTray: v })} />
           </Row>
@@ -386,7 +389,7 @@ export function SettingsView() {
               align="right"
             />
           </Row>
-          <Row label={t("Detect League client")} hint={t("Follow the account logged into the client and open live games automatically.")} htmlFor="auto-detect">
+          <Row label={t("Detect League client")} hint={t("Switches to the account logged into the client — also when you log into another account — and opens live games automatically.")} htmlFor="auto-detect">
             <Switch
               id="auto-detect"
               label={t("Detect League client")}

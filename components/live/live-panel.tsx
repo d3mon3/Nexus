@@ -2,7 +2,7 @@
 
 
 import { t } from "@/lib/i18n";
-import { Activity, Ban, Eye, MonitorPlay, RefreshCw, Swords, Users } from "lucide-react";
+import { Activity, Ban, Eye, MonitorPlay, RefreshCw, ShieldAlert, Swords, Users } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -25,6 +25,7 @@ import { Button } from "../ui/button";
 import { Card, CardBody, CardHeader } from "../ui/card";
 import { Select } from "../ui/select";
 import { ScoutBoard } from "./scout-board";
+import { SituationalItems } from "../game/situational-items";
 import { Skeleton } from "../ui/skeleton";
 import { EmptyState, ErrorState, Unavailable } from "../ui/states";
 import { Tooltip } from "../ui/tooltip";
@@ -156,6 +157,8 @@ function LiveBoard({ game, source, note, region, onRefresh, refreshing, trackedP
         <MatchupsCard game={game} />
         <BansCard game={game} />
       </div>
+
+      <SituationalCard game={game} trackedPuuid={trackedPuuid} />
 
       {game.unavailable.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -395,6 +398,27 @@ function MatchupsCard({ game }: { game: LiveGame }) {
             </div>
           );
         })}
+      </CardBody>
+    </Card>
+  );
+}
+
+/** Items against this enemy team (for the tracked player's side), AD / ADC / AP / tank. */
+function SituationalCard({ game, trackedPuuid }: { game: LiveGame; trackedPuuid: string }) {
+  const { champion } = useStatic();
+  const me = game.participants.find((p) => p.puuid === trackedPuuid) ?? game.participants[0];
+  if (!me) return null;
+  const enemies = game.participants
+    .filter((p) => p.teamId !== me.teamId)
+    .flatMap((p) => {
+      const c = champion(p.championId);
+      return c ? [{ champion: c, items: p.live?.items }] : [];
+    });
+  return (
+    <Card>
+      <CardHeader title={t("Situational items for this game")} icon={<ShieldAlert className="size-4 text-warning" />} />
+      <CardBody>
+        <SituationalItems me={champion(me.championId)} enemies={enemies} owned={me.live?.items ?? []} />
       </CardBody>
     </Card>
   );

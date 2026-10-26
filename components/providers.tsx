@@ -9,18 +9,37 @@ import { getBridge, useClientState } from "@/lib/desktop";
 import { resolveRegion } from "@/lib/regions";
 import { SettingsProvider, useSettings } from "@/lib/settings";
 import { StaticDataProvider } from "@/lib/static-context";
-import { LangProvider, useLanguage, type Lang } from "@/lib/i18n";
+import { LangProvider, t, useLanguage, type Lang } from "@/lib/i18n";
+import { notify } from "@/lib/notifications";
+import { NotificationSources } from "./notification-sources";
 
 /** Keeps the Electron shell in sync with settings and surfaces import results as toasts. */
 function DesktopSync() {
   const { settings, update } = useSettings();
   const client = useClientState();
-  // First run of the desktop app: use the account logged into the League client.
+  // Follow the account logged into the League client: first run, and every time you log
+  // into another account (a different account typed in Settings stays until the client changes).
   useEffect(() => {
     const s = client?.summoner;
     const platform = resolveRegion(s?.platform ?? "")?.platform;
-    if (!settings.myAccount && s?.gameName && platform) update({ myAccount: { gameName: s.gameName, tagLine: s.tagLine, platform }, region: platform });
-  }, [client?.summoner, settings.myAccount, update]);
+    if (!s?.gameName || !s.tagLine || !platform) return;
+    const id = `${s.gameName}#${s.tagLine}@${platform}`;
+    if (!settings.myAccount) {
+      update({ myAccount: { gameName: s.gameName, tagLine: s.tagLine, platform }, region: platform, lastClientAccount: id });
+      return;
+    }
+    if (id === settings.lastClientAccount) return;
+    if (!settings.autoDetectClient) {
+      update({ lastClientAccount: id });
+      return;
+    }
+    const same = settings.myAccount.gameName.toLowerCase() === s.gameName.toLowerCase() && settings.myAccount.tagLine.toLowerCase() === s.tagLine.toLowerCase() && settings.myAccount.platform === platform;
+    update({ myAccount: { gameName: s.gameName, tagLine: s.tagLine, platform }, region: platform, lastClientAccount: id });
+    if (!same && settings.lastClientAccount) {
+      toast.success(t("Switched to {0}", [`${s.gameName}#${s.tagLine}`]), { description: t("NEXUS follows the account logged into the League client.") });
+      notify({ id: `account:${id}:${Date.now()}`, kind: "info", title: t("Account switched"), body: t("Now showing {0}.", [`${s.gameName}#${s.tagLine}`]), href: "/" });
+    }
+  }, [client?.summoner, settings.myAccount, settings.lastClientAccount, settings.autoDetectClient, update]);
   const anyWidget = Object.values(settings.widgets).some((w) => w.enabled);
   const { lang } = useLanguage();
   useEffect(() => {
@@ -70,7 +89,12 @@ function MotionPrefs({ children }: { children: ReactNode }) {
 function MainWindowSync() {
   const [main, setMain] = useState(false);
   useEffect(() => setMain(!window.location.pathname.startsWith("/overlay")), []);
-  return main ? <DesktopSync /> : null;
+  return main ? (
+    <>
+      <DesktopSync />
+      <NotificationSources />
+    </>
+  ) : null;
 }
 
 export function Providers({ children, lang = "pl" }: { children: ReactNode; lang?: Lang }) {

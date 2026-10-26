@@ -40,12 +40,13 @@ if (process.env.MOCK_CS) {
       getUpdate: async () => ({ state: "downloading", tag: "build-12", name: "build 12", progress: 0.42 }),
       onUpdate: () => () => {},
       getChampSelect: async () => ({ queueId: 420, phase: "BAN_PICK", myCellId: 2, myBanTurn: false,
-        myTeam: [{ cellId: 0, championId: 266, intentId: 0, position: "top" }, { cellId: 1, championId: 64, intentId: 0, position: "jungle" }, { cellId: 2, championId: 0, intentId: 157, position: "middle" }, { cellId: 3, championId: 0, intentId: 0, position: "bottom" }, { cellId: 4, championId: 0, intentId: 0, position: "utility" }],
-        theirTeam: [{ cellId: 5, championId: 103, position: "" }, { cellId: 6, championId: 122, position: "" }, { cellId: 7, championId: 0, position: "" }, { cellId: 8, championId: 0, position: "" }, { cellId: 9, championId: 0, position: "" }],
+        myTeam: [{ cellId: 0, championId: 266, intentId: 0, position: "top", riotId: null }, { cellId: 1, championId: 64, intentId: 0, position: "jungle", riotId: "Riftwolf#EUW" }, { cellId: 2, championId: 0, intentId: 157, position: "middle" }, { cellId: 3, championId: 0, intentId: 0, position: "bottom" }, { cellId: 4, championId: 0, intentId: 0, position: "utility" }],
+        theirTeam: [{ cellId: 5, championId: 103, position: "" }, { cellId: 6, championId: 122, position: "" }, { cellId: 7, championId: 16, position: "" }, { cellId: 8, championId: 0, position: "" }, { cellId: 9, championId: 0, position: "" }],
         bans: [238, 777, 555] }),
     };
   });
 }
+if (process.env.NOTIFS) await page.addInitScript((v) => localStorage.setItem("nexus.notifications.v1", v), process.env.NOTIFS);
 if (process.env.SETTINGS) await page.addInitScript((v) => localStorage.setItem("nexus.settings.v1", v), process.env.SETTINGS);
 await page.goto(`http://localhost:${port}/?theme=${theme}#${route}`);
 await page.waitForTimeout(1600);
